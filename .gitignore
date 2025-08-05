@@ -1,0 +1,228 @@
+# TC Cloud Games Solution - Git Ignore
+# This file prevents cloned repositories from being committed to the solution repository
+
+# =============================================================================
+# CLONED REPOSITORIES - Prevent nested git repositories from being committed
+# =============================================================================
+
+# Infrastructure
+infrastructure/infra/
+
+# Orchestration  
+orchestration/apphost/
+
+# Services
+services/users/
+services/games/
+services/payments/
+
+# Shared components
+shared/common/
+
+# Automation
+automation/pipelines/
+
+# Legacy flat structure (in case someone runs old scripts)
+infra/
+apphost/
+users/
+games/
+payments/
+common/
+pipelines/
+
+# =============================================================================
+# DEVELOPMENT ENVIRONMENT
+# =============================================================================
+
+# Visual Studio / VS Code
+.vs/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# =============================================================================
+# BUILD OUTPUT & DEPENDENCIES
+# =============================================================================
+
+# .NET
+bin/
+obj/
+packages/
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+PublishProfiles/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# =============================================================================
+# AZURE & INFRASTRUCTURE
+# =============================================================================
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+
+# Azure Developer CLI
+.azure/
+
+# ARM Templates
+*.parameters.json
+!*.parameters.template.json
+
+# =============================================================================
+# SECRETS & CONFIGURATION
+# =============================================================================
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secret files
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Azure Key Vault
+.vault/
+
+# =============================================================================
+# LOGS & TEMPORARY FILES
+# =============================================================================
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# =============================================================================
+# DOCKER & CONTAINERS
+# =============================================================================
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# =============================================================================
+# TESTING & COVERAGE
+# =============================================================================
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output/
+
+# =============================================================================
+# PACKAGE MANAGERS
+# =============================================================================
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# NPM
+package-lock.json
+yarn.lock
+
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+
+# Generated documentation
+docs/_build/
+site/
+
+# =============================================================================
+# BACKUP & TEMPORARY
+# =============================================================================
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Swap files
+*.swp
+*.swo
+
+# =============================================================================
+# KEEP THESE FILES
+# =============================================================================
+
+# Explicitly keep important files (override any accidental ignores above)
+!README.md
+!LICENSE
+!.gitignore
+!scripts/
+!docs/
