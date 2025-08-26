@@ -4,24 +4,21 @@ echo "Cloning TC-CloudGames repositories with aliases..."
 echo ""
 echo ""
 
-GITHUB_USER="rdpresser"
-
-# Repository configuration with organized folders
-declare -A REPOS=(
-  ["tc-cloudgames-infra"]="infra:infrastructure"
-  ["tc-cloudgames-apphost"]="apphost:orchestration"
-  ["tc-cloudgames-users"]="users:services"
-  ["tc-cloudgames-games"]="games:services"
-  ["tc-cloudgames-payments"]="payments:services"
-  ["tc-cloudgames-common"]="common:shared"
-  ["tc-cloudgames-pipelines"]="pipelines:automation"
+# Repository configuration
+REPOS=(
+  "tc-cloudgames-users:users:services"
+  "tc-cloudgames-games:games:services"
+  "tc-cloudgames-payments:payments:services"
+  "tc-cloudgames-common:common:shared"
 )
+
+GITHUB_USER="rdpresser"
 
 # Go back one level to the root directory
 cd ..
 
 # Create organizational directories if they don't exist
-ORGANIZATIONAL_FOLDERS=("infrastructure" "orchestration" "services" "shared" "automation")
+ORGANIZATIONAL_FOLDERS=("services" "shared")
 for org_folder in "${ORGANIZATIONAL_FOLDERS[@]}"; do
   if [ ! -d "$org_folder" ]; then
     mkdir -p "$org_folder"
@@ -30,9 +27,10 @@ for org_folder in "${ORGANIZATIONAL_FOLDERS[@]}"; do
 done
 
 echo ""
+echo ""
 
-for repo_name in "${!REPOS[@]}"; do
-  IFS=":" read -r alias parent_folder <<< "${REPOS[$repo_name]}"
+for repo_config in "${REPOS[@]}"; do
+  IFS=":" read -r repo_name alias parent_folder <<< "$repo_config"
   url="https://github.com/$GITHUB_USER/$repo_name.git"
   target_path="$parent_folder/$alias"
   

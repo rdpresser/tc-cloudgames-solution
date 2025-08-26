@@ -3,13 +3,10 @@ Write-Host ""
 Write-Host ""
 
 $repos = @(
-    @{ name = "tc-cloudgames-infra"; alias = "infra"; folder = "infrastructure" },
-    @{ name = "tc-cloudgames-apphost"; alias = "apphost"; folder = "orchestration" },
     @{ name = "tc-cloudgames-users"; alias = "users"; folder = "services" },
     @{ name = "tc-cloudgames-games"; alias = "games"; folder = "services" },
     @{ name = "tc-cloudgames-payments"; alias = "payments"; folder = "services" },
-    @{ name = "tc-cloudgames-common"; alias = "common"; folder = "shared" },
-    @{ name = "tc-cloudgames-pipelines"; alias = "pipelines"; folder = "automation" }
+    @{ name = "tc-cloudgames-common"; alias = "common"; folder = "shared" }
 )
 
 $githubUser = "rdpresser"
@@ -18,7 +15,7 @@ $githubUser = "rdpresser"
 Set-Location ..
 
 # Create organizational directories if they don't exist
-$organizationalFolders = @("infrastructure", "orchestration", "services", "shared", "automation")
+$organizationalFolders = @("services", "shared")
 foreach ($orgFolder in $organizationalFolders) {
     if (-not (Test-Path $orgFolder)) {
         New-Item -ItemType Directory -Path $orgFolder -Force
