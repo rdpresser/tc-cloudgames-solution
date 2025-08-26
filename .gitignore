@@ -5,12 +5,6 @@
 # CLONED REPOSITORIES - Prevent nested git repositories from being committed
 # =============================================================================
 
-# Infrastructure
-infrastructure/infra/
-
-# Orchestration  
-orchestration/apphost/
-
 # Services
 services/users/
 services/games/
@@ -19,17 +13,11 @@ services/payments/
 # Shared components
 shared/common/
 
-# Automation
-automation/pipelines/
-
 # Legacy flat structure (in case someone runs old scripts)
-infra/
-apphost/
 users/
 games/
 payments/
 common/
-pipelines/
 
 # =============================================================================
 # DEVELOPMENT ENVIRONMENT
@@ -56,6 +44,13 @@ pipelines/
 # =============================================================================
 
 # .NET
+# Ignorar pastas de build e IDEs em qualquer nível
+**/[Bb]in/
+**/[Oo]bj/
+**/.vs/
+**/.vscode/
+**/.idea/
+
 bin/
 obj/
 packages/

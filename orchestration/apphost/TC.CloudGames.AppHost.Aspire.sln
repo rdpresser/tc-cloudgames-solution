@@ -1,0 +1,86 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Users.Api", "..\..\services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\TC.CloudGames.Users.Api.csproj", "{0487F409-946B-8964-7BA6-D4B7971032F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Contracts", "..\..\shared\common\src\TC.CloudGames.Contracts\TC.CloudGames.Contracts.csproj", "{BF634AAF-587E-1916-7EED-FB2526DC3D01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.SharedKernel", "..\..\shared\common\src\TC.CloudGames.SharedKernel\TC.CloudGames.SharedKernel.csproj", "{1B25FAAA-B192-4646-31AB-4F7985CB6D36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Users.Infrastructure", "..\..\services\users\src\Adapters\Outbound\TC.CloudGames.Users.Infrastructure\TC.CloudGames.Users.Infrastructure.csproj", "{4A5951AD-73B7-AF3B-C107-C50B667809D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Users.Application", "..\..\services\users\src\Core\TC.CloudGames.Users.Application\TC.CloudGames.Users.Application.csproj", "{91CCAB6C-24D6-7E10-CB53-161074B7FEFC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Users.Domain", "..\..\services\users\src\Core\TC.CloudGames.Users.Domain\TC.CloudGames.Users.Domain.csproj", "{389E4046-43BD-728F-FEED-6935B251BA5A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspire_AppHost", "Aspire_AppHost", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Users_Solution", "Users_Solution", "{D07BAD15-0213-4CE9-A1F5-B2DC64253C86}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{E2D71EEB-AED4-4B01-9C63-5EABA41D5BEA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.AppHost.Aspire", "src\TC.CloudGames.AppHost.Aspire\TC.CloudGames.AppHost.Aspire.csproj", "{6A2973D3-7695-7D6E-47DD-D4F9B94DF3B6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.AppHost.Aspire.ServiceDefaults", "src\TC.CloudGames.AppHost.Aspire.ServiceDefaults\TC.CloudGames.AppHost.Aspire.ServiceDefaults.csproj", "{10861B7B-C662-CC20-8308-7952456C42BA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{924EF059-1DF2-4EEE-A14F-361DF03A065C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0487F409-946B-8964-7BA6-D4B7971032F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0487F409-946B-8964-7BA6-D4B7971032F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0487F409-946B-8964-7BA6-D4B7971032F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0487F409-946B-8964-7BA6-D4B7971032F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF634AAF-587E-1916-7EED-FB2526DC3D01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF634AAF-587E-1916-7EED-FB2526DC3D01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF634AAF-587E-1916-7EED-FB2526DC3D01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF634AAF-587E-1916-7EED-FB2526DC3D01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B25FAAA-B192-4646-31AB-4F7985CB6D36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B25FAAA-B192-4646-31AB-4F7985CB6D36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B25FAAA-B192-4646-31AB-4F7985CB6D36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B25FAAA-B192-4646-31AB-4F7985CB6D36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A5951AD-73B7-AF3B-C107-C50B667809D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A5951AD-73B7-AF3B-C107-C50B667809D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A5951AD-73B7-AF3B-C107-C50B667809D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A5951AD-73B7-AF3B-C107-C50B667809D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91CCAB6C-24D6-7E10-CB53-161074B7FEFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91CCAB6C-24D6-7E10-CB53-161074B7FEFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91CCAB6C-24D6-7E10-CB53-161074B7FEFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91CCAB6C-24D6-7E10-CB53-161074B7FEFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{389E4046-43BD-728F-FEED-6935B251BA5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{389E4046-43BD-728F-FEED-6935B251BA5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{389E4046-43BD-728F-FEED-6935B251BA5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{389E4046-43BD-728F-FEED-6935B251BA5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A2973D3-7695-7D6E-47DD-D4F9B94DF3B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A2973D3-7695-7D6E-47DD-D4F9B94DF3B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A2973D3-7695-7D6E-47DD-D4F9B94DF3B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A2973D3-7695-7D6E-47DD-D4F9B94DF3B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10861B7B-C662-CC20-8308-7952456C42BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10861B7B-C662-CC20-8308-7952456C42BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10861B7B-C662-CC20-8308-7952456C42BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10861B7B-C662-CC20-8308-7952456C42BA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0487F409-946B-8964-7BA6-D4B7971032F0} = {D07BAD15-0213-4CE9-A1F5-B2DC64253C86}
+		{BF634AAF-587E-1916-7EED-FB2526DC3D01} = {E2D71EEB-AED4-4B01-9C63-5EABA41D5BEA}
+		{1B25FAAA-B192-4646-31AB-4F7985CB6D36} = {E2D71EEB-AED4-4B01-9C63-5EABA41D5BEA}
+		{4A5951AD-73B7-AF3B-C107-C50B667809D4} = {D07BAD15-0213-4CE9-A1F5-B2DC64253C86}
+		{91CCAB6C-24D6-7E10-CB53-161074B7FEFC} = {D07BAD15-0213-4CE9-A1F5-B2DC64253C86}
+		{389E4046-43BD-728F-FEED-6935B251BA5A} = {D07BAD15-0213-4CE9-A1F5-B2DC64253C86}
+		{D07BAD15-0213-4CE9-A1F5-B2DC64253C86} = {924EF059-1DF2-4EEE-A14F-361DF03A065C}
+		{6A2973D3-7695-7D6E-47DD-D4F9B94DF3B6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{10861B7B-C662-CC20-8308-7952456C42BA} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F1278D4F-DD5E-4308-B75D-11D57F7520A7}
+	EndGlobalSection
+EndGlobal
