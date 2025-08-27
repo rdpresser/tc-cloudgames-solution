@@ -1,0 +1,57 @@
+provider "azurerm" {
+  features {}
+}
+
+data "azurerm_client_config" "current" {}
+
+# =============================================================================
+# Azure Resource Provider Registration (Microsoft.App)
+# =============================================================================
+resource "azurerm_resource_provider_registration" "app" {
+  name = "Microsoft.App"
+}
+
+# =============================================================================
+# Random suffix for unique naming
+# =============================================================================
+resource "random_string" "unique_suffix" {
+  length  = 4
+  upper   = false
+  special = false
+}
+
+# =============================================================================
+# Locals: naming and common tags
+# =============================================================================
+locals {
+  environment  = var.environment
+  project_name = var.project_name
+  name_prefix  = "${local.project_name}-${local.environment}"
+
+  kv_name  = "tccloudgames${local.environment}kv${random_string.unique_suffix.result}"
+  acr_name = "tccloudgames${local.environment}acr${random_string.unique_suffix.result}"
+
+  common_tags = {
+    Environment = local.environment
+    Project     = "TC Cloud Games"
+    ManagedBy   = "Terraform"
+    Owner       = "DevOps Team"
+    CostCenter  = "Engineering"
+    Workspace   = terraform.workspace
+    Provider    = "Azure"
+    DeployTime  = timeadd(timestamp(), "-3h") # UTC-3
+  }
+}
+
+# =============================================================================
+# Resource Group
+# =============================================================================
+resource "azurerm_resource_group" "rg" {
+  name     = "${local.name_prefix}-solution-rg"
+  location = var.azure_resource_group_location
+  tags     = local.common_tags
+
+  depends_on = [
+    azurerm_resource_provider_registration.app
+  ]
+}
