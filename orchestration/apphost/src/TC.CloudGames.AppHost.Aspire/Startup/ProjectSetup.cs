@@ -15,7 +15,12 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         {
             var project = builder.AddProject<Projects.TC_CloudGames_Users_Api>("users-api")
                 .WithHealthChecks()
-                .WithServiceReferences(postgres, userDb, maintenanceDb, redis, rabbit);
+                .WithServiceReferences(postgres, userDb, maintenanceDb, redis, rabbit)
+                .WaitFor(postgres)
+                .WaitFor(userDb)
+                .WaitFor(maintenanceDb)
+                .WaitFor(rabbit)
+                .WaitFor(redis);
 
             ConfigureDatabaseEnvironment(project, builder, registry, userDb, maintenanceDb);
             ConfigureMessageBrokerEnvironment(project, builder, registry);
