@@ -109,7 +109,7 @@ module "redis" {
 // Log Analytics Workspace Module
 // -----------------------------------------------------------------------------
 module "logs" {
-  source              = "../modules/logs"
+  source              = "../modules/log_analytics"
   name_prefix         = local.full_name
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
@@ -119,3 +119,22 @@ module "logs" {
     module.resource_group
   ]
 }
+
+// -----------------------------------------------------------------------------
+// Container App Environment Module
+// Will be created using AZD CLI
+// -----------------------------------------------------------------------------
+# module "container_app_environment" {
+#   source                     = "../modules/container_app_env"
+#   name_prefix                = local.full_name
+#   location                   = module.resource_group.location
+#   resource_group_name        = module.resource_group.name
+#   log_analytics_workspace_id = module.logs.log_analytics_workspace_id
+#   tags                       = local.common_tags
+
+#   depends_on = [
+#     module.resource_group,
+#     module.logs,
+#     azurerm_resource_provider_registration.app
+#   ]
+# }
