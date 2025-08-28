@@ -2,36 +2,17 @@ tc-cloudgames-solution
 - .git
 - .github
 - - workflows
+- automation
+- - pipelines
+- - - .git
 - infrastructure
-- - terraform
-- - - foundation
-- - - - .terraform
-- - - - - modules
-- - - - - providers
-- - - - - - registry.terraform.io
-- - - - - - - hashicorp
-- - - - - - - - azurerm
-- - - - - - - - - 4.41.0
-- - - - - - - - - - windows_amd64
-- - - - - - - - random
-- - - - - - - - - 3.7.2
-- - - - - - - - - - windows_amd64
-- - - - environments
-- - - modules
-- - - - container_app
-- - - - container_app_env
-- - - - container_registry
-- - - - core
-- - - - key_vault
-- - - - log_analytics
-- - - - postgres
-- - - - redis
-- - - - resource_group
-- - - - service_bus
-- - - users
-- - - - environments
+- - infra
+- - - .git
 - orchestration
 - - apphost
+- - - .git
+- - - .github
+- - - - workflows
 - - - src
 - - - - TC.CloudGames.AppHost.Aspire
 - - - - - .azure

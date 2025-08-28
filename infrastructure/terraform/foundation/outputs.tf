@@ -1,89 +1,98 @@
 # =============================================================================
-# Outputs: Resource Group (Foundation)
+# Core Resource Group
 # =============================================================================
 
-# Resource Group name created in foundation
 output "foundation_rg_name" {
   description = "The name of the Resource Group created in foundation"
   value       = module.resource_group.name
 }
 
-# Resource Group ID created in foundation
 output "foundation_rg_id" {
   description = "The ID of the Resource Group created in foundation"
   value       = module.resource_group.id
 }
 
-# =============================================================================
-# Outputs: PostgreSQL Flexible Server (via module)
-# =============================================================================
-
-# PostgreSQL server name
-output "postgres_server_name" {
-  description = "The name of the PostgreSQL server"
-  value       = module.postgres.postgres_server_name
+output "foundation_rg_location" {
+  description = "The location of the Resource Group"
+  value       = module.resource_group.location
 }
 
-# Fully Qualified Domain Name (FQDN) of the PostgreSQL server
-output "postgres_server_fqdn" {
-  description = "The fully qualified domain name of the PostgreSQL server"
-  value       = module.postgres.postgres_server_fqdn
-}
-
-# Resource ID of the PostgreSQL server
-output "postgres_server_id" {
-  description = "The ID of the PostgreSQL server"
-  value       = module.postgres.postgres_server_id
-}
-
-# PostgreSQL server version
-output "postgres_server_version" {
-  description = "The version of the PostgreSQL server"
-  value       = module.postgres.postgres_server_version
-}
-
-# PostgreSQL databases created on the server
-output "postgres_databases" {
-  description = "Map of PostgreSQL databases created on the server"
-  value       = module.postgres.postgres_databases
-}
-
-# Default PostgreSQL port
-output "postgres_port" {
-  description = "The port of the PostgreSQL server"
-  value       = module.postgres.postgres_port
+output "azure_portal_rg_url" {
+  description = "Direct link to the Resource Group in Azure Portal"
+  value       = "https://portal.azure.com/#@/resource${module.resource_group.id}/overview"
 }
 
 # =============================================================================
-# Outputs: Azure Container Registry (Foundation)
+# PostgreSQL Flexible Server
 # =============================================================================
 
-# ACR name
-output "foundation_acr_name" {
-  description = "The name of the Azure Container Registry created in foundation"
-  value       = module.acr.acr_name
+output "postgres_info" {
+  description = "PostgreSQL connection and metadata"
+  value = {
+    name    = module.postgres.postgres_server_name
+    fqdn    = module.postgres.postgres_server_fqdn
+    id      = module.postgres.postgres_server_id
+    version = module.postgres.postgres_server_version
+    port    = module.postgres.postgres_port
+    dbs     = module.postgres.postgres_databases
+  }
 }
 
-# ACR login server URL (used by container apps)
-output "foundation_acr_login_server" {
-  description = "The login server URL of the Azure Container Registry created in foundation"
-  value       = module.acr.acr_login_server
+# =============================================================================
+# Azure Container Registry (ACR)
+# =============================================================================
+
+output "acr_info" {
+  description = "Azure Container Registry details"
+  value = {
+    name         = module.acr.acr_name
+    login_server = module.acr.acr_login_server
+    id           = module.acr.acr_id
+    sku          = module.acr.acr_sku
+    admin        = module.acr.acr_admin_enabled
+  }
 }
 
-# ACR Resource ID
-output "foundation_acr_id" {
-  description = "The resource ID of the Azure Container Registry created in foundation"
-  value       = module.acr.acr_id
+# =============================================================================
+# Aggregated Resource Map (useful for pipelines)
+# =============================================================================
+
+output "all_resources" {
+  description = "Aggregated resource names for quick reference"
+  value = {
+    resource_group     = module.resource_group.name
+    acr_name           = module.acr.acr_name
+    acr_login_server   = module.acr.acr_login_server
+    postgres_server    = module.postgres.postgres_server_name
+    postgres_fqdn      = module.postgres.postgres_server_fqdn
+    location           = module.resource_group.location
+  }
 }
 
-# ACR SKU
-output "foundation_acr_sku" {
-  description = "The SKU of the Azure Container Registry created in foundation"
-  value       = module.acr.acr_sku
+# =============================================================================
+# Connection & Debug Info
+# =============================================================================
+
+output "connection_info" {
+  description = "Non-sensitive connection info for debugging or next stages"
+  value = {
+    postgres_host = module.postgres.postgres_server_fqdn
+    postgres_port = module.postgres.postgres_port
+    acr_server    = module.acr.acr_login_server
+  }
 }
 
-# ACR admin user enabled
-output "foundation_acr_admin_enabled" {
-  description = "Whether the admin user is enabled for the Azure Container Registry created in foundation"
-  value       = module.acr.acr_admin_enabled
+# =============================================================================
+# Deployment Summary
+# =============================================================================
+
+output "deployment_summary" {
+  description = "High-level summary of the foundation deployment"
+  value = {
+    environment          = local.environment
+    location             = module.resource_group.location
+    resource_group       = module.resource_group.name
+    total_resources      = 3 # resource_group + postgres + acr
+    deployment_timestamp = timestamp()
+  }
 }

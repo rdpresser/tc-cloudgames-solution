@@ -1,0 +1,9 @@
+name: tc-cloudgames-foundation
+resource-group: ${env:AZD_ENV_RESOURCE_GROUP} # pode vir do env.json
+location: ${env:AZD_ENV_LOCATION}
+services:
+  containerAppEnv:
+    type: containerAppEnvironment
+    properties:
+      logAnalyticsWorkspaceId: ${env:AZD_LOG_ANALYTICS_WORKSPACE_ID}
+tags: ${env:AZD_ENV_TAGS}
