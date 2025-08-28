@@ -37,3 +37,19 @@ variable "azure_resource_group_location" {
     error_message = "The azure_resource_group_location must be a valid Azure region."
   }
 }
+
+# =============================================================================
+# Variables from Terraform Cloud workspace
+# =============================================================================
+# PostgreSQL administrator username
+variable "postgres_admin_login" {
+  type        = string
+  description = "PostgreSQL administrator username"
+}
+
+# PostgreSQL administrator password
+variable "postgres_admin_password" {
+  type        = string
+  description = "PostgreSQL administrator password"
+  sensitive   = true
+}

@@ -46,12 +46,31 @@ locals {
 # =============================================================================
 # Resource Group
 # =============================================================================
-resource "azurerm_resource_group" "rg" {
-  name     = "${local.name_prefix}-solution-rg"
-  location = var.azure_resource_group_location
-  tags     = local.common_tags
+module "resource_group" {
+  source      = "../modules/resource_group"
+  name_prefix = "${local.project_name}-solution-${local.environment}-rg"
+  location    = var.azure_resource_group_location
+  tags        = local.common_tags
 
   depends_on = [
     azurerm_resource_provider_registration.app
+  ]
+}
+
+# =============================================================================
+# PostgreSQL Flexible Server
+# =============================================================================
+
+module "postgres" {
+  source                  = "../modules/postgres"
+  name_prefix             = "${local.name_prefix}-db-${random_string.unique_suffix.result}"
+  location                = module.resource_group.location
+  resource_group_name     = module.resource_group.name
+  postgres_admin_login    = var.postgres_admin_login
+  postgres_admin_password = var.postgres_admin_password
+  tags                    = local.common_tags
+
+  depends_on = [
+    module.resource_group
   ]
 }
