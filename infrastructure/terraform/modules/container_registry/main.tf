@@ -5,7 +5,7 @@
 # Create an Azure Container Registry
 resource "azurerm_container_registry" "acr" {
   # Name of the ACR
-  name = var.name_prefix
+  name = "${var.name_prefix}acr"
 
   # Resource Group where the ACR will be deployed
   resource_group_name = var.resource_group_name

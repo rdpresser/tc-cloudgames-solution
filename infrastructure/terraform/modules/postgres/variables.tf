@@ -65,9 +65,4 @@ variable "databases" {
 variable "tags" {
   type        = map(string)
   description = "Common tags applied to PostgreSQL resources"
-  default     = {
-    Environment = "dev"
-    Project     = "TC Cloud Games"
-    ManagedBy   = "Terraform"
-  }
 }

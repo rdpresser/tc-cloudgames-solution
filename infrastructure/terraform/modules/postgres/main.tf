@@ -3,7 +3,7 @@
 # =============================================================================
 resource "azurerm_postgresql_flexible_server" "postgres_server" {
   # Server name with prefix and optional random suffix
-  name                = var.name_prefix
+  name                = "${var.name_prefix}-db"
   location            = var.location
   resource_group_name = var.resource_group_name
   zone                = "1"

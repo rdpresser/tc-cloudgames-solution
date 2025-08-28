@@ -27,6 +27,7 @@ locals {
   environment  = var.environment
   project_name = var.project_name
   name_prefix  = "${local.project_name}-${local.environment}"
+  full_name    = "${local.name_prefix}-${random_string.unique_suffix.result}"
 
   kv_name = "tccloudgames${local.environment}kv${random_string.unique_suffix.result}"
 
@@ -62,7 +63,7 @@ module "resource_group" {
 
 module "postgres" {
   source                  = "../modules/postgres"
-  name_prefix             = "${local.name_prefix}-db-${random_string.unique_suffix.result}"
+  name_prefix             = local.full_name
   location                = module.resource_group.location
   resource_group_name     = module.resource_group.name
   postgres_admin_login    = var.postgres_admin_login
@@ -78,14 +79,10 @@ module "postgres" {
 # Azure Container Registry (ACR) Module
 # =============================================================================
 module "acr" {
-  source = "../modules/container_registry"
-  # Name prefix: local.name_prefix + "-acr-" + random suffix, with dashes removed
-  name_prefix = replace("${local.name_prefix}-acr-${random_string.unique_suffix.result}", "-", "")
-
+  source              = "../modules/container_registry"
+  name_prefix         = replace(local.full_name, "-", "")
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
-  sku                 = "Standard"
-  admin_enabled       = true
   tags                = local.common_tags
 
   depends_on = [
@@ -93,3 +90,32 @@ module "acr" {
   ]
 }
 
+// -----------------------------------------------------------------------------
+// Redis Cache Module
+// -----------------------------------------------------------------------------
+module "redis" {
+  source              = "../modules/redis"
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [
+    module.resource_group
+  ]
+}
+
+// -----------------------------------------------------------------------------
+// Log Analytics Workspace Module
+// -----------------------------------------------------------------------------
+module "logs" {
+  source              = "../modules/logs"
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [
+    module.resource_group
+  ]
+}

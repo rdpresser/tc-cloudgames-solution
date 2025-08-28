@@ -34,9 +34,4 @@ variable "admin_enabled" {
 variable "tags" {
   type        = map(string)
   description = "Common tags applied to ACR resources"
-  default     = {
-    Environment = "dev"
-    Project     = "TC Cloud Games"
-    ManagedBy   = "Terraform"
-  }
 }
