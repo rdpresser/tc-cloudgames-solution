@@ -1,4 +1,4 @@
-name: 🏗️ Infra | Terraform Deploy
+name: 🏗️ Infra + AZD | Terraform Deploy & Foundation
 
 on:
   pull_request:
@@ -19,10 +19,10 @@ env:
   TF_WORKSPACE: ${{ vars.TF_WORKSPACE_DEV }}
 
 jobs:
-  terraform-deploy:
+  deploy-infra-foundation:
     runs-on: ubuntu-latest
     environment: 'dev-rodrigo'
-    timeout-minutes: 40
+    timeout-minutes: 60
     if: |
       (github.event_name == 'pull_request' && 
        github.event.pull_request.merged == true) ||
@@ -37,6 +37,10 @@ jobs:
         run: |
           if [ -z "${{ secrets.TF_API_TOKEN }}" ]; then
             echo "❌ TF_API_TOKEN secret is required"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            echo "❌ AZURE_CREDENTIALS secret is required"
             exit 1
           fi
 
@@ -75,34 +79,38 @@ jobs:
       - name: 📊 Terraform Outputs
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          echo "📊 Extracting outputs..."
-          if ! TERRAFORM_OUTPUT=$(terraform output -json 2>/dev/null); then
-            echo "⚠️ No outputs available"
-            TERRAFORM_OUTPUT='{}'
-          fi
-          
-          # Validar JSON
-          if ! echo "$TERRAFORM_OUTPUT" | jq . >/dev/null 2>&1; then
-            echo "❌ Invalid JSON in terraform outputs"
-            exit 1
-          fi
-          
+          TERRAFORM_OUTPUT=$(terraform output -json || echo '{}')
           echo "$TERRAFORM_OUTPUT"
-          
-          # Export para outros steps
           echo "TERRAFORM_OUTPUT<<EOF" >> $GITHUB_ENV
           echo "$TERRAFORM_OUTPUT" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          
-          # Step Summary
-          echo "## 🏗️ Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔐 Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install AZD
+        run: curl -sL https://aka.ms/install-azd.sh | bash
+
+      - name: Deploy AZD Foundation
+        working-directory: infrastructure/azd/foundation
+        run: ./scripts/deploy.sh
+
+      - name: 📊 Deployment Summary
+        run: |
+          echo "## 🏗️ Infrastructure + AZD Deployment Summary" >> $GITHUB_STEP_SUMMARY
           
           RG_NAME=$(echo "$TERRAFORM_OUTPUT" | jq -r '.foundation_rg_name.value // "N/A"')
           LOCATION=$(echo "$TERRAFORM_OUTPUT" | jq -r '.foundation_rg_location.value // "N/A"')
-          
+          ACR_NAME=$(echo "$TERRAFORM_OUTPUT" | jq -r '.acr_info.value.name // "N/A"')
+          POSTGRES=$(echo "$TERRAFORM_OUTPUT" | jq -r '.postgres_info.value.name // "N/A"')
+
+          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Resource Group | $RG_NAME |" >> $GITHUB_STEP_SUMMARY
           echo "| Location | $LOCATION |" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL | $POSTGRES |" >> $GITHUB_STEP_SUMMARY
+          echo "| ACR | $ACR_NAME |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Terraform Cloud Workspace](https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }})" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [Terraform Cloud Workspace](https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }})" >> $GITHUB_STEP_SUMMARY

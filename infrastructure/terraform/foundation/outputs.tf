@@ -76,7 +76,7 @@ output "log_analytics_info" {
   description = "Log Analytics Workspace details"
   value = {
     name = module.logs.log_analytics_name
-    id   = module.logs.log_analytics_workspace_id
+    id   = module.logs.log_analytics_id
   }
 }
 
@@ -87,10 +87,10 @@ output "log_analytics_info" {
 output "servicebus_info" {
   description = "Azure Service Bus details"
   value = {
-    namespace     = module.servicebus.namespace_name
-    namespace_id  = module.servicebus.namespace_id
-    topic         = module.servicebus.topic_name
-    subscription  = module.servicebus.subscription_name
+    namespace    = module.servicebus.namespace_name
+    namespace_id = module.servicebus.namespace_id
+    topic        = module.servicebus.topic_name
+    subscription = module.servicebus.subscription_name
   }
 }
 
@@ -122,11 +122,11 @@ output "all_resources" {
 output "connection_info" {
   description = "Non-sensitive connection info for debugging or next stages"
   value = {
-    postgres_host = module.postgres.postgres_server_fqdn
-    postgres_port = module.postgres.postgres_port
-    acr_server    = module.acr.acr_login_server
-    redis_host    = module.redis.redis_hostname
-    redis_port    = module.redis.redis_ssl_port
+    postgres_host        = module.postgres.postgres_server_fqdn
+    postgres_port        = module.postgres.postgres_port
+    acr_server           = module.acr.acr_login_server
+    redis_host           = module.redis.redis_hostname
+    redis_port           = module.redis.redis_ssl_port
     servicebus_namespace = module.servicebus.namespace_name
     servicebus_topic     = module.servicebus.topic_name
   }
