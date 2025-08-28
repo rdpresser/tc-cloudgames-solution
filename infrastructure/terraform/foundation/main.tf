@@ -28,8 +28,7 @@ locals {
   project_name = var.project_name
   name_prefix  = "${local.project_name}-${local.environment}"
 
-  kv_name  = "tccloudgames${local.environment}kv${random_string.unique_suffix.result}"
-  acr_name = "tccloudgames${local.environment}acr${random_string.unique_suffix.result}"
+  kv_name = "tccloudgames${local.environment}kv${random_string.unique_suffix.result}"
 
   common_tags = {
     Environment = local.environment
@@ -74,3 +73,23 @@ module "postgres" {
     module.resource_group
   ]
 }
+
+# =============================================================================
+# Azure Container Registry (ACR) Module
+# =============================================================================
+module "acr" {
+  source = "../modules/container_registry"
+  # Name prefix: local.name_prefix + "-acr-" + random suffix, with dashes removed
+  name_prefix = replace("${local.name_prefix}-acr-${random_string.unique_suffix.result}", "-", "")
+
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  sku                 = "Standard"
+  admin_enabled       = true
+  tags                = local.common_tags
+
+  depends_on = [
+    module.resource_group
+  ]
+}
+
