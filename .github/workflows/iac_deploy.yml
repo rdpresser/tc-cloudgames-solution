@@ -1,0 +1,108 @@
+name: 🏗️ Infra | Terraform Deploy
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: 'Type "deploy" to confirm'
+        required: true
+        default: ''
+
+env:
+  TF_VERSION: '1.13.0'
+  TF_WORKING_DIR: './infrastructure/terraform/foundation'
+  TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+  TF_WORKSPACE: ${{ vars.TF_WORKSPACE_DEV }}
+
+jobs:
+  terraform-deploy:
+    runs-on: ubuntu-latest
+    environment: 'dev-rodrigo'
+    timeout-minutes: 40
+    if: |
+      (github.event_name == 'pull_request' && 
+       github.event.pull_request.merged == true) ||
+      (github.event_name == 'workflow_dispatch' && 
+       github.event.inputs.confirm_deploy == 'deploy')
+    
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔒 Validate Required Secrets
+        run: |
+          if [ -z "${{ secrets.TF_API_TOKEN }}" ]; then
+            echo "❌ TF_API_TOKEN secret is required"
+            exit 1
+          fi
+
+      - name: 🗂️ Cache Terraform
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            **/.terraform
+          key: terraform-${{ env.TF_VERSION }}-${{ hashFiles('**/*.tf') }}
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: 🔧 Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -upgrade
+          terraform validate
+          echo "📋 Workspace: $(terraform workspace show)"
+          echo "🔗 Monitor: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }}"
+
+      - name: 📝 Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform plan -out=tfplan
+          terraform show -json tfplan > plan.json
+
+      - name: 🚀 Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve
+
+      - name: 📊 Terraform Outputs
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "📊 Extracting outputs..."
+          if ! TERRAFORM_OUTPUT=$(terraform output -json 2>/dev/null); then
+            echo "⚠️ No outputs available"
+            TERRAFORM_OUTPUT='{}'
+          fi
+          
+          # Validar JSON
+          if ! echo "$TERRAFORM_OUTPUT" | jq . >/dev/null 2>&1; then
+            echo "❌ Invalid JSON in terraform outputs"
+            exit 1
+          fi
+          
+          echo "$TERRAFORM_OUTPUT"
+          
+          # Export para outros steps
+          echo "TERRAFORM_OUTPUT<<EOF" >> $GITHUB_ENV
+          echo "$TERRAFORM_OUTPUT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          # Step Summary
+          echo "## 🏗️ Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          
+          RG_NAME=$(echo "$TERRAFORM_OUTPUT" | jq -r '.foundation_rg_name.value // "N/A"')
+          LOCATION=$(echo "$TERRAFORM_OUTPUT" | jq -r '.foundation_rg_location.value // "N/A"')
+          
+          echo "| Resource Group | $RG_NAME |" >> $GITHUB_STEP_SUMMARY
+          echo "| Location | $LOCATION |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Terraform Cloud Workspace](https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }})" >> $GITHUB_STEP_SUMMARY

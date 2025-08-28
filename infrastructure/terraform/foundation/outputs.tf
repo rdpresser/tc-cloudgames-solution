@@ -54,6 +54,47 @@ output "acr_info" {
 }
 
 # =============================================================================
+# Redis Cache
+# =============================================================================
+
+output "redis_info" {
+  description = "Redis Cache details"
+  value = {
+    name     = module.redis.redis_name
+    id       = module.redis.redis_id
+    host     = module.redis.redis_hostname
+    ssl_port = module.redis.redis_ssl_port
+    sku      = module.redis.redis_sku
+  }
+}
+
+# =============================================================================
+# Log Analytics Workspace
+# =============================================================================
+
+output "log_analytics_info" {
+  description = "Log Analytics Workspace details"
+  value = {
+    name = module.logs.log_analytics_name
+    id   = module.logs.log_analytics_workspace_id
+  }
+}
+
+# =============================================================================
+# Service Bus
+# =============================================================================
+
+output "servicebus_info" {
+  description = "Azure Service Bus details"
+  value = {
+    namespace     = module.servicebus.namespace_name
+    namespace_id  = module.servicebus.namespace_id
+    topic         = module.servicebus.topic_name
+    subscription  = module.servicebus.subscription_name
+  }
+}
+
+# =============================================================================
 # Aggregated Resource Map (useful for pipelines)
 # =============================================================================
 
@@ -65,6 +106,11 @@ output "all_resources" {
     acr_login_server   = module.acr.acr_login_server
     postgres_server    = module.postgres.postgres_server_name
     postgres_fqdn      = module.postgres.postgres_server_fqdn
+    redis_name         = module.redis.redis_name
+    redis_host         = module.redis.redis_hostname
+    log_analytics_name = module.logs.log_analytics_name
+    servicebus_ns      = module.servicebus.namespace_name
+    servicebus_topic   = module.servicebus.topic_name
     location           = module.resource_group.location
   }
 }
@@ -79,6 +125,10 @@ output "connection_info" {
     postgres_host = module.postgres.postgres_server_fqdn
     postgres_port = module.postgres.postgres_port
     acr_server    = module.acr.acr_login_server
+    redis_host    = module.redis.redis_hostname
+    redis_port    = module.redis.redis_ssl_port
+    servicebus_namespace = module.servicebus.namespace_name
+    servicebus_topic     = module.servicebus.topic_name
   }
 }
 
@@ -92,7 +142,7 @@ output "deployment_summary" {
     environment          = local.environment
     location             = module.resource_group.location
     resource_group       = module.resource_group.name
-    total_resources      = 3 # resource_group + postgres + acr
+    total_resources      = 6 # resource_group + postgres + acr + redis + log_analytics + servicebus
     deployment_timestamp = timestamp()
   }
 }
