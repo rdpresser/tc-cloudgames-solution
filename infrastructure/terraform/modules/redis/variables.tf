@@ -21,7 +21,7 @@ variable "resource_group_name" {
 variable "sku_name" {
   description = "Redis SKU name (Basic, Standard, Premium)"
   type        = string
-  default     = "Standard"
+  default     = "Basic"
 }
 
 variable "sku_family" {
@@ -33,7 +33,7 @@ variable "sku_family" {
 variable "sku_capacity" {
   description = "Redis instance size (0-6 depending on SKU)"
   type        = number
-  default     = 1
+  default     = 0
 }
 
 variable "enable_non_ssl_port" {
