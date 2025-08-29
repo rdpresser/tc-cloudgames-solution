@@ -11,8 +11,8 @@ resource "azurerm_key_vault" "key_vault" {
   soft_delete_retention_days = var.soft_delete_retention_days
 
   # Enable RBAC for Container Apps Managed Identity integration
-  enable_rbac_authorization = true
-  purge_protection_enabled  = var.purge_protection_enabled
+  rbac_authorization_enabled = true
+  purge_protection_enabled   = var.purge_protection_enabled
 
   # Allow Container Apps to access
   network_acls {

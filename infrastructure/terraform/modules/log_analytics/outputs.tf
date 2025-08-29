@@ -7,8 +7,9 @@ output "log_analytics_name" {
   value       = azurerm_log_analytics_workspace.logs.name
 }
 
-output "log_analytics_id" {
-  description = "The ID of the Log Analytics workspace"
+
+output "log_analytics_workspace_id" {
+  description = "The workspace ID of the Log Analytics workspace"
   value       = azurerm_log_analytics_workspace.logs.id
 }
 
