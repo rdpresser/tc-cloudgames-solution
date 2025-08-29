@@ -41,3 +41,70 @@ variable "tenant_id" {
   description = "The Tenant ID used by the Key Vault"
   type        = string
 }
+
+# =============================================================================
+# Infrastructure Secrets Variables
+# =============================================================================
+
+variable "acr_name" {
+  description = "Azure Container Registry name"
+  type        = string
+}
+
+variable "acr_login_server" {
+  description = "Azure Container Registry login server"
+  type        = string
+}
+
+variable "acr_admin_username" {
+  description = "Azure Container Registry admin username"
+  type        = string
+}
+
+variable "acr_admin_password" {
+  description = "Azure Container Registry admin password"
+  type        = string
+  sensitive   = true
+}
+
+variable "postgres_fqdn" {
+  description = "PostgreSQL server FQDN"
+  type        = string
+}
+
+variable "postgres_port" {
+  description = "PostgreSQL server port"
+  type        = string
+}
+
+variable "postgres_admin_login" {
+  description = "PostgreSQL admin login"
+  type        = string
+}
+
+variable "postgres_admin_password" {
+  description = "PostgreSQL admin password"
+  type        = string
+  sensitive   = true
+}
+
+variable "redis_hostname" {
+  description = "Redis cache hostname"
+  type        = string
+}
+
+variable "redis_ssl_port" {
+  description = "Redis cache SSL port"
+  type        = string
+}
+
+variable "redis_primary_access_key" {
+  description = "Redis cache primary access key"
+  type        = string
+  sensitive   = true
+}
+
+variable "servicebus_namespace" {
+  description = "Service Bus namespace name"
+  type        = string
+}
