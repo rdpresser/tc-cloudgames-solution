@@ -1,11 +1,20 @@
 #!/bin/bash
-# Deploy AZD foundation (local ou pipeline)
-# Compatível Windows via Git Bash ou WSL
+# Deploy AZD Foundation (Container App Environment + Key Vault)
+# Compatível Linux / Mac / Git Bash / WSL
+# -------------------------------------------------------
 
-# Define AZD environment
-AZD_ENV="./env.template.json"
+# Caminho para o env.json
+AZD_ENV="./env.json"
 
-echo "Starting AZD deployment..."
-azd up --environment-file $AZD_ENV
+# Verifica se o arquivo existe
+if [ ! -f "$AZD_ENV" ]; then
+    echo "❌ Environment file $AZD_ENV não encontrado. Gere a partir do env.template.json ou do pipeline."
+    exit 1
+fi
 
-echo "AZD deployment finished."
+echo "🚀 Iniciando deploy AZD usando $AZD_ENV ..."
+
+# Executa o deploy
+azd up --environment-file "$AZD_ENV" --verbose
+
+echo "✅ Deploy AZD finalizado."

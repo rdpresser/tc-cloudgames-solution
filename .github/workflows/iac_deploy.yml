@@ -1,4 +1,4 @@
-name: 🏗️ Infra + AZD | Terraform Deploy & Foundation
+name: 🏗️ Infra | Terraform + AZD Foundation
 
 on:
   pull_request:
@@ -10,25 +10,26 @@ on:
       confirm_deploy:
         description: 'Type "deploy" to confirm'
         required: true
-        default: ''
+        default: 'dev-rodrigo'
 
 env:
   TF_VERSION: '1.13.0'
   TF_WORKING_DIR: './infrastructure/terraform/foundation'
   TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
   TF_WORKSPACE: ${{ vars.TF_WORKSPACE_DEV }}
+  AZD_WORKING_DIR: './infrastructure/azd/foundation'
 
 jobs:
-  deploy-infra-foundation:
+
+  terraform-deploy:
     runs-on: ubuntu-latest
     environment: 'dev-rodrigo'
-    timeout-minutes: 60
+    timeout-minutes: 40
     if: |
       (github.event_name == 'pull_request' && 
        github.event.pull_request.merged == true) ||
       (github.event_name == 'workflow_dispatch' && 
        github.event.inputs.confirm_deploy == 'deploy')
-    
     steps:
       - name: ⏬ Checkout repository
         uses: actions/checkout@v4
@@ -58,59 +59,55 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: 🔧 Terraform Init
+      - name: 🔧 Terraform Init & Plan & Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform init -upgrade
           terraform validate
-          echo "📋 Workspace: $(terraform workspace show)"
-          echo "🔗 Monitor: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }}"
-
-      - name: 📝 Terraform Plan
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
           terraform plan -out=tfplan
-          terraform show -json tfplan > plan.json
+          terraform apply -auto-approve tfplan
 
-      - name: 🚀 Terraform Apply
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply -auto-approve
-
-      - name: 📊 Terraform Outputs
+      - name: 📊 Terraform Outputs -> GitHub Env
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          TERRAFORM_OUTPUT=$(terraform output -json || echo '{}')
-          echo "$TERRAFORM_OUTPUT"
-          echo "TERRAFORM_OUTPUT<<EOF" >> $GITHUB_ENV
-          echo "$TERRAFORM_OUTPUT" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          TERRAFORM_OUTPUT=$(terraform output -json)
+          echo "TF_OUTPUT_RG=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_name.value')" >> $GITHUB_ENV
+          echo "TF_OUTPUT_LOCATION=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_location.value')" >> $GITHUB_ENV
+          echo "TF_OUTPUT_LOG_ANALYTICS_ID=$(echo $TERRAFORM_OUTPUT | jq -r '.log_analytics_info.value.id')" >> $GITHUB_ENV
 
-      - name: 🔐 Azure Login
+  azd-deploy:
+    runs-on: ubuntu-latest
+    needs: terraform-deploy
+    environment: 'dev-rodrigo'
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Azure CLI
+        uses: azure/cli@v1
+        with:
+          inlineScript: echo "Azure CLI installed"
+
+      - name: 🔧 Install AZD
+        run: |
+          curl -sL https://aka.ms/install-azd.sh | bash
+
+      - name: 🔒 Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Install AZD
-        run: curl -sL https://aka.ms/install-azd.sh | bash
-
-      - name: Deploy AZD Foundation
-        working-directory: infrastructure/azd/foundation
-        run: ./scripts/deploy.sh
-
-      - name: 📊 Deployment Summary
+      - name: 📁 Prepare AZD Environment File
+        working-directory: ${{ env.AZD_WORKING_DIR }}
         run: |
-          echo "## 🏗️ Infrastructure + AZD Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          
-          RG_NAME=$(echo "$TERRAFORM_OUTPUT" | jq -r '.foundation_rg_name.value // "N/A"')
-          LOCATION=$(echo "$TERRAFORM_OUTPUT" | jq -r '.foundation_rg_location.value // "N/A"')
-          ACR_NAME=$(echo "$TERRAFORM_OUTPUT" | jq -r '.acr_info.value.name // "N/A"')
-          POSTGRES=$(echo "$TERRAFORM_OUTPUT" | jq -r '.postgres_info.value.name // "N/A"')
+          jq '.resourceGroup = env.TF_OUTPUT_RG |
+              .location = env.TF_OUTPUT_LOCATION |
+              .logAnalyticsWorkspaceId = env.TF_OUTPUT_LOG_ANALYTICS_ID |
+              .tags.Environment = "dev" |
+              .tags.Project = "TC Cloud Games" |
+              .tags.ManagedBy = "azd"' env.template.json > env.json
 
-          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource Group | $RG_NAME |" >> $GITHUB_STEP_SUMMARY
-          echo "| Location | $LOCATION |" >> $GITHUB_STEP_SUMMARY
-          echo "| PostgreSQL | $POSTGRES |" >> $GITHUB_STEP_SUMMARY
-          echo "| ACR | $ACR_NAME |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [Terraform Cloud Workspace](https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }})" >> $GITHUB_STEP_SUMMARY
+      - name: 🚀 Deploy AZD Foundation (Container App Env + Key Vault)
+        working-directory: ${{ env.AZD_WORKING_DIR }}
+        run: |
+          azd up --environment-file env.json --verbose

@@ -1,8 +1,20 @@
 #!/bin/bash
-# Destroy AZD resources
-AZD_ENV="./env.template.json"
+# Destroy AZD Foundation (Container App Environment + Key Vault)
+# Compatível Linux / Mac / Git Bash / WSL
+# -------------------------------------------------------
 
-echo "Destroying AZD resources..."
-azd down --environment-file $AZD_ENV
+# Caminho para o env.json
+AZD_ENV="./env.json"
 
-echo "AZD resources destroyed."
+# Verifica se o arquivo existe
+if [ ! -f "$AZD_ENV" ]; then
+    echo "❌ Environment file $AZD_ENV não encontrado. Gere a partir do env.template.json ou do pipeline."
+    exit 1
+fi
+
+echo "💣 Iniciando destruição de recursos AZD usando $AZD_ENV ..."
+
+# Executa o destroy
+azd down --environment-file "$AZD_ENV" --verbose
+
+echo "✅ Recursos AZD destruídos."
