@@ -76,7 +76,32 @@ output "log_analytics_info" {
   description = "Log Analytics Workspace details"
   value = {
     name = module.logs.log_analytics_name
-    id   = module.logs.log_analytics_id
+    id   = module.logs.log_analytics_workspace_id
+  }
+}
+
+# =============================================================================
+# Container App Environment
+# =============================================================================
+
+output "container_app_environment_info" {
+  description = "Container App Environment details"
+  value = {
+    name = module.container_app_environment.container_app_environment_name
+    id   = module.container_app_environment.container_app_environment_id
+  }
+}
+
+# =============================================================================
+# Key Vault
+# =============================================================================
+
+output "key_vault_info" {
+  description = "Key Vault details"
+  value = {
+    name = module.key_vault.key_vault_name
+    id   = module.key_vault.key_vault_id
+    uri  = module.key_vault.key_vault_uri
   }
 }
 
@@ -142,7 +167,7 @@ output "deployment_summary" {
     environment          = local.environment
     location             = module.resource_group.location
     resource_group       = module.resource_group.name
-    total_resources      = 6 # resource_group + postgres + acr + redis + log_analytics + servicebus
+    total_resources      = 8 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault
     deployment_timestamp = timestamp()
   }
 }

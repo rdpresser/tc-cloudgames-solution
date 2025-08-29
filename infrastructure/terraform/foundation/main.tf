@@ -122,22 +122,39 @@ module "logs" {
 
 // -----------------------------------------------------------------------------
 // Container App Environment Module
-// Will be created using AZD CLI
+// Creates environment ready for Container Apps with System Managed Identity
 // -----------------------------------------------------------------------------
-# module "container_app_environment" {
-#   source                     = "../modules/container_app_env"
-#   name_prefix                = local.full_name
-#   location                   = module.resource_group.location
-#   resource_group_name        = module.resource_group.name
-#   log_analytics_workspace_id = module.logs.log_analytics_workspace_id
-#   tags                       = local.common_tags
+module "container_app_environment" {
+  source                     = "../modules/container_app_env"
+  name_prefix                = local.full_name
+  location                   = module.resource_group.location
+  resource_group_name        = module.resource_group.name
+  log_analytics_workspace_id = module.logs.log_analytics_workspace_id
+  tags                       = local.common_tags
 
-#   depends_on = [
-#     module.resource_group,
-#     module.logs,
-#     azurerm_resource_provider_registration.app
-#   ]
-# }
+  depends_on = [
+    module.resource_group,
+    module.logs,
+    azurerm_resource_provider_registration.app
+  ]
+}
+
+// -----------------------------------------------------------------------------
+// Key Vault Module  
+// Creates empty Key Vault with RBAC, ready for secrets management
+// -----------------------------------------------------------------------------
+module "key_vault" {
+  source              = "../modules/key_vault"
+  name_prefix         = replace(local.full_name, "-", "")
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+
+  depends_on = [
+    module.resource_group
+  ]
+}
 
 #########################################
 # Calls Service Bus module
