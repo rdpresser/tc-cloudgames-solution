@@ -49,12 +49,20 @@ infrastructure/terraform/modules/container_app/
 - 🏷️ Gera tag com timestamp + commit SHA
 - 📦 Faz push para ACR usando Azure CLI
 - 🔐 Usa credenciais GitHub OIDC (sem secrets!)
+- 📊 Coleta cobertura de código com XPlat Code Coverage
+
+### 2. Foundation Discovery Job
+- 🔍 **Descoberta resiliente**: Filtros específicos com `starts_with()` e `ends_with()` 
+- 🎯 **Padrões exatos**: Evita capturar recursos de teste antigos
+- ⚡ **Performance**: ACR login server calculado (não consultado)
+- ✅ **Validação**: Verifica existência de todos os recursos necessários
 
 ### 2. Deploy Job  
 - 📦 Instala Azure Developer CLI
-- 🚀 Executa `azd deploy` com configuração automática
+- � **Inicialização semântica**: `azd env new` em vez de `azd init`
+- �🚀 Executa `azd deploy` com configuração automática
 - 🆔 Container App criado com System Managed Identity
-- 🔐 RBAC configurado automaticamente para Key Vault
+- 🔐 **RBAC idempotente**: Verifica antes de criar role assignments
 - ✅ Teste de saúde do deployment
 
 ### 3. Summary Job
@@ -150,6 +158,7 @@ azd up
 - ✅ Non-root user
 - ✅ Multi-stage build
 - ✅ Health checks integrados
+- ✅ **Cobertura de código**: XPlat Code Coverage integrado
 
 ### Key Vault Integration
 - ✅ Secrets populados via Terraform
