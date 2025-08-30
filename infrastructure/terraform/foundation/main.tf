@@ -140,8 +140,8 @@ module "container_app_environment" {
 }
 
 // -----------------------------------------------------------------------------
-// Key Vault Module  
-// Creates Key Vault with RBAC and populates with infrastructure secrets
+// Key Vault Module (PURE TERRAFORM RBAC APPROACH)
+// Creates: Key Vault -> RBAC Roles -> Secrets (in correct sequence)
 // -----------------------------------------------------------------------------
 module "key_vault" {
   source              = "../modules/key_vault"
@@ -151,8 +151,8 @@ module "key_vault" {
   resource_group_id   = module.resource_group.id
   tags                = local.common_tags
   tenant_id           = data.azurerm_client_config.current.tenant_id
-
-  # Pass infrastructure values to populate secrets
+  
+  # Infrastructure values to populate secrets (keeping original variable names)
   acr_name                 = module.acr.acr_name
   acr_login_server         = module.acr.acr_login_server
   acr_admin_username       = module.acr.acr_admin_username
@@ -165,11 +165,26 @@ module "key_vault" {
   redis_ssl_port           = tostring(module.redis.redis_ssl_port)
   redis_primary_access_key = module.redis.redis_primary_access_key
   servicebus_namespace     = module.servicebus.namespace_name
+  
+  # Database connection info (NEW: using new variable pattern)
+  db_host            = module.postgres.postgres_server_fqdn
+  db_port            = tostring(module.postgres.postgres_port)  
+  db_name_users      = "tc-cloudgames-users-db"
+  db_admin_login     = var.postgres_admin_login
+  db_password        = var.postgres_admin_password
+  
+  # Cache connection info (NEW: using new variable pattern)
+  cache_host         = module.redis.redis_hostname
+  cache_port         = tostring(module.redis.redis_ssl_port)
+  cache_password     = module.redis.redis_primary_access_key
+  
+  # Service Bus info (NEW)
+  servicebus_connection_string = module.servicebus.namespace_connection_string
 
-  # RBAC Access Control - Object IDs for Key Vault permissions
-  app_object_id            = var.app_object_id
-  user_object_id           = var.user_object_id
-  github_actions_object_id = var.github_actions_object_id
+  # RBAC Access Control (NEW: using new variable names)
+  service_principal_object_id = var.app_object_id
+  user_object_id             = var.user_object_id
+  github_actions_object_id   = var.github_actions_object_id
 
   depends_on = [
     module.resource_group,

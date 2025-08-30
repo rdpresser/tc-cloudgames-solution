@@ -136,8 +136,8 @@ variable "servicebus_namespace" {
 # RBAC Access Control Variables
 # =============================================================================
 
-variable "app_object_id" {
-  description = "Object ID of the application service principal that needs Key Vault access"
+variable "service_principal_object_id" {
+  description = "Object ID of the service principal that needs Key Vault access (replaces app_object_id)"
   type        = string
 }
 
@@ -149,6 +149,91 @@ variable "user_object_id" {
 
 variable "github_actions_object_id" {
   description = "Object ID of the GitHub Actions service principal"
+  type        = string
+  default     = null
+}
+
+# =============================================================================
+# Database Connection Variables (replacing postgres_* pattern)
+# =============================================================================
+
+variable "db_host" {
+  description = "Database server hostname"
+  type        = string
+}
+
+variable "db_port" {
+  description = "Database server port"
+  type        = string
+  default     = "5432"
+}
+
+variable "db_name_users" {
+  description = "Users database name"
+  type        = string
+  default     = "tc-cloudgames-users-db"
+}
+
+variable "db_name_games" {
+  description = "Games database name"
+  type        = string
+  default     = "tc-cloudgames-games-db"
+}
+
+variable "db_name_payments" {
+  description = "Payments database name"
+  type        = string
+  default     = "tc-cloudgames-payments-db"
+}
+
+variable "db_admin_login" {
+  description = "Database admin login"
+  type        = string
+}
+
+variable "db_password" {
+  description = "Database admin password"
+  type        = string
+  sensitive   = true
+}
+
+# =============================================================================
+# Cache Connection Variables (replacing redis_* pattern)
+# =============================================================================
+
+variable "cache_host" {
+  description = "Redis cache hostname"
+  type        = string
+}
+
+variable "cache_port" {
+  description = "Redis cache port"
+  type        = string
+  default     = "6380"
+}
+
+variable "cache_password" {
+  description = "Redis cache primary access key"
+  type        = string
+  sensitive   = true
+}
+
+# =============================================================================
+# Service Bus Connection Variables  
+# =============================================================================
+
+variable "servicebus_connection_string" {
+  description = "Service Bus connection string"
+  type        = string
+  sensitive   = true
+}
+
+# =============================================================================
+# Legacy Variables (keeping for backward compatibility)
+# =============================================================================
+
+variable "app_object_id" {
+  description = "Object ID of the application service principal that needs Key Vault access (deprecated, use service_principal_object_id)"
   type        = string
   default     = null
 }

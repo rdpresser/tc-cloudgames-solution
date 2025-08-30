@@ -23,3 +23,9 @@ output "subscription_name" {
   value       = azurerm_servicebus_subscription.this.name
 }
 
+output "namespace_connection_string" {
+  description = "The connection string for the Service Bus namespace."
+  value       = azurerm_servicebus_namespace.this.default_primary_connection_string
+  sensitive   = true
+}
+
