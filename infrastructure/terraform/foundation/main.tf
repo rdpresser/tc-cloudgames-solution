@@ -152,18 +152,18 @@ module "key_vault" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
   # Pass infrastructure values to populate secrets
-  acr_name                 = module.acr.acr_name
-  acr_login_server         = module.acr.acr_login_server
-  acr_admin_username       = module.acr.acr_admin_username
-  acr_admin_password       = module.acr.acr_admin_password
-  postgres_fqdn            = module.postgres.postgres_server_fqdn
-  postgres_port            = tostring(module.postgres.postgres_port)
-  postgres_admin_login     = var.postgres_admin_login
-  postgres_admin_password  = var.postgres_admin_password
-  redis_hostname           = module.redis.redis_hostname
-  redis_ssl_port           = tostring(module.redis.redis_ssl_port)
-  redis_primary_access_key = module.redis.redis_primary_access_key
-  servicebus_namespace     = module.servicebus.namespace_name
+  acr_name                  = module.acr.acr_name
+  acr_login_server          = module.acr.acr_login_server
+  acr_admin_username        = module.acr.acr_admin_username
+  acr_admin_password        = module.acr.acr_admin_password
+  postgres_fqdn             = module.postgres.postgres_server_fqdn
+  postgres_port             = tostring(module.postgres.postgres_port)
+  postgres_admin_login      = var.postgres_admin_login
+  postgres_admin_password   = var.postgres_admin_password
+  redis_hostname            = module.redis.redis_hostname
+  redis_ssl_port            = tostring(module.redis.redis_ssl_port)
+  redis_primary_access_key  = module.redis.redis_primary_access_key
+  servicebus_namespace      = module.servicebus.namespace_name
 
   depends_on = [
     module.resource_group,

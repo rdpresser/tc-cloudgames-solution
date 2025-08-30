@@ -79,6 +79,30 @@ resource "azurerm_key_vault_secret" "db_port" {
   depends_on = [azurerm_key_vault.key_vault]
 }
 
+resource "azurerm_key_vault_secret" "db_name_users" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-name-users"
+  value        = var.postgres_users_db_name
+
+  depends_on = [azurerm_key_vault.key_vault]
+}
+
+resource "azurerm_key_vault_secret" "db_name_games" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-name-games"
+  value        = var.postgres_games_db_name
+
+  depends_on = [azurerm_key_vault.key_vault]
+}
+
+resource "azurerm_key_vault_secret" "db_name_payments" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-name-payments"
+  value        = var.postgres_payments_db_name
+
+  depends_on = [azurerm_key_vault.key_vault]
+}
+
 resource "azurerm_key_vault_secret" "db_admin_login" {
   key_vault_id = azurerm_key_vault.key_vault.id
   name         = "db-admin-login"

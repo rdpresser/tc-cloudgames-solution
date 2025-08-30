@@ -77,6 +77,24 @@ variable "postgres_port" {
   type        = string
 }
 
+variable "postgres_users_db_name" {
+  description = "PostgreSQL database name"
+  type        = string
+  default     = "tc-cloudgames-users-db"
+}
+
+variable "postgres_games_db_name" {
+  description = "PostgreSQL database name"
+  type        = string
+  default     = "tc-cloudgames-games-db"
+}
+
+variable "postgres_payments_db_name" {
+  description = "PostgreSQL database name"
+  type        = string
+  default     = "tc-cloudgames-payments-db"
+}
+
 variable "postgres_admin_login" {
   description = "PostgreSQL admin login"
   type        = string
