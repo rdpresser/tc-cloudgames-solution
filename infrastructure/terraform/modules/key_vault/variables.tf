@@ -126,3 +126,24 @@ variable "servicebus_namespace" {
   description = "Service Bus namespace name"
   type        = string
 }
+
+# =============================================================================
+# RBAC Access Control Variables
+# =============================================================================
+
+variable "app_object_id" {
+  description = "Object ID of the application service principal that needs Key Vault access"
+  type        = string
+}
+
+variable "user_object_id" {
+  description = "Object ID of the Azure AD user that needs Key Vault access"
+  type        = string
+  default     = null
+}
+
+variable "github_actions_object_id" {
+  description = "Object ID of the GitHub Actions service principal"
+  type        = string
+  default     = null
+}

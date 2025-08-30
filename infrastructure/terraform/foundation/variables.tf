@@ -53,3 +53,24 @@ variable "postgres_admin_password" {
   description = "PostgreSQL administrator password"
   sensitive   = true
 }
+
+# =============================================================================
+# RBAC Access Control Variables (Object IDs for Key Vault permissions)
+# =============================================================================
+
+variable "app_object_id" {
+  type        = string
+  description = "Object ID of the application service principal (Terraform Cloud/GitHub Actions) that needs Key Vault access"
+}
+
+variable "user_object_id" {
+  type        = string
+  description = "Object ID of the Azure AD user that needs Key Vault access for management"
+  default     = null
+}
+
+variable "github_actions_object_id" {
+  type        = string
+  description = "Object ID of the GitHub Actions service principal for CI/CD pipelines"
+  default     = null
+}

@@ -90,9 +90,9 @@ module "acr" {
   ]
 }
 
-// -----------------------------------------------------------------------------
-// Redis Cache Module
-// -----------------------------------------------------------------------------
+# =============================================================================
+# Redis Cache Module
+# =============================================================================
 module "redis" {
   source              = "../modules/redis"
   name_prefix         = local.full_name
@@ -105,9 +105,9 @@ module "redis" {
   ]
 }
 
-// -----------------------------------------------------------------------------
-// Log Analytics Workspace Module
-// -----------------------------------------------------------------------------
+# =============================================================================
+# Log Analytics Workspace Module
+# =============================================================================
 module "logs" {
   source              = "../modules/log_analytics"
   name_prefix         = local.full_name
@@ -152,18 +152,23 @@ module "key_vault" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
   # Pass infrastructure values to populate secrets
-  acr_name                  = module.acr.acr_name
-  acr_login_server          = module.acr.acr_login_server
-  acr_admin_username        = module.acr.acr_admin_username
-  acr_admin_password        = module.acr.acr_admin_password
-  postgres_fqdn             = module.postgres.postgres_server_fqdn
-  postgres_port             = tostring(module.postgres.postgres_port)
-  postgres_admin_login      = var.postgres_admin_login
-  postgres_admin_password   = var.postgres_admin_password
-  redis_hostname            = module.redis.redis_hostname
-  redis_ssl_port            = tostring(module.redis.redis_ssl_port)
-  redis_primary_access_key  = module.redis.redis_primary_access_key
-  servicebus_namespace      = module.servicebus.namespace_name
+  acr_name                 = module.acr.acr_name
+  acr_login_server         = module.acr.acr_login_server
+  acr_admin_username       = module.acr.acr_admin_username
+  acr_admin_password       = module.acr.acr_admin_password
+  postgres_fqdn            = module.postgres.postgres_server_fqdn
+  postgres_port            = tostring(module.postgres.postgres_port)
+  postgres_admin_login     = var.postgres_admin_login
+  postgres_admin_password  = var.postgres_admin_password
+  redis_hostname           = module.redis.redis_hostname
+  redis_ssl_port           = tostring(module.redis.redis_ssl_port)
+  redis_primary_access_key = module.redis.redis_primary_access_key
+  servicebus_namespace     = module.servicebus.namespace_name
+
+  # RBAC Access Control - Object IDs for Key Vault permissions
+  app_object_id            = var.app_object_id
+  user_object_id           = var.user_object_id
+  github_actions_object_id = var.github_actions_object_id
 
   depends_on = [
     module.resource_group,
@@ -189,4 +194,3 @@ module "servicebus" {
     module.resource_group
   ]
 }
-

@@ -158,3 +158,44 @@ resource "azurerm_key_vault_secret" "servicebus_namespace" {
 
   depends_on = [azurerm_key_vault.key_vault]
 }
+
+# =============================================================================
+# RBAC Role Assignments for Key Vault Access
+# =============================================================================
+
+# 🔑 Application Service Principal - Key Vault Secrets User + Key Vault Administrator
+resource "azurerm_role_assignment" "app_kv_secrets_user" {
+  scope                = azurerm_key_vault.key_vault.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.app_object_id
+
+  depends_on = [azurerm_key_vault.key_vault]
+}
+
+resource "azurerm_role_assignment" "app_kv_admin" {
+  scope                = azurerm_key_vault.key_vault.id
+  role_definition_name = "Key Vault Administrator"
+  principal_id         = var.app_object_id
+
+  depends_on = [azurerm_key_vault.key_vault]
+}
+
+# 👤 User - Key Vault Administrator (optional)
+resource "azurerm_role_assignment" "user_kv_admin" {
+  count                = var.user_object_id != null ? 1 : 0
+  scope                = azurerm_key_vault.key_vault.id
+  role_definition_name = "Key Vault Administrator"
+  principal_id         = var.user_object_id
+
+  depends_on = [azurerm_key_vault.key_vault]
+}
+
+# 🤖 GitHub Actions Service Principal - Key Vault Secrets User (optional)
+resource "azurerm_role_assignment" "github_kv_secrets_user" {
+  count                = var.github_actions_object_id != null ? 1 : 0
+  scope                = azurerm_key_vault.key_vault.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.github_actions_object_id
+
+  depends_on = [azurerm_key_vault.key_vault]
+}
