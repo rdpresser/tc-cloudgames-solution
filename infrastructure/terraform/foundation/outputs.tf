@@ -171,3 +171,43 @@ output "deployment_summary" {
     deployment_timestamp = timestamp()
   }
 }
+
+# =============================================================================
+# Deployment Performance Metrics
+# =============================================================================
+
+output "deployment_timing" {
+  description = "Infrastructure deployment timing information"
+  value = {
+    terraform_start_time = local.deployment_start_time
+    terraform_end_time   = local.deployment_end_time
+    note                = "Terraform timestamps are estimates. Use CI/CD pipeline GITHUB_STEP_SUMMARY for accurate timing."
+    measurement_source   = "CI/CD Pipeline"
+  }
+}
+
+output "deployment_performance_summary" {
+  description = "Deployment performance metadata"
+  value = {
+    # Basic deployment info
+    environment          = var.environment
+    terraform_workspace  = terraform.workspace
+    resource_count       = 8 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault
+    deployment_method    = "Pure Terraform via Terraform Cloud"
+    
+    # Deployment metadata
+    deployment_date = formatdate("YYYY-MM-DD", local.deployment_end_time)
+    deployment_time = formatdate("hh:mm:ss", local.deployment_end_time)
+    
+    # Performance targets
+    performance_targets = {
+      excellent = "< 5 minutes"
+      good      = "5-10 minutes" 
+      acceptable = "10-15 minutes"
+      slow      = "> 15 minutes"
+    }
+    
+    # Note about accurate timing
+    timing_note = "Actual deployment duration measured by GitHub Actions pipeline with start/end timestamps"
+  }
+}

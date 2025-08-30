@@ -65,10 +65,49 @@ jobs:
       - name: 🏗️ Terraform Deploy Foundation
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+          # Record deployment start time
+          DEPLOYMENT_START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          DEPLOYMENT_START_UNIX=$(date +%s)
+          echo "DEPLOYMENT_START_TIME=$DEPLOYMENT_START_TIME" >> $GITHUB_ENV
+          echo "DEPLOYMENT_START_UNIX=$DEPLOYMENT_START_UNIX" >> $GITHUB_ENV
+          
+          echo "🚀 Starting Terraform deployment at $DEPLOYMENT_START_TIME"
+          
           terraform init -upgrade
           terraform validate
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
+          
+          # Record deployment end time
+          DEPLOYMENT_END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          DEPLOYMENT_END_UNIX=$(date +%s)
+          echo "DEPLOYMENT_END_TIME=$DEPLOYMENT_END_TIME" >> $GITHUB_ENV
+          echo "DEPLOYMENT_END_UNIX=$DEPLOYMENT_END_UNIX" >> $GITHUB_ENV
+          
+          # Calculate duration
+          DURATION_SECONDS=$((DEPLOYMENT_END_UNIX - DEPLOYMENT_START_UNIX))
+          DURATION_MINUTES=$(echo "scale=2; $DURATION_SECONDS / 60" | bc -l)
+          echo "DEPLOYMENT_DURATION_SECONDS=$DURATION_SECONDS" >> $GITHUB_ENV
+          echo "DEPLOYMENT_DURATION_MINUTES=$DURATION_MINUTES" >> $GITHUB_ENV
+          
+          # Performance rating
+          if [ $DURATION_SECONDS -lt 300 ]; then
+            PERFORMANCE_RATING="🚀 Excellent (< 5min)"
+          elif [ $DURATION_SECONDS -lt 600 ]; then
+            PERFORMANCE_RATING="✅ Good (5-10min)"
+          elif [ $DURATION_SECONDS -lt 900 ]; then
+            PERFORMANCE_RATING="⚠️ Acceptable (10-15min)"
+          else
+            PERFORMANCE_RATING="🐌 Slow (> 15min)"
+          fi
+          echo "PERFORMANCE_RATING=$PERFORMANCE_RATING" >> $GITHUB_ENV
+          
+          # Resources per minute
+          RESOURCES_PER_MIN=$(echo "scale=2; 8 / ($DURATION_SECONDS / 60)" | bc -l)
+          echo "RESOURCES_PER_MINUTE=$RESOURCES_PER_MIN" >> $GITHUB_ENV
+          
+          echo "✅ Deployment completed at $DEPLOYMENT_END_TIME"
+          echo "⏱️ Total duration: ${DURATION_MINUTES} minutes (${DURATION_SECONDS}s)"
 
       - name: � Extract Infrastructure Outputs
         id: terraform-outputs
@@ -96,8 +135,25 @@ jobs:
           CONTAINER_APP_ENV=$(echo $TERRAFORM_OUTPUT | jq -r '.container_app_environment_info.value.name')
           KEY_VAULT_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.key_vault_info.value.name')
           
+          # Extract deployment timing metrics from environment variables
+          DEPLOYMENT_DURATION_MIN=$DEPLOYMENT_DURATION_MINUTES
+          DEPLOYMENT_DURATION_SEC=$DEPLOYMENT_DURATION_SECONDS
+          PERFORMANCE_RATING="$PERFORMANCE_RATING"
+          RESOURCES_PER_MIN=$RESOURCES_PER_MINUTE
+          START_TIME="$DEPLOYMENT_START_TIME"
+          END_TIME="$DEPLOYMENT_END_TIME"
+          
           # Generate comprehensive deployment summary
           echo "## 🏗️ TC CloudGames Infrastructure - Pure Terraform Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⏱️ Deployment Performance Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Total Duration** | ${DEPLOYMENT_DURATION_MIN} minutes (${DEPLOYMENT_DURATION_SEC}s) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Performance Rating** | ${PERFORMANCE_RATING} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Deployment Speed** | ${RESOURCES_PER_MIN} resources/minute |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Start Time** | ${START_TIME} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **End Time** | ${END_TIME} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📋 Foundation Resources" >> $GITHUB_STEP_SUMMARY
           echo "| Resource Type | Resource Name | Status |" >> $GITHUB_STEP_SUMMARY

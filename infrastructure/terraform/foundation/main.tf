@@ -5,6 +5,13 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 # =============================================================================
+# Deployment Timing - Start Timestamp (using locals)
+# =============================================================================
+locals {
+  deployment_start_time = timestamp()
+}
+
+# =============================================================================
 # Azure Resource Provider Registration (Microsoft.App) - REMOVED
 # =============================================================================
 # Note: Microsoft.App provider is assumed to be already registered
@@ -208,4 +215,16 @@ module "servicebus" {
   depends_on = [
     module.resource_group
   ]
+}
+
+# =============================================================================
+# Deployment Timing - End Timestamp and Duration Calculation
+# =============================================================================
+locals {
+  deployment_end_time = timestamp()
+  
+  # Calculate duration in seconds (approximation since both timestamps are taken at plan time)
+  # Note: This gives an estimate since both timestamps are captured during planning phase
+  # For more accurate measurement, use external timing in CI/CD pipeline
+  deployment_duration_estimate = "Measured by CI/CD pipeline for accurate timing"
 }
