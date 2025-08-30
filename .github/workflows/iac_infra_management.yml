@@ -16,12 +16,18 @@ on:
         description: 'Type operation name to confirm (up/down/destroy)'
         required: true
         default: ''
+      confirm_destructive:
+        description: 'Confirm Redis/ACR destroy operations'
+        required: false
+        type: boolean
+        default: false
 
 env:
   TF_VERSION: '1.13.1'
   TF_WORKING_DIR: './infrastructure/terraform/foundation'
   TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
   TF_WORKSPACE: ${{ vars.TF_WORKSPACE_DEV }}
+  TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
 
 jobs:
   cost-management:
@@ -134,13 +140,94 @@ jobs:
             echo "⚠️ No Container Apps found"
           fi
           
-          # Redis and ACR are always available (no start/stop operations)
+          # Redis and ACR - expensive resources with recreation capability
+          echo "Redis and ACR are expensive resources that generate ongoing costs."
+          echo "When UP operation includes destructive operations, these will be recreated using Terraform Cloud API..."
+          
+          # Get Terraform Cloud workspace ID
+          workspace_id=$(curl -s \
+            --header "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+            --header "Content-Type: application/vnd.api+json" \
+            "https://app.terraform.io/api/v2/organizations/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }}" | \
+            jq -r '.data.id')
+          
+          echo "Workspace ID: $workspace_id"
+          
+          if [[ "${{ inputs.confirm_destructive }}" == "true" ]]; then
+            echo "Creating targeted apply run to recreate Redis and ACR resources..."
+            
+            # Create targeted apply run for Redis and ACR
+            run_id=$(curl -s \
+              --header "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+              --header "Content-Type: application/vnd.api+json" \
+              --request POST \
+              --data '{
+                "data": {
+                  "type": "runs",
+                  "attributes": {
+                    "message": "Recreate Redis and ACR resources via GitHub Actions",
+                    "target-addrs": [
+                      "module.redis.azurerm_redis_cache.redis_cache",
+                      "module.acr.azurerm_container_registry.acr"
+                    ]
+                  },
+                  "relationships": {
+                    "workspace": {
+                      "data": {
+                        "type": "workspaces",
+                        "id": "'$workspace_id'"
+                      }
+                    }
+                  }
+                }
+              }' \
+              "https://app.terraform.io/api/v2/runs" | \
+              jq -r '.data.id')
+            
+            echo "Terraform Cloud Run ID: $run_id"
+            echo "Monitoring run progress..."
+            
+            # Poll run status
+            while true; do
+              status=$(curl -s \
+                --header "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+                "https://app.terraform.io/api/v2/runs/$run_id" | \
+                jq -r '.data.attributes.status')
+              
+              echo "Current status: $status"
+              
+              case $status in
+                "applied")
+                  echo "✅ Redis and ACR resources successfully recreated!"
+                  break
+                  ;;
+                "errored"|"canceled"|"discarded")
+                  echo "❌ Run failed with status: $status"
+                  exit 1
+                  ;;
+                "planned_and_finished")
+                  echo "⚠️ No changes needed - resources already exist"
+                  break
+                  ;;
+                *)
+                  echo "⏳ Waiting for run to complete..."
+                  sleep 10
+                  ;;
+              esac
+            done
+            
+            echo "💰 Expected monthly cost savings when resources are destroyed: ~$20-50"
+          else
+            echo "⚠️ Skipping Redis and ACR recreation - confirm_destructive not enabled"
+            echo "💡 To enable targeted resource operations, set confirm_destructive: true"
+          fi
+          
           if [ ! -z "${{ steps.validate.outputs.redis_name }}" ]; then
-            echo "ℹ️ Redis Cache: ${{ steps.validate.outputs.redis_name }} (always available)"
+            echo "ℹ️ Redis Cache: ${{ steps.validate.outputs.redis_name }}"
           fi
           
           if [ ! -z "${{ steps.validate.outputs.acr_name }}" ]; then
-            echo "ℹ️ Container Registry: ${{ steps.validate.outputs.acr_name }} (always available)"
+            echo "ℹ️ Container Registry: ${{ steps.validate.outputs.acr_name }}"
           fi
 
       - name: ⬇️ STOP Services (DOWN Operation)
@@ -175,13 +262,94 @@ jobs:
             echo "⚠️ No PostgreSQL server found"
           fi
           
-          # Redis and ACR remain available (cost optimization note)
-          if [ ! -z "${{ steps.validate.outputs.redis_name }}" ]; then
-            echo "ℹ️ Redis Cache: ${{ steps.validate.outputs.redis_name }} (keeping available - basic tier)"
-          fi
+          # Redis and ACR - targeted destruction for cost optimization
+          echo "Redis and ACR are expensive resources generating ongoing costs (~$20-50/month)."
+          echo "When DOWN operation includes destructive operations, these will be destroyed using Terraform Cloud API..."
           
-          if [ ! -z "${{ steps.validate.outputs.acr_name }}" ]; then
-            echo "ℹ️ Container Registry: ${{ steps.validate.outputs.acr_name }} (keeping available - basic tier)"
+          # Get Terraform Cloud workspace ID
+          workspace_id=$(curl -s \
+            --header "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+            --header "Content-Type: application/vnd.api+json" \
+            "https://app.terraform.io/api/v2/organizations/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE }}" | \
+            jq -r '.data.id')
+          
+          echo "Workspace ID: $workspace_id"
+          
+          if [[ "${{ inputs.confirm_destructive }}" == "true" ]]; then
+            echo "Creating targeted destroy run for Redis and ACR resources..."
+            
+            # Create targeted destroy run for Redis and ACR
+            run_id=$(curl -s \
+              --header "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+              --header "Content-Type: application/vnd.api+json" \
+              --request POST \
+              --data '{
+                "data": {
+                  "type": "runs",
+                  "attributes": {
+                    "message": "Destroy Redis and ACR resources for cost optimization via GitHub Actions",
+                    "is-destroy": true,
+                    "target-addrs": [
+                      "module.redis.azurerm_redis_cache.redis_cache",
+                      "module.acr.azurerm_container_registry.acr"
+                    ]
+                  },
+                  "relationships": {
+                    "workspace": {
+                      "data": {
+                        "type": "workspaces",
+                        "id": "'$workspace_id'"
+                      }
+                    }
+                  }
+                }
+              }' \
+              "https://app.terraform.io/api/v2/runs" | \
+              jq -r '.data.id')
+            
+            echo "Terraform Cloud Destroy Run ID: $run_id"
+            echo "Monitoring destroy progress..."
+            
+            # Poll run status
+            while true; do
+              status=$(curl -s \
+                --header "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+                "https://app.terraform.io/api/v2/runs/$run_id" | \
+                jq -r '.data.attributes.status')
+              
+              echo "Current status: $status"
+              
+              case $status in
+                "applied")
+                  echo "✅ Redis and ACR resources successfully destroyed!"
+                  echo "💰 Monthly cost savings: ~$20-50"
+                  break
+                  ;;
+                "errored"|"canceled"|"discarded")
+                  echo "❌ Destroy run failed with status: $status"
+                  exit 1
+                  ;;
+                "planned_and_finished")
+                  echo "⚠️ No changes needed - resources already destroyed"
+                  break
+                  ;;
+                *)
+                  echo "⏳ Waiting for destroy to complete..."
+                  sleep 10
+                  ;;
+              esac
+            done
+          else
+            echo "⚠️ Keeping Redis and ACR running - confirm_destructive not enabled"
+            echo "💡 To enable cost optimization, set confirm_destructive: true"
+            
+            if [ ! -z "${{ steps.validate.outputs.redis_name }}" ]; then
+              echo "ℹ️ Redis Cache: ${{ steps.validate.outputs.redis_name }} (keeping available - basic tier)"
+            fi
+            
+            if [ ! -z "${{ steps.validate.outputs.acr_name }}" ]; then
+              echo "ℹ️ Container Registry: ${{ steps.validate.outputs.acr_name }} (keeping available - basic tier)"
+            fi
           fi
 
       - name: 🗑️ DESTROY All Resources (DESTROY Operation)
