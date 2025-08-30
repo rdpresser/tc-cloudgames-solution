@@ -17,7 +17,6 @@ env:
   TF_WORKING_DIR: './infrastructure/terraform/foundation'
   TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
   TF_WORKSPACE: ${{ vars.TF_WORKSPACE_DEV }}
-  AZD_WORKING_DIR: './infrastructure/azd/foundation'
 
 jobs:
 
@@ -71,6 +70,21 @@ jobs:
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
 
+      - name: 📤 Capture Terraform Outputs
+        id: terraform-outputs
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          TERRAFORM_OUTPUT=$(terraform output -json)
+          
+          # Extract and set outputs for other jobs
+          RG_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_name.value')
+          LOCATION=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_location.value')
+          LOG_ANALYTICS_ID=$(echo $TERRAFORM_OUTPUT | jq -r '.log_analytics_workspace_id.value')
+          
+          echo "rg_name=$RG_NAME" >> $GITHUB_OUTPUT
+          echo "location=$LOCATION" >> $GITHUB_OUTPUT
+          echo "log_analytics_id=$LOG_ANALYTICS_ID" >> $GITHUB_OUTPUT
+
       - name: 🎉 Foundation Deployment Summary
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -103,3 +117,12 @@ jobs:
           echo "- **Payments API**: Can now deploy Container App with System MI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🔗 [View Resource Group in Azure Portal](https://portal.azure.com/#@/resource$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_id.value')/overview)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 RBAC Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Service Principal**: Key Vault Administrator + Secrets User (via Terraform)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **GitHub Actions**: Key Vault Secrets User (via Terraform)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **User Account**: Key Vault Administrator (via Terraform)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **All Secrets**: Pre-populated and ready for Container Apps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Pure Terraform Architecture" >> $GITHUB_STEP_SUMMARY
+          echo "Complete foundation deployment with proper RBAC sequencing - **no additional steps required!**" >> $GITHUB_STEP_SUMMARY
