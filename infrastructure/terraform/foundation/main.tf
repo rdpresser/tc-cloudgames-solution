@@ -148,6 +148,7 @@ module "key_vault" {
   name_prefix         = replace(local.full_name, "-", "")
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
+  resource_group_id   = module.resource_group.id
   tags                = local.common_tags
   tenant_id           = data.azurerm_client_config.current.tenant_id
 

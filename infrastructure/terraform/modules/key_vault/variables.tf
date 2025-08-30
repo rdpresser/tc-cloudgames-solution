@@ -13,6 +13,11 @@ variable "resource_group_name" {
   type        = string
 }
 
+variable "resource_group_id" {
+  description = "Resource group ID where the Key Vault will be deployed"
+  type        = string
+}
+
 variable "tags" {
   description = "Resource tags"
   type        = map(string)

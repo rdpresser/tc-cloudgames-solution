@@ -32,7 +32,10 @@ resource "azurerm_key_vault_secret" "acr_name" {
   name         = "acr-name"
   value        = var.acr_name
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin
+  ]
 }
 
 resource "azurerm_key_vault_secret" "acr_login_server" {
@@ -40,7 +43,11 @@ resource "azurerm_key_vault_secret" "acr_login_server" {
   name         = "acr-login-server"
   value        = var.acr_login_server
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "acr_admin_username" {
@@ -48,7 +55,11 @@ resource "azurerm_key_vault_secret" "acr_admin_username" {
   name         = "acr-username"
   value        = var.acr_admin_username
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "acr_admin_password" {
@@ -56,7 +67,11 @@ resource "azurerm_key_vault_secret" "acr_admin_password" {
   name         = "acr-password"
   value        = var.acr_admin_password
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 # =============================================================================
@@ -68,7 +83,11 @@ resource "azurerm_key_vault_secret" "db_host" {
   name         = "db-host"
   value        = var.postgres_fqdn
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "db_port" {
@@ -76,7 +95,11 @@ resource "azurerm_key_vault_secret" "db_port" {
   name         = "db-port"
   value        = var.postgres_port
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "db_name_users" {
@@ -84,7 +107,11 @@ resource "azurerm_key_vault_secret" "db_name_users" {
   name         = "db-name-users"
   value        = var.postgres_users_db_name
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "db_name_games" {
@@ -92,7 +119,11 @@ resource "azurerm_key_vault_secret" "db_name_games" {
   name         = "db-name-games"
   value        = var.postgres_games_db_name
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "db_name_payments" {
@@ -100,7 +131,11 @@ resource "azurerm_key_vault_secret" "db_name_payments" {
   name         = "db-name-payments"
   value        = var.postgres_payments_db_name
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "db_admin_login" {
@@ -108,7 +143,11 @@ resource "azurerm_key_vault_secret" "db_admin_login" {
   name         = "db-admin-login"
   value        = var.postgres_admin_login
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "db_password" {
@@ -116,7 +155,11 @@ resource "azurerm_key_vault_secret" "db_password" {
   name         = "db-password"
   value        = var.postgres_admin_password
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 # =============================================================================
@@ -128,7 +171,11 @@ resource "azurerm_key_vault_secret" "cache_host" {
   name         = "cache-host"
   value        = var.redis_hostname
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "cache_port" {
@@ -136,7 +183,11 @@ resource "azurerm_key_vault_secret" "cache_port" {
   name         = "cache-port"
   value        = var.redis_ssl_port
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 resource "azurerm_key_vault_secret" "cache_password" {
@@ -144,7 +195,11 @@ resource "azurerm_key_vault_secret" "cache_password" {
   name         = "cache-password"
   value        = var.redis_primary_access_key
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 # =============================================================================
@@ -156,7 +211,11 @@ resource "azurerm_key_vault_secret" "servicebus_namespace" {
   name         = "servicebus-namespace"
   value        = var.servicebus_namespace
 
-  depends_on = [azurerm_key_vault.key_vault]
+  depends_on = [
+    azurerm_key_vault.key_vault,
+    azurerm_role_assignment.app_kv_admin,
+    azurerm_role_assignment.app_kv_secrets_user
+  ]
 }
 
 # =============================================================================
@@ -174,7 +233,7 @@ resource "azurerm_role_assignment" "app_kv_secrets_user" {
 
 resource "azurerm_role_assignment" "app_kv_admin" {
   scope                = azurerm_key_vault.key_vault.id
-  role_definition_name = "Key Vault Administrator"
+  role_definition_name = "Key Vault Administrator" 
   principal_id         = var.app_object_id
 
   depends_on = [azurerm_key_vault.key_vault]
@@ -190,7 +249,7 @@ resource "azurerm_role_assignment" "user_kv_admin" {
   depends_on = [azurerm_key_vault.key_vault]
 }
 
-# 🤖 GitHub Actions Service Principal - Key Vault Secrets User (optional)
+# 🤖 GitHub Actions Service Principal - Key Vault Secrets User (optional)  
 resource "azurerm_role_assignment" "github_kv_secrets_user" {
   count                = var.github_actions_object_id != null ? 1 : 0
   scope                = azurerm_key_vault.key_vault.id
