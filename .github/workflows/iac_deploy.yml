@@ -1,4 +1,4 @@
-name: 🏗️ Infra | Terraform + AZD Foundation
+name: 🏗️ Infrastructure | Pure Terraform Foundation
 
 on:
   pull_request:
@@ -62,7 +62,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: 🔧 Terraform Init & Plan & Apply
+      - name: 🏗️ Terraform Deploy Foundation
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform init -upgrade
@@ -70,13 +70,13 @@ jobs:
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
 
-      - name: 📤 Capture Terraform Outputs
+      - name: � Extract Infrastructure Outputs
         id: terraform-outputs
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           TERRAFORM_OUTPUT=$(terraform output -json)
           
-          # Extract and set outputs for other jobs
+          # Extract and set outputs for downstream deployments
           RG_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_name.value')
           LOCATION=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_location.value')
           LOG_ANALYTICS_ID=$(echo $TERRAFORM_OUTPUT | jq -r '.log_analytics_workspace_id.value')
@@ -85,44 +85,47 @@ jobs:
           echo "location=$LOCATION" >> $GITHUB_OUTPUT
           echo "log_analytics_id=$LOG_ANALYTICS_ID" >> $GITHUB_OUTPUT
 
-      - name: 🎉 Foundation Deployment Summary
+      - name: � Infrastructure Deployment Summary
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           TERRAFORM_OUTPUT=$(terraform output -json)
           
-          # Extract key values for summary
+          # Extract key infrastructure details
           RG_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_name.value')
           LOCATION=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_location.value')
           CONTAINER_APP_ENV=$(echo $TERRAFORM_OUTPUT | jq -r '.container_app_environment_info.value.name')
           KEY_VAULT_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.key_vault_info.value.name')
           
-          # Create comprehensive step summary
-          echo "## 🏗️ TC CloudGames Foundation - Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          # Generate comprehensive deployment summary
+          echo "## 🏗️ TC CloudGames Infrastructure - Pure Terraform Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Infrastructure Summary" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Foundation Resources" >> $GITHUB_STEP_SUMMARY
           echo "| Resource Type | Resource Name | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---------------|---------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource Group | $RG_NAME | ✅ Created |" >> $GITHUB_STEP_SUMMARY
-          echo "| Location | $LOCATION | ✅ Set |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container App Environment | $CONTAINER_APP_ENV | ✅ Ready for apps |" >> $GITHUB_STEP_SUMMARY
-          echo "| Key Vault | $KEY_VAULT_NAME | ✅ Empty, ready for secrets |" >> $GITHUB_STEP_SUMMARY
-          echo "| PostgreSQL Server | $(echo $TERRAFORM_OUTPUT | jq -r '.postgres_info.value.name') | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-          echo "| Azure Container Registry | $(echo $TERRAFORM_OUTPUT | jq -r '.acr_info.value.name') | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-          echo "| Redis Cache | $(echo $TERRAFORM_OUTPUT | jq -r '.redis_info.value.name') | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-          echo "| Service Bus | $(echo $TERRAFORM_OUTPUT | jq -r '.servicebus_info.value.namespace') | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource Group | $RG_NAME | ✅ Deployed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Location | $LOCATION | ✅ Configured |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container App Environment | $CONTAINER_APP_ENV | ✅ Ready for Container Apps |" >> $GITHUB_STEP_SUMMARY
+          echo "| Key Vault | $KEY_VAULT_NAME | ✅ Configured with RBAC |" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL Server | $(echo $TERRAFORM_OUTPUT | jq -r '.postgres_info.value.name') | ✅ Ready for connections |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Registry | $(echo $TERRAFORM_OUTPUT | jq -r '.acr_info.value.name') | ✅ Ready for images |" >> $GITHUB_STEP_SUMMARY
+          echo "| Redis Cache | $(echo $TERRAFORM_OUTPUT | jq -r '.redis_info.value.name') | ✅ Ready for caching |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service Bus | $(echo $TERRAFORM_OUTPUT | jq -r '.servicebus_info.value.namespace') | ✅ Ready for messaging |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY  
-          echo "- **Users API**: Can now deploy Container App with System MI" >> $GITHUB_STEP_SUMMARY
-          echo "- **Games API**: Can now deploy Container App with System MI" >> $GITHUB_STEP_SUMMARY
-          echo "- **Payments API**: Can now deploy Container App with System MI" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Application Deployment Ready" >> $GITHUB_STEP_SUMMARY  
+          echo "- **Users API**: Infrastructure ready for Container App deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Games API**: Infrastructure ready for Container App deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Payments API**: Infrastructure ready for Container App deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Resource Group in Azure Portal](https://portal.azure.com/#@/resource$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_id.value')/overview)" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Infrastructure in Azure Portal](https://portal.azure.com/#@/resource$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_id.value')/overview)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔐 RBAC Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Service Principal**: Key Vault Administrator + Secrets User (via Terraform)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **GitHub Actions**: Key Vault Secrets User (via Terraform)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **User Account**: Key Vault Administrator (via Terraform)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **All Secrets**: Pre-populated and ready for Container Apps" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 Security & Access Control" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Service Principal**: Full Key Vault access configured via Terraform" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **GitHub Actions**: Secrets access configured via Terraform" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **User Account**: Administrative access configured via Terraform" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Connection Secrets**: Pre-populated and ready for applications" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 Pure Terraform Architecture" >> $GITHUB_STEP_SUMMARY
-          echo "Complete foundation deployment with proper RBAC sequencing - **no additional steps required!**" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Pure Terraform Architecture Benefits" >> $GITHUB_STEP_SUMMARY
+          echo "✨ **Single Source of Truth**: All infrastructure managed through Terraform" >> $GITHUB_STEP_SUMMARY
+          echo "🔄 **Consistent Deployments**: Reproducible infrastructure across environments" >> $GITHUB_STEP_SUMMARY
+          echo "🛡️ **Proper RBAC Sequencing**: Key Vault → Roles → Secrets in correct order" >> $GITHUB_STEP_SUMMARY
+          echo "🎮 **Ready for Gaming Platform**: Foundation optimized for gaming workloads" >> $GITHUB_STEP_SUMMARY
