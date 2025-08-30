@@ -39,7 +39,6 @@ locals {
     CostCenter  = "Engineering"
     Workspace   = terraform.workspace
     Provider    = "Azure"
-    DeployTime  = timeadd(timestamp(), "-3h") # UTC-3
   }
 }
 
