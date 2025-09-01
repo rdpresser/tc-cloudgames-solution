@@ -89,55 +89,55 @@ resource "azurerm_container_app" "main" {
   # Key Vault secret references using System Managed Identity
   secret {
     name                = "db-host"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-host"
   }
 
   secret {
     name                = "db-port"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-port"
   }
 
   secret {
     name                = "db-name-users"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-name-users"
   }
 
   secret {
     name                = "db-admin-login"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-admin-login"
   }
 
   secret {
     name                = "db-password"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-password"
   }
 
   secret {
     name                = "cache-host"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-host"
   }
 
   secret {
     name                = "cache-port"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-port"
   }
 
   secret {
     name                = "cache-password"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-password"
   }
 
   secret {
     name                = "servicebus-namespace"
-    identity            = "system"
+    identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-namespace"
   }
 
@@ -157,7 +157,7 @@ resource "azurerm_container_app" "main" {
   # ACR configuration using System Managed Identity
   registry {
     server   = var.container_registry_server
-    identity = "system"
+    identity = "System"
   }
 }
 
