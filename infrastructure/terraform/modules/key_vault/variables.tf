@@ -237,3 +237,8 @@ variable "app_object_id" {
   type        = string
   default     = null
 }
+
+variable "subscription_id" {
+  description = "Azure subscription ID for role assignments"
+  type        = string
+}

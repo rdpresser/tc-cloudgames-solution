@@ -191,6 +191,7 @@ module "key_vault" {
   service_principal_object_id = var.app_object_id
   user_object_id              = var.user_object_id
   github_actions_object_id    = var.github_actions_object_id
+  subscription_id             = data.azurerm_client_config.current.subscription_id
 
   depends_on = [
     module.resource_group,
@@ -229,6 +230,7 @@ module "users_api_container_app" {
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   container_registry_server    = module.acr.acr_login_server
   key_vault_name               = module.key_vault.key_vault_name
+  subscription_id              = data.azurerm_client_config.current.subscription_id
   service_name                 = "users-api"
   tags                         = local.common_tags
 

@@ -72,6 +72,18 @@ resource "azurerm_role_assignment" "user_kv_admin" {
 }
 
 # -----------------------------------------------------------------------------
+# ACR Role Assignments for CI/CD Pipeline
+# -----------------------------------------------------------------------------
+
+# GitHub Actions Service Principal - ACR Push (for CI/CD image push)
+resource "azurerm_role_assignment" "github_actions_acr_push" {
+  count                = var.github_actions_object_id != null ? 1 : 0
+  principal_id         = var.github_actions_object_id
+  role_definition_name = "AcrPush"
+  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${var.acr_name}"
+}
+
+# -----------------------------------------------------------------------------
 # Key Vault Secrets (Created AFTER RBAC permissions)
 # -----------------------------------------------------------------------------
 

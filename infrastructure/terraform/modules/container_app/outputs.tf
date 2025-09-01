@@ -24,10 +24,10 @@ output "container_app_url" {
 
 output "system_assigned_identity_principal_id" {
   description = "The Principal ID of the System Assigned Managed Identity"
-  value       = data.azurerm_container_app.identity.identity[0].principal_id
+  value       = azurerm_container_app.main.identity[0].principal_id
 }
 
 output "system_assigned_identity_tenant_id" {
   description = "The Tenant ID of the System Assigned Managed Identity"
-  value       = data.azurerm_container_app.identity.identity[0].tenant_id
+  value       = azurerm_container_app.main.identity[0].tenant_id
 }

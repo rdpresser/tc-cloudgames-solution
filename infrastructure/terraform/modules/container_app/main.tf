@@ -154,33 +154,20 @@ resource "azurerm_container_app" "main" {
     }
   }
 
-  # ACR configuration using System Managed Identity
-  registry {
-    server   = var.container_registry_server
-    identity = "System"
-  }
-}
-
-# Data source to get Container App System Managed Identity principal ID
-data "azurerm_container_app" "identity" {
-  name                = azurerm_container_app.main.name
-  resource_group_name = var.resource_group_name
-  depends_on         = [azurerm_container_app.main]
+  # Note: ACR registry authentication will be added after role assignments are created
+  # This prevents circular dependency during initial creation
 }
 
 # Role assignment: Grant Key Vault Secrets User role to Container App System MI
 resource "azurerm_role_assignment" "key_vault_secrets_user" {
-  scope                = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
+  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
   role_definition_name = "Key Vault Secrets User"
-  principal_id         = data.azurerm_container_app.identity.identity[0].principal_id
+  principal_id         = azurerm_container_app.main.identity[0].principal_id
 }
 
 # Role assignment: Grant ACR Pull role to Container App System MI for container image access
 resource "azurerm_role_assignment" "acr_pull" {
-  scope                = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${split(".", var.container_registry_server)[0]}"
+  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${split(".", var.container_registry_server)[0]}"
   role_definition_name = "AcrPull"
-  principal_id         = data.azurerm_container_app.identity.identity[0].principal_id
+  principal_id         = azurerm_container_app.main.identity[0].principal_id
 }
-
-# Get current Azure client configuration
-data "azurerm_client_config" "current" {}

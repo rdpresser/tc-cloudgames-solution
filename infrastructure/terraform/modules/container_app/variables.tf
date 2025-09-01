@@ -81,6 +81,11 @@ variable "key_vault_name" {
   type        = string
 }
 
+variable "subscription_id" {
+  description = "Azure subscription ID for role assignments"
+  type        = string
+}
+
 variable "environment_variables" {
   description = "Environment variables for the container app"
   type = list(object({
