@@ -30,7 +30,7 @@ resource "azurerm_container_app" "main" {
       # Environment variables matching pipeline requirements
       env {
         name  = "ASPNETCORE_ENVIRONMENT"
-        value = "Development"
+        value = "Production"
       }
 
       # env {
