@@ -6,7 +6,6 @@
 # Container App with System Managed Identity
 resource "azurerm_container_app" "main" {
   name                         = "${var.name_prefix}-${var.service_name}"
-  location                     = var.location
   resource_group_name          = var.resource_group_name
   container_app_environment_id = var.container_app_environment_id
   revision_mode                = "Single"

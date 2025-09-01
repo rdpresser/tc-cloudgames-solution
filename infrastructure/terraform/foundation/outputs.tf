@@ -126,11 +126,11 @@ output "servicebus_info" {
 output "users_api_container_app_info" {
   description = "Users API Container App details"
   value = {
-    name                = module.users_api_container_app.container_app_name
-    id                  = module.users_api_container_app.container_app_id
-    fqdn                = module.users_api_container_app.container_app_fqdn
-    url                 = module.users_api_container_app.container_app_url
-    system_identity_id  = module.users_api_container_app.system_assigned_identity_principal_id
+    name               = module.users_api_container_app.container_app_name
+    id                 = module.users_api_container_app.container_app_id
+    fqdn               = module.users_api_container_app.container_app_fqdn
+    url                = module.users_api_container_app.container_app_url
+    system_identity_id = module.users_api_container_app.system_assigned_identity_principal_id
   }
 }
 
@@ -141,20 +141,20 @@ output "users_api_container_app_info" {
 output "all_resources" {
   description = "Aggregated resource names for quick reference"
   value = {
-    resource_group             = module.resource_group.name
-    acr_name                   = module.acr.acr_name
-    acr_login_server           = module.acr.acr_login_server
-    postgres_server            = module.postgres.postgres_server_name
-    postgres_fqdn              = module.postgres.postgres_server_fqdn
-    redis_name                 = module.redis.redis_name
-    redis_host                 = module.redis.redis_hostname
-    log_analytics_name         = module.logs.log_analytics_name
-    servicebus_ns              = module.servicebus.namespace_name
-    servicebus_topic           = module.servicebus.topic_name
-    users_api_container_app    = module.users_api_container_app.container_app_name
-    container_app_environment  = module.container_app_environment.container_app_environment_name
-    key_vault                  = module.key_vault.key_vault_name
-    location                   = module.resource_group.location
+    resource_group            = module.resource_group.name
+    acr_name                  = module.acr.acr_name
+    acr_login_server          = module.acr.acr_login_server
+    postgres_server           = module.postgres.postgres_server_name
+    postgres_fqdn             = module.postgres.postgres_server_fqdn
+    redis_name                = module.redis.redis_name
+    redis_host                = module.redis.redis_hostname
+    log_analytics_name        = module.logs.log_analytics_name
+    servicebus_ns             = module.servicebus.namespace_name
+    servicebus_topic          = module.servicebus.topic_name
+    users_api_container_app   = module.users_api_container_app.container_app_name
+    container_app_environment = module.container_app_environment.container_app_environment_name
+    key_vault                 = module.key_vault.key_vault_name
+    location                  = module.resource_group.location
   }
 }
 
@@ -199,7 +199,7 @@ output "deployment_timing" {
   value = {
     terraform_start_time = local.deployment_start_time
     terraform_end_time   = local.deployment_end_time
-    note                = "Terraform timestamps are estimates. Use CI/CD pipeline GITHUB_STEP_SUMMARY for accurate timing."
+    note                 = "Terraform timestamps are estimates. Use CI/CD pipeline GITHUB_STEP_SUMMARY for accurate timing."
     measurement_source   = "CI/CD Pipeline"
   }
 }
@@ -208,23 +208,23 @@ output "deployment_performance_summary" {
   description = "Deployment performance metadata"
   value = {
     # Basic deployment info
-    environment          = var.environment
-    terraform_workspace  = terraform.workspace
-    resource_count       = 8 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault
-    deployment_method    = "Pure Terraform via Terraform Cloud"
-    
+    environment         = var.environment
+    terraform_workspace = terraform.workspace
+    resource_count      = 8 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault
+    deployment_method   = "Pure Terraform via Terraform Cloud"
+
     # Deployment metadata
     deployment_date = formatdate("YYYY-MM-DD", local.deployment_end_time)
     deployment_time = formatdate("hh:mm:ss", local.deployment_end_time)
-    
+
     # Performance targets
     performance_targets = {
-      excellent = "< 5 minutes"
-      good      = "5-10 minutes" 
+      excellent  = "< 5 minutes"
+      good       = "5-10 minutes"
       acceptable = "10-15 minutes"
-      slow      = "> 15 minutes"
+      slow       = "> 15 minutes"
     }
-    
+
     # Note about accurate timing
     timing_note = "Actual deployment duration measured by GitHub Actions pipeline with start/end timestamps"
   }

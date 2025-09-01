@@ -245,7 +245,7 @@ module "users_api_container_app" {
 # =============================================================================
 locals {
   deployment_end_time = timestamp()
-  
+
   # Calculate duration in seconds (approximation since both timestamps are taken at plan time)
   # Note: This gives an estimate since both timestamps are captured during planning phase
   # For more accurate measurement, use external timing in CI/CD pipeline
