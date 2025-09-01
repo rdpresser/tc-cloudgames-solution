@@ -7,13 +7,11 @@
 variable "name_prefix" {
   description = "The name of the Service Bus Namespace."
   type        = string
-  default     = "tccloudgames-sb"
 }
 
 variable "location" {
   description = "Azure region for Service Bus namespace."
   type        = string
-  default     = "brazilsouth"
 }
 
 variable "resource_group_name" {
@@ -30,7 +28,7 @@ variable "sku" {
 variable "topic_name" {
   description = "Name of the Service Bus topic."
   type        = string
-  default     = "user.events"
+  default     = "user-events"
 }
 
 variable "subscription_name" {
