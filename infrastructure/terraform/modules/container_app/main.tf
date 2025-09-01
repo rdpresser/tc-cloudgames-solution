@@ -154,8 +154,11 @@ resource "azurerm_container_app" "main" {
     }
   }
 
-  # Note: ACR registry authentication will be added after role assignments are created
-  # This prevents circular dependency during initial creation
+  # ACR configuration using System Managed Identity
+  registry {
+    server   = var.container_registry_server
+    identity = "System"
+  }
 }
 
 # Role assignment: Grant Key Vault Secrets User role to Container App System MI
