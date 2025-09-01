@@ -202,7 +202,7 @@ module "key_vault" {
 }
 
 #########################################
-# Calls Service Bus module
+# Service Bus module
 #########################################
 
 module "servicebus" {
@@ -214,6 +214,29 @@ module "servicebus" {
 
   depends_on = [
     module.resource_group
+  ]
+}
+
+#########################################
+# Users API Container App module
+#########################################
+
+module "users_api_container_app" {
+  source                       = "../modules/container_app"
+  name_prefix                  = local.full_name
+  location                     = module.resource_group.location
+  resource_group_name          = module.resource_group.name
+  container_app_environment_id = module.container_app_environment.container_app_environment_id
+  container_registry_server    = module.acr.acr_login_server
+  key_vault_name               = module.key_vault.key_vault_name
+  service_name                 = "users-api"
+  tags                         = local.common_tags
+
+  depends_on = [
+    module.resource_group,
+    module.container_app_environment,
+    module.acr,
+    module.key_vault
   ]
 }
 

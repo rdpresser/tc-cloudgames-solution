@@ -30,8 +30,9 @@ variable "container_registry_server" {
 
 variable "container_image" {
   description = "Container image URI"
-  type        = string
-  default     = "mcr.microsoft.com/k8se/quickstart:latest"
+  # Use a placeholder image that exists - this will be updated by CI/CD
+  default     = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+  type        = string  
 }
 
 variable "service_name" {

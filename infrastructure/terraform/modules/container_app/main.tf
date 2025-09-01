@@ -28,65 +28,118 @@ resource "azurerm_container_app" "main" {
       cpu    = var.cpu_requests
       memory = var.memory_requests
 
-      # Dynamic environment variables
-      dynamic "env" {
-        for_each = var.environment_variables
-        content {
-          name  = env.value.name
-          value = env.value.value
-        }
+      # Environment variables matching pipeline requirements
+      env {
+        name  = "ASPNETCORE_ENVIRONMENT"
+        value = "Development"
+      }
+
+      env {
+        name  = "ASPNETCORE_URLS" 
+        value = "http://+:8080"
       }
 
       # Key Vault secret references for infrastructure secrets
       env {
-        name        = "DATABASE_CONNECTION_STRING"
-        secret_name = "postgres-connection-string"
+        name        = "DB_HOST"
+        secret_name = "db-host"
       }
 
       env {
-        name        = "REDIS_CONNECTION_STRING" 
-        secret_name = "redis-connection-string"
+        name        = "DB_PORT"
+        secret_name = "db-port"
       }
 
       env {
-        name        = "SERVICEBUS_CONNECTION_STRING"
-        secret_name = "servicebus-connection-string"
+        name        = "DB_NAME"
+        secret_name = "db-name-users"
       }
 
       env {
-        name        = "ACR_LOGIN_SERVER"
-        secret_name = "acr-login-server"
+        name        = "DB_USER"
+        secret_name = "db-admin-login"
+      }
+
+      env {
+        name        = "DB_PASSWORD"
+        secret_name = "db-password"
+      }
+
+      env {
+        name        = "CACHE_HOST"
+        secret_name = "cache-host"
+      }
+
+      env {
+        name        = "CACHE_PORT"
+        secret_name = "cache-port"
+      }
+
+      env {
+        name        = "CACHE_PASSWORD"
+        secret_name = "cache-password"
+      }
+
+      env {
+        name        = "SERVICEBUS_NAMESPACE"
+        secret_name = "servicebus-namespace"
       }
     }
   }
 
   # Key Vault secret references using System Managed Identity
   secret {
-    name  = "postgres-connection-string"
-    value = "https://${var.key_vault_name}.vault.azure.net/secrets/postgres-connection-string"
-    identity = "system"
-    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/postgres-connection-string"
+    name                = "db-host"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-host"
   }
 
   secret {
-    name  = "redis-connection-string"
-    value = "https://${var.key_vault_name}.vault.azure.net/secrets/redis-connection-string"
-    identity = "system" 
-    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/redis-connection-string"
+    name                = "db-port"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-port"
   }
 
   secret {
-    name  = "servicebus-connection-string"
-    value = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-connection-string"
-    identity = "system"
-    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-connection-string"
+    name                = "db-name-users"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-name-users"
   }
 
   secret {
-    name  = "acr-login-server"
-    value = "https://${var.key_vault_name}.vault.azure.net/secrets/acr-login-server"
-    identity = "system"
-    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/acr-login-server"
+    name                = "db-admin-login"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-admin-login"
+  }
+
+  secret {
+    name                = "db-password"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-password"
+  }
+
+  secret {
+    name                = "cache-host"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-host"
+  }
+
+  secret {
+    name                = "cache-port"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-port"
+  }
+
+  secret {
+    name                = "cache-password"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-password"
+  }
+
+  secret {
+    name                = "servicebus-namespace"
+    identity            = "system"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-namespace"
   }
 
   # Ingress configuration
