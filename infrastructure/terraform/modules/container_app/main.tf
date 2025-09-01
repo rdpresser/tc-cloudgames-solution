@@ -33,10 +33,10 @@ resource "azurerm_container_app" "main" {
         value = "Development"
       }
 
-      env {
-        name  = "ASPNETCORE_URLS" 
-        value = "http://+:8080"
-      }
+      # env {
+      #   name  = "ASPNETCORE_URLS" 
+      #   value = "http://+:8080"
+      # }
 
       # Key Vault secret references for infrastructure secrets
       env {
