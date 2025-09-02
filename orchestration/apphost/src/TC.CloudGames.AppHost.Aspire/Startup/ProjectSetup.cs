@@ -10,7 +10,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             IResourceBuilder<PostgresServerResource>? postgres,
             IResourceBuilder<PostgresDatabaseResource>? userDb,
             IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
-            IResourceBuilder<RedisResource> redis,
+            IResourceBuilder<RedisResource>? redis,
             MessageBrokerResources messageBroker)
         {
             var project = builder.AddProject<Projects.TC_CloudGames_Users_Api>("users-api")
@@ -20,8 +20,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (postgres != null) project = project.WithReference(postgres);
             if (userDb != null) project = project.WithReference(userDb);
             if (maintenanceDb != null) project = project.WithReference(maintenanceDb);
-            
-            project = project.WithReference(redis);
+            if (redis != null) project = project.WithReference(redis);
             
             // Add message broker references baseado no tipo
             AddMessageBrokerReferences(project, messageBroker);
@@ -30,8 +29,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (postgres != null) project = project.WaitFor(postgres);
             if (userDb != null) project = project.WaitFor(userDb);
             if (maintenanceDb != null) project = project.WaitFor(maintenanceDb);
-            
-            project = project.WaitFor(redis);
+            if (redis != null) project = project.WaitFor(redis);
             
             // Wait for message broker only if it has local resources
             WaitForMessageBrokerIfNeeded(project, messageBroker);
@@ -59,7 +57,8 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                     break;
                 
                 case MessageBrokerType.AzureServiceBus when messageBroker.ServiceBus != null:
-                    project = project.WithReference(messageBroker.ServiceBus);
+                    // Para Azure Service Bus, o recurso pode ser um parâmetro ou connection string
+                    // Parâmetros não precisam de WithReference, apenas variáveis de ambiente
                     break;
             }
         }
@@ -72,8 +71,8 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                     project.WaitFor(messageBroker.RabbitMQ);
                     break;
                 
-                case MessageBrokerType.AzureServiceBus when messageBroker.ServiceBus != null:
-                    project.WaitFor(messageBroker.ServiceBus);
+                case MessageBrokerType.AzureServiceBus:
+                    // Azure Service Bus externo não precisa de WaitFor
                     break;
             }
         }

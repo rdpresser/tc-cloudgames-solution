@@ -28,7 +28,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             }
         }
 
-        public static IResourceBuilder<RedisResource> ConfigureRedis(
+        public static IResourceBuilder<RedisResource>? ConfigureRedis(
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
             ILogger? logger = null)
@@ -37,11 +37,9 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             if (cacheConfig.UseExternalService)
             {
-                logger?.LogInformation("🌐 Configurando Redis externo");
-                // Para serviços externos Redis, criamos um recurso com configuração externa
-                return builder.AddRedis(cacheConfig.ContainerName)
-                    .WithEndpoint("tcp", endpoint =>
-                        endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, cacheConfig.Host, cacheConfig.Port));
+                logger?.LogInformation("🌐 Configurando Redis externo: {Host} - não criando containers", cacheConfig.Host);
+                // Para serviços externos Redis, não criamos recurso para evitar containers desnecessários
+                return null;
             }
             else
             {
@@ -121,13 +119,18 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (serviceBusConfig.UseExternalService && !string.IsNullOrEmpty(serviceBusConfig.ConnectionString))
             {
                 logger?.LogInformation("🌐 Configurando Azure Service Bus externo");
-                var serviceBusResource = builder.AddConnectionString("servicebus-connection", "ServiceBus");
+                
+                // Para serviços externos, usar o parâmetro diretamente
+                if (serviceBusConfig.ConnectionStringParameter == null)
+                {
+                    throw new InvalidOperationException("Azure Service Bus ConnectionString parameter not configured");
+                }
 
                 return new MessageBrokerResources
                 {
                     Type = MessageBrokerType.AzureServiceBus,
                     RabbitMQ = null,
-                    ServiceBus = serviceBusResource
+                    ServiceBus = serviceBusConfig.ConnectionStringParameter
                 };
             }
             else
@@ -201,6 +204,6 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
     {
         public MessageBrokerType Type { get; set; }
         public IResourceBuilder<RabbitMQServerResource>? RabbitMQ { get; set; }
-        public IResourceBuilder<IResourceWithConnectionString>? ServiceBus { get; set; }
+        public IResourceBuilder<IResource>? ServiceBus { get; set; }
     }
 }

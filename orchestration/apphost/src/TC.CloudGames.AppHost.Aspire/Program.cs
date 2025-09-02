@@ -1,33 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
+using TC.CloudGames.AppHost.Aspire.Extensions;
 using TC.CloudGames.AppHost.Aspire.Startup;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Load environment variables from .env files
-var environment = builder.Environment.EnvironmentName.ToLowerInvariant();
-
-// Find project root by looking for solution file or git directory
-var projectRoot = FindProjectRoot() ?? Directory.GetCurrentDirectory();
-
-// Load base .env file first (if exists)
-var baseEnvFile = Path.Combine(projectRoot, ".env");
-if (File.Exists(baseEnvFile))
-{
-    DotNetEnv.Env.Load(baseEnvFile);
-    Console.WriteLine($"Loaded base .env from: {baseEnvFile}");
-}
-
-// Load environment-specific .env file (overrides base values)
-var envFile = Path.Combine(projectRoot, $".env.{environment}");
-if (File.Exists(envFile))
-{
-    DotNetEnv.Env.Load(envFile);
-    Console.WriteLine($"Loaded {environment} .env from: {envFile}");
-}
-else
-{
-    Console.WriteLine($"Environment file not found: {envFile}");
-}
+// Configure environment variables from .env files
+builder.ConfigureEnvironmentVariables();
 
 // Setup logger
 var loggerFactory = LoggerFactory.Create(config =>
@@ -50,28 +28,3 @@ ProjectSetup.ConfigureUsersApi(builder, registry, postgres, userDb, maintenanceD
 
 // Run
 await builder.Build().RunAsync();
-
-static string? FindProjectRoot()
-{
-    var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
-
-    while (directory != null)
-    {
-        // Look for common project root indicators
-        if (directory.GetFiles("*.sln").Length > 0 ||
-            directory.GetDirectories(".git").Length > 0 ||
-            HasEnvFiles(directory))
-        {
-            return directory.FullName;
-        }
-        directory = directory.Parent;
-    }
-
-    return null;
-}
-
-static bool HasEnvFiles(DirectoryInfo directory)
-{
-    return directory.GetFiles(".env").Length > 0 ||
-           directory.GetFiles(".env.*").Length > 0;
-}
