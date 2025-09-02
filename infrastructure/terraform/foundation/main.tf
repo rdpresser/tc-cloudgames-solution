@@ -181,7 +181,7 @@ module "key_vault" {
   cache_port     = tostring(module.redis.redis_ssl_port)
   cache_password = module.redis.redis_primary_access_key
 
-  # Service Bus info (NEW)
+  # Service Bus info
   servicebus_connection_string = module.servicebus.namespace_connection_string
 
   # RBAC Access Control (NEW: using new variable names)

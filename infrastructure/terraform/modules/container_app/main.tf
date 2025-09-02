@@ -97,6 +97,31 @@ resource "azurerm_container_app" "main" {
         name        = "AZURE_SERVICEBUS_CONNECTIONSTRING"
         secret_name = "servicebus-connection-string"
       }
+
+      env {
+        name        = "AZURE_SERVICEBUS_AUTO_PROVISION"
+        secret_name = "servicebus-auto-provision"
+      }
+
+      env {
+        name        = "AZURE_SERVICEBUS_MAX_DELIVERY_COUNT"
+        secret_name = "servicebus-max-delivery-count"
+      }
+
+      env {
+        name        = "AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING"
+        secret_name = "servicebus-enable-dead-lettering"
+      }
+
+      env {
+        name        = "AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP"
+        secret_name = "servicebus-auto-purge-on-startup"
+      }
+
+      env {
+        name        = "AZURE_SERVICEBUS_USE_CONTROL_QUEUES"
+        secret_name = "servicebus-use-control-queues"
+      }
     }
   }
 
@@ -171,6 +196,36 @@ resource "azurerm_container_app" "main" {
     name                = "servicebus-connection-string"
     identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-connection-string"
+  }
+
+  secret {
+    name                = "servicebus-auto-provision"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-auto-provision"
+  }
+
+  secret {
+    name                = "servicebus-max-delivery-count"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-max-delivery-count"
+  }
+
+  secret {
+    name                = "servicebus-enable-dead-lettering"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-enable-dead-lettering"
+  }
+
+  secret {
+    name                = "servicebus-auto-purge-on-startup"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-auto-purge-on-startup"
+  }
+
+  secret {
+    name                = "servicebus-use-control-queues"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-use-control-queues"
   }
 
   # Ingress configuration

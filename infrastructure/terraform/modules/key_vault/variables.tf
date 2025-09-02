@@ -212,6 +212,36 @@ variable "servicebus_connection_string" {
   sensitive   = true
 }
 
+variable "servicebus_auto_provision" {
+  description = "Service Bus auto provision setting"
+  type        = bool
+  default     = true
+}
+
+variable "servicebus_max_delivery_count" {
+  description = "Service Bus maximum delivery count"
+  type        = number
+  default     = 10
+}
+
+variable "servicebus_enable_dead_lettering" {
+  description = "Service Bus enable dead lettering"
+  type        = bool
+  default     = true
+}
+
+variable "servicebus_auto_purge_on_startup" {
+  description = "Service Bus auto purge on startup"
+  type        = bool
+  default     = false
+}
+
+variable "servicebus_use_control_queues" {
+  description = "Service Bus use control queues"
+  type        = bool
+  default     = true
+}
+
 # =============================================================================
 # Legacy Variables (keeping for backward compatibility)
 # =============================================================================
