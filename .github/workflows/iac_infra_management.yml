@@ -244,7 +244,7 @@ jobs:
                 --resource-group "$RG_NAME" \
                 --name "$app" \
                 --min-replicas 0 \
-                --max-replicas 0
+                --max-replicas 3
               echo "✅ Container App $app stopped"
             done
           else
