@@ -75,7 +75,7 @@ module "postgres" {
   postgres_admin_login    = var.postgres_admin_login
   postgres_admin_password = var.postgres_admin_password
   tags                    = local.common_tags
-
+  
   depends_on = [
     module.resource_group
   ]
@@ -165,7 +165,6 @@ module "key_vault" {
   acr_admin_username       = module.acr.acr_admin_username
   acr_admin_password       = module.acr.acr_admin_password
   postgres_fqdn            = module.postgres.postgres_server_fqdn
-  postgres_port            = tostring(module.postgres.postgres_port)
   postgres_admin_login     = var.postgres_admin_login
   postgres_admin_password  = var.postgres_admin_password
   redis_hostname           = module.redis.redis_hostname
@@ -176,8 +175,6 @@ module "key_vault" {
   # Database connection info (NEW: using new variable pattern)
   db_host        = module.postgres.postgres_server_fqdn
   db_port        = tostring(module.postgres.postgres_port)
-  db_admin_login = var.postgres_admin_login
-  db_password    = var.postgres_admin_password
 
   # Cache connection info (NEW: using new variable pattern)
   cache_host     = module.redis.redis_hostname
@@ -225,7 +222,6 @@ module "servicebus" {
 module "users_api_container_app" {
   source                       = "../modules/container_app"
   name_prefix                  = local.full_name
-  location                     = module.resource_group.location
   resource_group_name          = module.resource_group.name
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   container_registry_server    = module.acr.acr_login_server
@@ -233,6 +229,55 @@ module "users_api_container_app" {
   subscription_id              = data.azurerm_client_config.current.subscription_id
   service_name                 = "users-api"
   tags                         = local.common_tags
+  db_name                      = "db-name-users"
+
+  depends_on = [
+    module.resource_group,
+    module.container_app_environment,
+    module.acr,
+    module.key_vault
+  ]
+}
+
+#########################################
+# Games API Container App module
+#########################################
+
+module "games_api_container_app" {
+  source                       = "../modules/container_app"
+  name_prefix                  = local.full_name
+  resource_group_name          = module.resource_group.name
+  container_app_environment_id = module.container_app_environment.container_app_environment_id
+  container_registry_server    = module.acr.acr_login_server
+  key_vault_name               = module.key_vault.key_vault_name
+  subscription_id              = data.azurerm_client_config.current.subscription_id
+  service_name                 = "games-api"
+  tags                         = local.common_tags
+  db_name                      = "db-name-games"
+
+  depends_on = [
+    module.resource_group,
+    module.container_app_environment,
+    module.acr,
+    module.key_vault
+  ]
+}
+
+#########################################
+# Payments API Container App module
+#########################################
+
+module "payments_api_container_app" {
+  source                       = "../modules/container_app"
+  name_prefix                  = local.full_name
+  resource_group_name          = module.resource_group.name
+  container_app_environment_id = module.container_app_environment.container_app_environment_id
+  container_registry_server    = module.acr.acr_login_server
+  key_vault_name               = module.key_vault.key_vault_name
+  subscription_id              = data.azurerm_client_config.current.subscription_id
+  service_name                 = "payments-api"
+  tags                         = local.common_tags
+  db_name                      = "db-name-payments"
 
   depends_on = [
     module.resource_group,

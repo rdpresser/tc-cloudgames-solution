@@ -139,10 +139,60 @@ resource "azurerm_key_vault_secret" "db_name_users" {
   ]
 }
 
+resource "azurerm_key_vault_secret" "db_name_games" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-name-games"
+  value        = var.db_name_games
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "db_name_payments" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-name-payments"
+  value        = var.db_name_payments
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "db_name_maintenance" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-name-maintenance"
+  value        = var.db_name_maintenance
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "db_schema" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-schema"
+  value        = var.db_schema
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "db_connection_timeout" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-connection-timeout"
+  value        = var.db_connection_timeout
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
 resource "azurerm_key_vault_secret" "db_admin_login" {
   key_vault_id = azurerm_key_vault.key_vault.id
   name         = "db-admin-login"
-  value        = var.db_admin_login
+  value        = var.postgres_admin_login
 
   depends_on = [
     azurerm_role_assignment.service_principal_kv_admin
@@ -152,7 +202,7 @@ resource "azurerm_key_vault_secret" "db_admin_login" {
 resource "azurerm_key_vault_secret" "db_password" {
   key_vault_id = azurerm_key_vault.key_vault.id
   name         = "db-password"
-  value        = var.db_password
+  value        = var.postgres_admin_password
 
   depends_on = [
     azurerm_role_assignment.service_principal_kv_admin
@@ -238,6 +288,9 @@ output "secrets" {
     db_host                      = azurerm_key_vault_secret.db_host.id
     db_port                      = azurerm_key_vault_secret.db_port.id
     db_name_users                = azurerm_key_vault_secret.db_name_users.id
+    db_name_games                = azurerm_key_vault_secret.db_name_games.id
+    db_name_payments             = azurerm_key_vault_secret.db_name_payments.id
+    db_name_maintenance          = azurerm_key_vault_secret.db_name_maintenance.id
     db_admin_login               = azurerm_key_vault_secret.db_admin_login.id
     db_password                  = azurerm_key_vault_secret.db_password.id
     cache_host                   = azurerm_key_vault_secret.cache_host.id

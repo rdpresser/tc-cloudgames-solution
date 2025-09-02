@@ -8,11 +8,6 @@ variable "name_prefix" {
   type        = string
 }
 
-variable "location" {
-  description = "Azure region for resources"
-  type        = string
-}
-
 variable "resource_group_name" {
   description = "Resource group name"
   type        = string
@@ -93,4 +88,9 @@ variable "environment_variables" {
     value = string
   }))
   default = []
+}
+
+variable "db_name" {
+  description = "Database name for the application"
+  type        = string
 }

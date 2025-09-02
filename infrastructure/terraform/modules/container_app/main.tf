@@ -10,7 +10,7 @@ resource "azurerm_container_app" "main" {
   container_app_environment_id = var.container_app_environment_id
   revision_mode                = "Single"
   tags                         = var.tags
-
+  
   # System Managed Identity configuration
   identity {
     type = "SystemAssigned"
@@ -33,10 +33,10 @@ resource "azurerm_container_app" "main" {
         value = "Production"
       }
 
-      # env {
-      #   name  = "ASPNETCORE_URLS" 
-      #   value = "http://+:8080"
-      # }
+      env {
+        name  = "ASPNETCORE_URLS" 
+        value = "http://+:8080"
+      }
 
       # Key Vault secret references for infrastructure secrets
       env {
@@ -51,7 +51,7 @@ resource "azurerm_container_app" "main" {
 
       env {
         name        = "DB_NAME"
-        secret_name = "db-name-users"
+        secret_name = var.db_name
       }
 
       env {
@@ -64,6 +64,20 @@ resource "azurerm_container_app" "main" {
         secret_name = "db-password"
       }
 
+      env {
+        name = "DB_MAINTENANCE_NAME"
+        secret_name = "db-name-maintenance"
+      }
+
+      env {
+        name        = "DB_SCHEMA"
+        secret_name = "db-schema"
+      }
+
+      env {
+        name        = "DB_CONNECTION_TIMEOUT"
+        secret_name = "db-connection-timeout"
+      }
       env {
         name        = "CACHE_HOST"
         secret_name = "cache-host"
@@ -80,8 +94,8 @@ resource "azurerm_container_app" "main" {
       }
 
       env {
-        name        = "SERVICEBUS_NAMESPACE"
-        secret_name = "servicebus-namespace"
+        name        = "AZURE_SERVICEBUS_CONNECTIONSTRING"
+        secret_name = "servicebus-connection-string"
       }
     }
   }
@@ -100,9 +114,27 @@ resource "azurerm_container_app" "main" {
   }
 
   secret {
-    name                = "db-name-users"
+    name                = var.db_name
     identity            = "System"
-    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-name-users"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/${var.db_name}"
+  }
+
+  secret {
+    name                = "db-name-maintenance"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-name-maintenance"
+  }
+
+  secret {
+    name                = "db-schema"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-schema"
+  }
+
+  secret {
+    name                = "db-connection-timeout"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/db-connection-timeout"
   }
 
   secret {
@@ -136,9 +168,9 @@ resource "azurerm_container_app" "main" {
   }
 
   secret {
-    name                = "servicebus-namespace"
+    name                = "servicebus-connection-string"
     identity            = "System"
-    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-namespace"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/servicebus-connection-string"
   }
 
   # Ingress configuration

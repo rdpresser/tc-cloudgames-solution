@@ -77,29 +77,6 @@ variable "postgres_fqdn" {
   type        = string
 }
 
-variable "postgres_port" {
-  description = "PostgreSQL server port"
-  type        = string
-}
-
-variable "postgres_users_db_name" {
-  description = "PostgreSQL database name"
-  type        = string
-  default     = "tc-cloudgames-users-db"
-}
-
-variable "postgres_games_db_name" {
-  description = "PostgreSQL database name"
-  type        = string
-  default     = "tc-cloudgames-games-db"
-}
-
-variable "postgres_payments_db_name" {
-  description = "PostgreSQL database name"
-  type        = string
-  default     = "tc-cloudgames-payments-db"
-}
-
 variable "postgres_admin_login" {
   description = "PostgreSQL admin login"
   type        = string
@@ -186,15 +163,22 @@ variable "db_name_payments" {
   default     = "tc-cloudgames-payments-db"
 }
 
-variable "db_admin_login" {
-  description = "Database admin login"
+variable "db_name_maintenance" {
+  description = "Maintenance database name"
   type        = string
+  default     = "postgres"
 }
 
-variable "db_password" {
-  description = "Database admin password"
+variable "db_schema" {
+  description = "Maintenance database schema"
   type        = string
-  sensitive   = true
+  default     = "public"
+}
+
+variable "db_connection_timeout" {
+  description = "The number of seconds to wait for a connection to the database before timing out"
+  type        = number
+  default     = 30
 }
 
 # =============================================================================
