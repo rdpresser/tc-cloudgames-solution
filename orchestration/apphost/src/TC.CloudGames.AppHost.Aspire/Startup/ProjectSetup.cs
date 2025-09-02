@@ -6,24 +6,39 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
     {
         public static void ConfigureUsersApi(
             IDistributedApplicationBuilder builder,
-            ParameterRegistry registry,
-            IResourceBuilder<PostgresServerResource> postgres,
-            IResourceBuilder<PostgresDatabaseResource> userDb,
-            IResourceBuilder<PostgresDatabaseResource> maintenanceDb,
+            ServiceParameterRegistry registry,
+            IResourceBuilder<PostgresServerResource>? postgres,
+            IResourceBuilder<PostgresDatabaseResource>? userDb,
+            IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
             IResourceBuilder<RedisResource> redis,
-            IResourceBuilder<RabbitMQServerResource> rabbit)
+            MessageBrokerResources messageBroker)
         {
             var project = builder.AddProject<Projects.TC_CloudGames_Users_Api>("users-api")
-                .WithHealthChecks()
-                .WithServiceReferences(postgres, userDb, maintenanceDb, redis, rabbit)
-                .WaitFor(postgres)
-                .WaitFor(userDb)
-                .WaitFor(maintenanceDb)
-                .WaitFor(rabbit)
-                .WaitFor(redis);
+                .WithHealthChecks();
 
-            ConfigureDatabaseEnvironment(project, builder, registry, userDb, maintenanceDb);
-            ConfigureMessageBrokerEnvironment(project, builder, registry);
+            // Add references only for local services (containers)
+            if (postgres != null) project = project.WithReference(postgres);
+            if (userDb != null) project = project.WithReference(userDb);
+            if (maintenanceDb != null) project = project.WithReference(maintenanceDb);
+            
+            project = project.WithReference(redis);
+            
+            // Add message broker references baseado no tipo
+            AddMessageBrokerReferences(project, messageBroker);
+
+            // Wait only for local services
+            if (postgres != null) project = project.WaitFor(postgres);
+            if (userDb != null) project = project.WaitFor(userDb);
+            if (maintenanceDb != null) project = project.WaitFor(maintenanceDb);
+            
+            project = project.WaitFor(redis);
+            
+            // Wait for message broker only if it has local resources
+            WaitForMessageBrokerIfNeeded(project, messageBroker);
+
+            // Configure environment variables uniformly
+            ConfigureDatabaseEnvironment(project, builder, registry);
+            ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type);
             ConfigureCacheEnvironment(project, builder, registry);
         }
 
@@ -35,62 +50,142 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 .WithHttpHealthCheck("/live");
         }
 
-        private static IResourceBuilder<ProjectResource> WithServiceReferences(
-            this IResourceBuilder<ProjectResource> project,
-            IResourceBuilder<PostgresServerResource> postgres,
-            IResourceBuilder<PostgresDatabaseResource> userDb,
-            IResourceBuilder<PostgresDatabaseResource> maintenanceDb,
-            IResourceBuilder<RedisResource> redis,
-            IResourceBuilder<RabbitMQServerResource> rabbit)
+        private static void AddMessageBrokerReferences(IResourceBuilder<ProjectResource> project, MessageBrokerResources messageBroker)
         {
-            return project
-                .WithReference(postgres)      // Needed for schema/table creation via Marten/Wolverine
-                .WithReference(userDb)        // Needed for DB connection
-                .WithReference(maintenanceDb)
-                .WithReference(redis)
-                .WithReference(rabbit);
+            switch (messageBroker.Type)
+            {
+                case MessageBrokerType.RabbitMQ when messageBroker.RabbitMQ != null:
+                    project = project.WithReference(messageBroker.RabbitMQ);
+                    break;
+                
+                case MessageBrokerType.AzureServiceBus when messageBroker.ServiceBus != null:
+                    project = project.WithReference(messageBroker.ServiceBus);
+                    break;
+            }
+        }
+
+        private static void WaitForMessageBrokerIfNeeded(IResourceBuilder<ProjectResource> project, MessageBrokerResources messageBroker)
+        {
+            switch (messageBroker.Type)
+            {
+                case MessageBrokerType.RabbitMQ when messageBroker.RabbitMQ != null:
+                    project.WaitFor(messageBroker.RabbitMQ);
+                    break;
+                
+                case MessageBrokerType.AzureServiceBus when messageBroker.ServiceBus != null:
+                    project.WaitFor(messageBroker.ServiceBus);
+                    break;
+            }
         }
 
         private static void ConfigureDatabaseEnvironment(
             IResourceBuilder<ProjectResource> project,
             IDistributedApplicationBuilder builder,
-            ParameterRegistry registry,
-            IResourceBuilder<PostgresDatabaseResource> userDb,
-            IResourceBuilder<PostgresDatabaseResource> maintenanceDb)
+            ServiceParameterRegistry registry)
         {
+            var dbConfig = registry.GetDatabaseConfig(builder.Configuration);
+            
             project
-                .WithEnvironment("DB_HOST", "localhost")
-                .WithEnvironment("DB_PORT", builder.Configuration["Database:Port"] ?? "5432")
-                .WithEnvironment("DB_NAME", userDb.Resource.DatabaseName)
-                .WithEnvironment("DB_MAINTENANCE_NAME", maintenanceDb.Resource.DatabaseName)
-                .WithParameterEnv("DB_USER", registry["postgres-user"])
-                .WithParameterEnv("DB_PASSWORD", registry["postgres-password"]);
+                .WithEnvironment("DB_HOST", dbConfig.Host)
+                .WithEnvironment("DB_PORT", dbConfig.Port.ToString())
+                .WithEnvironment("DB_USERS_NAME", dbConfig.UsersDbName)
+                .WithEnvironment("DB_GAMES_NAME", dbConfig.GamesDbName)
+                .WithEnvironment("DB_PAYMENTS_NAME", dbConfig.PaymentsDbName)
+                .WithEnvironment("DB_MAINTENANCE_NAME", dbConfig.MaintenanceDbName)
+                .WithEnvironment("DB_SCHEMA", dbConfig.Schema)
+                .WithEnvironment("DB_CONNECTION_TIMEOUT", dbConfig.ConnectionTimeout.ToString());
+
+            // Add parameters for secrets
+            if (dbConfig.UserParameter != null)
+                project.WithParameterEnv("DB_USER", dbConfig.UserParameter);
+            
+            if (dbConfig.PasswordParameter != null)
+                project.WithParameterEnv("DB_PASSWORD", dbConfig.PasswordParameter);
         }
 
         private static void ConfigureMessageBrokerEnvironment(
             IResourceBuilder<ProjectResource> project,
             IDistributedApplicationBuilder builder,
-            ParameterRegistry registry)
+            ServiceParameterRegistry registry,
+            MessageBrokerType messageBrokerType)
         {
+            // Set the message broker type
+            project.WithEnvironment("MESSAGE_BROKER_TYPE", messageBrokerType.ToString());
+
+            switch (messageBrokerType)
+            {
+                case MessageBrokerType.RabbitMQ:
+                    ConfigureRabbitMqEnvironment(project, builder, registry);
+                    break;
+                
+                case MessageBrokerType.AzureServiceBus:
+                    ConfigureAzureServiceBusEnvironment(project, builder, registry);
+                    break;
+            }
+        }
+
+        private static void ConfigureRabbitMqEnvironment(
+            IResourceBuilder<ProjectResource> project,
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry)
+        {
+            var rabbitConfig = registry.GetRabbitMqConfig(builder.Configuration);
+            
             project
-                .WithEnvironment("RABBITMQ_HOST", "localhost")
-                .WithEnvironment("RABBITMQ_PORT", builder.Configuration["RabbitMq:Port"] ?? "5672")
-                .WithEnvironment("RABBITMQ_VHOST", builder.Configuration["RabbitMq:VirtualHost"] ?? "/")
-                .WithEnvironment("RABBITMQ_EXCHANGE", builder.Configuration["RabbitMq:Exchange"] ?? "user.events")
-                .WithParameterEnv("RABBITMQ_USERNAME", registry["rabbitmq-user"])
-                .WithParameterEnv("RABBITMQ_PASSWORD", registry["rabbitmq-password"]);
+                .WithEnvironment("RABBITMQ_HOST", rabbitConfig.Host)
+                .WithEnvironment("RABBITMQ_PORT", rabbitConfig.Port.ToString())
+                .WithEnvironment("RABBITMQ_VHOST", rabbitConfig.VirtualHost)
+                .WithEnvironment("RABBITMQ_EXCHANGE", rabbitConfig.Exchange)
+                .WithEnvironment("RABBITMQ_AUTO_PROVISION", rabbitConfig.AutoProvision.ToString())
+                .WithEnvironment("RABBITMQ_DURABLE", rabbitConfig.Durable.ToString())
+                .WithEnvironment("RABBITMQ_USE_QUORUM_QUEUES", rabbitConfig.UseQuorumQueues.ToString())
+                .WithEnvironment("RABBITMQ_AUTO_PURGE_ON_STARTUP", rabbitConfig.AutoPurgeOnStartup.ToString());
+
+            // Add parameters for secrets
+            if (rabbitConfig.UserParameter != null)
+                project.WithParameterEnv("RABBITMQ_USERNAME", rabbitConfig.UserParameter);
+                
+            if (rabbitConfig.PasswordParameter != null)
+                project.WithParameterEnv("RABBITMQ_PASSWORD", rabbitConfig.PasswordParameter);
+        }
+
+        private static void ConfigureAzureServiceBusEnvironment(
+            IResourceBuilder<ProjectResource> project,
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry)
+        {
+            var serviceBusConfig = registry.GetAzureServiceBusConfig(builder.Configuration);
+            
+            project
+                .WithEnvironment("AZURE_SERVICEBUS_TOPIC_NAME", serviceBusConfig.TopicName)
+                .WithEnvironment("AZURE_SERVICEBUS_SUBSCRIPTION_NAME", serviceBusConfig.SubscriptionName)
+                .WithEnvironment("AZURE_SERVICEBUS_AUTO_PROVISION", serviceBusConfig.AutoProvision.ToString())
+                .WithEnvironment("AZURE_SERVICEBUS_MAX_DELIVERY_COUNT", serviceBusConfig.MaxDeliveryCount.ToString())
+                .WithEnvironment("AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING", serviceBusConfig.EnableDeadLettering.ToString())
+                .WithEnvironment("AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP", serviceBusConfig.AutoPurgeOnStartup.ToString())
+                .WithEnvironment("AZURE_SERVICEBUS_USE_CONTROL_QUEUES", serviceBusConfig.UseControlQueues.ToString());
+
+            // Add parameters for secrets
+            if (serviceBusConfig.ConnectionStringParameter != null)
+                project.WithParameterEnv("AZURE_SERVICEBUS_CONNECTIONSTRING", serviceBusConfig.ConnectionStringParameter);
         }
 
         private static void ConfigureCacheEnvironment(
             IResourceBuilder<ProjectResource> project,
             IDistributedApplicationBuilder builder,
-            ParameterRegistry registry)
+            ServiceParameterRegistry registry)
         {
+            var cacheConfig = registry.GetCacheConfig(builder.Configuration);
+            
             project
-                .WithEnvironment("CACHE_HOST", "localhost")
-                .WithEnvironment("CACHE_PORT", builder.Configuration["Cache:Port"] ?? "6379")
-                .WithEnvironment("CACHE_SECURE", "false")
-                .WithParameterEnv("CACHE_PASSWORD", registry["redis-password"]);
+                .WithEnvironment("CACHE_HOST", cacheConfig.Host)
+                .WithEnvironment("CACHE_PORT", cacheConfig.Port.ToString())
+                .WithEnvironment("CACHE_INSTANCE_NAME", cacheConfig.InstanceName)
+                .WithEnvironment("CACHE_SECURE", cacheConfig.Secure.ToString());
+
+            // Add parameters for secrets
+            if (cacheConfig.PasswordParameter != null)
+                project.WithParameterEnv("CACHE_PASSWORD", cacheConfig.PasswordParameter);
         }
     }
 }
