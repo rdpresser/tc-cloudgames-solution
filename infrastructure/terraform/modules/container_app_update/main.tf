@@ -22,121 +22,121 @@ resource "azurerm_container_app" "updated" {
 
   secret {
     name                = "db-host"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/db-host"
+    key_vault_secret_id = "${var.key_vault_id}secrets/db-host"
     identity            = "System"
   }
 
   secret {
     name                = "db-port"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/db-port"
+    key_vault_secret_id = "${var.key_vault_id}secrets/db-port"
     identity            = "System"
   }
 
   secret {
     name                = var.db_name
-    key_vault_secret_id = "${var.key_vault_id}/secrets/${var.db_name}"
+    key_vault_secret_id = "${var.key_vault_id}secrets/${var.db_name}"
     identity            = "System"
   }
 
   secret {
     name                = "db-admin-login"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/db-admin-login"
+    key_vault_secret_id = "${var.key_vault_id}secrets/db-admin-login"
     identity            = "System"
   }
 
   secret {
     name                = "db-password"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/db-password"
+    key_vault_secret_id = "${var.key_vault_id}secrets/db-password"
     identity            = "System"
   }
 
   secret {
     name                = "db-name-maintenance"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/db-name-maintenance"
+    key_vault_secret_id = "${var.key_vault_id}secrets/db-name-maintenance"
     identity            = "System"
   }
 
   secret {
     name                = "db-schema"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/db-schema"
+    key_vault_secret_id = "${var.key_vault_id}secrets/db-schema"
     identity            = "System"
   }
 
   secret {
     name                = "db-connection-timeout"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/db-connection-timeout"
+    key_vault_secret_id = "${var.key_vault_id}secrets/db-connection-timeout"
     identity            = "System"
   }
 
   secret {
     name                = "cache-host"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/cache-host"
+    key_vault_secret_id = "${var.key_vault_id}secrets/cache-host"
     identity            = "System"
   }
 
   secret {
     name                = "cache-port"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/cache-port"
+    key_vault_secret_id = "${var.key_vault_id}secrets/cache-port"
     identity            = "System"
   }
 
   secret {
     name                = "cache-password"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/cache-password"
+    key_vault_secret_id = "${var.key_vault_id}secrets/cache-password"
     identity            = "System"
   }
 
   secret {
     name                = "cache-secure"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/cache-secure"
+    key_vault_secret_id = "${var.key_vault_id}secrets/cache-secure"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-connection-string"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-connection-string"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-connection-string"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-topic-name"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-topic-name"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-topic-name"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-subscription-name"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-subscription-name"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-subscription-name"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-auto-provision"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-auto-provision"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-auto-provision"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-max-delivery-count"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-max-delivery-count"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-max-delivery-count"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-enable-dead-lettering"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-enable-dead-lettering"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-enable-dead-lettering"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-auto-purge-on-startup"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-auto-purge-on-startup"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-auto-purge-on-startup"
     identity            = "System"
   }
 
   secret {
     name                = "servicebus-use-control-queues"
-    key_vault_secret_id = "${var.key_vault_id}/secrets/servicebus-use-control-queues"
+    key_vault_secret_id = "${var.key_vault_id}secrets/servicebus-use-control-queues"
     identity            = "System"
   }
 

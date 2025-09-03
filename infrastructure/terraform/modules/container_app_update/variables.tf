@@ -31,7 +31,7 @@ variable "memory_requests" {
 }
 
 variable "key_vault_id" {
-  description = "ID of the Key Vault containing secrets"
+  description = "URI of the Key Vault containing secrets (e.g., https://keyvaultname.vault.azure.net/)"
   type        = string
 }
 

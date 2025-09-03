@@ -310,7 +310,7 @@ module "users_api_container_app_update" {
   resource_group_name          = module.resource_group.name
   service_name                 = "users-api"
   container_image              = "${module.acr.acr_login_server}/users-api:latest"
-  key_vault_id                 = module.key_vault.key_vault_id
+  key_vault_id                 = module.key_vault.key_vault_uri
   db_name                      = "db-name-users"
 
   role_assignment_dependencies = [
@@ -330,7 +330,7 @@ module "games_api_container_app_update" {
   resource_group_name          = module.resource_group.name
   service_name                 = "games-api"
   container_image              = "${module.acr.acr_login_server}/games-api:latest"
-  key_vault_id                 = module.key_vault.key_vault_id
+  key_vault_id                 = module.key_vault.key_vault_uri
   db_name                      = "db-name-games"
 
   role_assignment_dependencies = [
@@ -350,7 +350,7 @@ module "payments_api_container_app_update" {
   resource_group_name          = module.resource_group.name
   service_name                 = "payms-api"
   container_image              = "${module.acr.acr_login_server}/payments-api:latest"
-  key_vault_id                 = module.key_vault.key_vault_id
+  key_vault_id                 = module.key_vault.key_vault_uri
   db_name                      = "db-name-payments"
 
   role_assignment_dependencies = [
