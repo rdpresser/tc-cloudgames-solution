@@ -120,17 +120,81 @@ output "servicebus_info" {
 }
 
 # =============================================================================
-# Users API Container App
+# Users API Container App (Updated with Key Vault Secrets)
 # =============================================================================
 
 output "users_api_container_app_info" {
-  description = "Users API Container App details"
+  description = "Users API Container App details (after Key Vault update)"
   value = {
-    name               = module.users_api_container_app.container_app_name
-    id                 = module.users_api_container_app.container_app_id
-    fqdn               = module.users_api_container_app.container_app_fqdn
-    url                = module.users_api_container_app.container_app_url
-    system_identity_id = module.users_api_container_app.system_assigned_identity_principal_id
+    name               = module.users_api_container_app_update.container_app_name
+    id                 = module.users_api_container_app_update.container_app_id
+    fqdn               = module.users_api_container_app_update.container_app_fqdn
+    system_identity_id = module.users_api_container_app_update.system_assigned_identity_principal_id
+    # Basic Container App info for reference
+    basic_container_app = {
+      name = module.users_api_container_app.container_app_name
+      id   = module.users_api_container_app.container_app_id
+    }
+  }
+}
+
+# =============================================================================
+# Games API Container App (Updated with Key Vault Secrets)
+# =============================================================================
+
+output "games_api_container_app_info" {
+  description = "Games API Container App details (after Key Vault update)"
+  value = {
+    name               = module.games_api_container_app_update.container_app_name
+    id                 = module.games_api_container_app_update.container_app_id
+    fqdn               = module.games_api_container_app_update.container_app_fqdn
+    system_identity_id = module.games_api_container_app_update.system_assigned_identity_principal_id
+    # Basic Container App info for reference
+    basic_container_app = {
+      name = module.games_api_container_app.container_app_name
+      id   = module.games_api_container_app.container_app_id
+    }
+  }
+}
+
+# =============================================================================
+# Payments API Container App (Updated with Key Vault Secrets)
+# =============================================================================
+
+output "payments_api_container_app_info" {
+  description = "Payments API Container App details (after Key Vault update)"
+  value = {
+    name               = module.payments_api_container_app_update.container_app_name
+    id                 = module.payments_api_container_app_update.container_app_id
+    fqdn               = module.payments_api_container_app_update.container_app_fqdn
+    system_identity_id = module.payments_api_container_app_update.system_assigned_identity_principal_id
+    # Basic Container App info for reference
+    basic_container_app = {
+      name = module.payments_api_container_app.container_app_name
+      id   = module.payments_api_container_app.container_app_id
+    }
+  }
+}
+
+# =============================================================================
+# Container Apps Role Assignments (for dependency management)
+# =============================================================================
+
+output "container_apps_role_assignments" {
+  description = "Role assignments for all Container Apps (useful for dependencies)"
+  value = {
+    users_api = {
+      key_vault_secrets_user = module.users_api_container_app.role_assignment_key_vault_secrets_user_id
+      acr_pull               = module.users_api_container_app.role_assignment_acr_pull_id
+    }
+    games_api = {
+      key_vault_secrets_user = module.games_api_container_app.role_assignment_key_vault_secrets_user_id
+      acr_pull               = module.games_api_container_app.role_assignment_acr_pull_id
+    }
+    payments_api = {
+      key_vault_secrets_user = module.payments_api_container_app.role_assignment_key_vault_secrets_user_id
+      acr_pull               = module.payments_api_container_app.role_assignment_acr_pull_id
+    }
   }
 }
 
@@ -151,7 +215,9 @@ output "all_resources" {
     log_analytics_name        = module.logs.log_analytics_name
     servicebus_ns             = module.servicebus.namespace_name
     servicebus_topic          = module.servicebus.topic_name
-    users_api_container_app   = module.users_api_container_app.container_app_name
+    users_api_container_app   = module.users_api_container_app_update.container_app_name
+    games_api_container_app   = module.games_api_container_app_update.container_app_name
+    payments_api_container_app = module.payments_api_container_app_update.container_app_name
     container_app_environment = module.container_app_environment.container_app_environment_name
     key_vault                 = module.key_vault.key_vault_name
     location                  = module.resource_group.location
@@ -185,7 +251,7 @@ output "deployment_summary" {
     environment          = local.environment
     location             = module.resource_group.location
     resource_group       = module.resource_group.name
-    total_resources      = 8 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault
+    total_resources      = 11 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault + users_api + games_api + payments_api
     deployment_timestamp = timestamp()
   }
 }
@@ -210,7 +276,7 @@ output "deployment_performance_summary" {
     # Basic deployment info
     environment         = var.environment
     terraform_workspace = terraform.workspace
-    resource_count      = 8 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault
+    resource_count      = 11 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault + users_api + games_api + payments_api
     deployment_method   = "Pure Terraform via Terraform Cloud"
 
     # Deployment metadata

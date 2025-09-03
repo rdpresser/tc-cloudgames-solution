@@ -56,94 +56,31 @@ resource "azurerm_container_app" "main" {
         value = "http://+:8080"
       }
 
-      # Key Vault secret references for infrastructure secrets
+      # Placeholder environment variables (will be updated after role assignments)
+      # These prevent the app from failing to start while secrets are not accessible
       env {
-        name        = "DB_HOST"
-        secret_name = "db-host"
+        name  = "DB_HOST"
+        value = "placeholder-will-be-updated"
       }
 
       env {
-        name        = "DB_PORT"
-        secret_name = "db-port"
+        name  = "DB_PORT"
+        value = "5432"
       }
 
       env {
-        name        = "DB_NAME"
-        secret_name = var.db_name
+        name  = "DB_NAME"
+        value = "placeholder-will-be-updated"
       }
 
       env {
-        name        = "DB_USER"
-        secret_name = "db-admin-login"
+        name  = "DB_USER"
+        value = "placeholder-will-be-updated"
       }
 
       env {
-        name        = "DB_PASSWORD"
-        secret_name = "db-password"
-      }
-
-      env {
-        name = "DB_MAINTENANCE_NAME"
-        secret_name = "db-name-maintenance"
-      }
-
-      env {
-        name        = "DB_SCHEMA"
-        secret_name = "db-schema"
-      }
-
-      env {
-        name        = "DB_CONNECTION_TIMEOUT"
-        secret_name = "db-connection-timeout"
-      }
-      env {
-        name        = "CACHE_HOST"
-        secret_name = "cache-host"
-      }
-
-      env {
-        name        = "CACHE_PORT"
-        secret_name = "cache-port"
-      }
-
-      env {
-        name        = "CACHE_PASSWORD"
-        secret_name = "cache-password"
-      }
-
-      env {
-        name        = "CACHE_SECURE"
-        secret_name = "cache-secure"
-      }
-
-      env {
-        name        = "AZURE_SERVICEBUS_CONNECTIONSTRING"
-        secret_name = "servicebus-connection-string"
-      }
-
-      env {
-        name        = "AZURE_SERVICEBUS_AUTO_PROVISION"
-        secret_name = "servicebus-auto-provision"
-      }
-
-      env {
-        name        = "AZURE_SERVICEBUS_MAX_DELIVERY_COUNT"
-        secret_name = "servicebus-max-delivery-count"
-      }
-
-      env {
-        name        = "AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING"
-        secret_name = "servicebus-enable-dead-lettering"
-      }
-
-      env {
-        name        = "AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP"
-        secret_name = "servicebus-auto-purge-on-startup"
-      }
-
-      env {
-        name        = "AZURE_SERVICEBUS_USE_CONTROL_QUEUES"
-        secret_name = "servicebus-use-control-queues"
+        name  = "DB_PASSWORD"
+        value = "placeholder-will-be-updated"
       }
     }
   }
@@ -275,18 +212,33 @@ resource "azurerm_container_app" "main" {
     server   = var.container_registry_server
     identity = "System"
   }
+
+  # Custom timeouts to prevent operation expired errors
+  timeouts {
+    create = "20m"  # Increased from 15m to 20m
+    update = "15m"  # Increased from 10m to 15m
+    delete = "10m"
+  }
 }
 
-# Role assignment: Grant Key Vault Secrets User role to Container App System MI
+# =============================================================================
+# Role Assignments for Container App (created AFTER Container App exists)
+# =============================================================================
+
+# Key Vault Secrets User Role Assignment
 resource "azurerm_role_assignment" "key_vault_secrets_user" {
   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
+
+  depends_on = [azurerm_container_app.main]
 }
 
-# Role assignment: Grant ACR Pull role to Container App System MI for container image access
+# ACR Pull Role Assignment
 resource "azurerm_role_assignment" "acr_pull" {
   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${split(".", var.container_registry_server)[0]}"
   role_definition_name = "AcrPull"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
+
+  depends_on = [azurerm_container_app.main]
 }

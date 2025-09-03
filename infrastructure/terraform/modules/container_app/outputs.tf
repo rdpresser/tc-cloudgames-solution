@@ -31,3 +31,17 @@ output "system_assigned_identity_tenant_id" {
   description = "The Tenant ID of the System Assigned Managed Identity"
   value       = azurerm_container_app.main.identity[0].tenant_id
 }
+
+# =============================================================================
+# Role Assignment Outputs
+# =============================================================================
+
+output "role_assignment_key_vault_secrets_user_id" {
+  description = "ID of the Key Vault Secrets User role assignment"
+  value       = azurerm_role_assignment.key_vault_secrets_user.id
+}
+
+output "role_assignment_acr_pull_id" {
+  description = "ID of the ACR Pull role assignment"
+  value       = azurerm_role_assignment.acr_pull.id
+}

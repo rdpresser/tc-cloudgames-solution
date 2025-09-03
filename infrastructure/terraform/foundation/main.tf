@@ -216,7 +216,7 @@ module "servicebus" {
 }
 
 #########################################
-# Users API Container App module
+# PHASE 1: Basic Container Apps (without Key Vault secrets)
 #########################################
 
 module "users_api_container_app" {
@@ -228,13 +228,17 @@ module "users_api_container_app" {
   key_vault_name               = module.key_vault.key_vault_name
   subscription_id              = data.azurerm_client_config.current.subscription_id
   service_name                 = "users-api"
-  tags                         = local.common_tags
+  container_image              = "${module.acr.acr_login_server}/users-api:latest"
   db_name                      = "db-name-users"
+  tags                         = local.common_tags
 
   depends_on = [
     module.resource_group,
-    module.container_app_environment,
     module.acr,
+    module.container_app_environment,
+    module.postgres,
+    module.redis,
+    module.servicebus,
     module.key_vault
   ]
 }
@@ -252,13 +256,17 @@ module "games_api_container_app" {
   key_vault_name               = module.key_vault.key_vault_name
   subscription_id              = data.azurerm_client_config.current.subscription_id
   service_name                 = "games-api"
+  container_image              = "${module.acr.acr_login_server}/games-api:latest"
   tags                         = local.common_tags
   db_name                      = "db-name-games"
 
   depends_on = [
     module.resource_group,
-    module.container_app_environment,
     module.acr,
+    module.container_app_environment,
+    module.postgres,
+    module.redis,
+    module.servicebus,
     module.key_vault
   ]
 }
@@ -276,14 +284,82 @@ module "payments_api_container_app" {
   key_vault_name               = module.key_vault.key_vault_name
   subscription_id              = data.azurerm_client_config.current.subscription_id
   service_name                 = "payms-api"
+  container_image              = "${module.acr.acr_login_server}/payments-api:latest"
   tags                         = local.common_tags
   db_name                      = "db-name-payments"
 
   depends_on = [
     module.resource_group,
-    module.container_app_environment,
     module.acr,
+    module.container_app_environment,
+    module.postgres,
+    module.redis,
+    module.servicebus,
     module.key_vault
+  ]
+}
+
+# =============================================================================
+# PHASE 2: Update Container Apps with Key Vault Secrets (after role assignments)
+# =============================================================================
+
+# Users API Update with Key Vault Secrets
+module "users_api_container_app_update" {
+  source                       = "../modules/container_app_update"
+  container_app_name           = module.users_api_container_app.container_app_name
+  resource_group_name          = module.resource_group.name
+  service_name                 = "users-api"
+  container_image              = "${module.acr.acr_login_server}/users-api:latest"
+  key_vault_id                 = module.key_vault.key_vault_id
+  db_name                      = "db-name-users"
+
+  role_assignment_dependencies = [
+    module.users_api_container_app.role_assignment_key_vault_secrets_user_id,
+    module.users_api_container_app.role_assignment_acr_pull_id
+  ]
+
+  depends_on = [
+    module.users_api_container_app
+  ]
+}
+
+# Games API Update with Key Vault Secrets
+module "games_api_container_app_update" {
+  source                       = "../modules/container_app_update"
+  container_app_name           = module.games_api_container_app.container_app_name
+  resource_group_name          = module.resource_group.name
+  service_name                 = "games-api"
+  container_image              = "${module.acr.acr_login_server}/games-api:latest"
+  key_vault_id                 = module.key_vault.key_vault_id
+  db_name                      = "db-name-games"
+
+  role_assignment_dependencies = [
+    module.games_api_container_app.role_assignment_key_vault_secrets_user_id,
+    module.games_api_container_app.role_assignment_acr_pull_id
+  ]
+
+  depends_on = [
+    module.games_api_container_app
+  ]
+}
+
+# Payments API Update with Key Vault Secrets
+module "payments_api_container_app_update" {
+  source                       = "../modules/container_app_update"
+  container_app_name           = module.payments_api_container_app.container_app_name
+  resource_group_name          = module.resource_group.name
+  service_name                 = "payms-api"
+  container_image              = "${module.acr.acr_login_server}/payments-api:latest"
+  key_vault_id                 = module.key_vault.key_vault_id
+  db_name                      = "db-name-payments"
+
+  role_assignment_dependencies = [
+    module.payments_api_container_app.role_assignment_key_vault_secrets_user_id,
+    module.payments_api_container_app.role_assignment_acr_pull_id
+  ]
+
+  depends_on = [
+    module.payments_api_container_app
   ]
 }
 

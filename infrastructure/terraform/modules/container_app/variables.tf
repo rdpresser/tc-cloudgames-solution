@@ -54,15 +54,15 @@ variable "max_replicas" {
 }
 
 variable "cpu_requests" {
-  description = "CPU requests in cores"
+  description = "CPU requests for the container"
   type        = string
-  default     = "0.25"
+  default     = "0.5"
 }
 
 variable "memory_requests" {
-  description = "Memory requests"
+  description = "Memory requests for the container"
   type        = string
-  default     = "0.5Gi"
+  default     = "1.0Gi"
 }
 
 variable "tags" {
