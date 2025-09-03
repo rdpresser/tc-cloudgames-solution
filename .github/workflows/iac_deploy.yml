@@ -85,7 +85,7 @@ jobs:
   deploy-foundation:
     runs-on: ubuntu-latest
     environment: 'dev-rodrigo'
-    timeout-minutes: 50
+    timeout-minutes: 60  # Increased from 50 to 60 minutes for Container Apps
     outputs:
       tf_output_rg: ${{ steps.terraform-outputs.outputs.rg_name }}
       tf_output_location: ${{ steps.terraform-outputs.outputs.location }}
@@ -127,7 +127,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: 🏗️ Deploy Foundation Infrastructure
+      - name: 🏗️ Deploy Foundation Infrastructure (with retry)
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           FOUNDATION_START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -141,7 +141,23 @@ jobs:
           terraform init -upgrade
           terraform validate
           terraform plan -var="use_keyvault_secrets=false" -out=tfplan-foundation
-          terraform apply -auto-approve tfplan-foundation
+          
+          # Retry logic for terraform apply (Container Apps can be slow)
+          echo "🔄 Applying infrastructure with retry logic..."
+          for i in {1..3}; do
+            echo "Attempt $i of 3"
+            if terraform apply -auto-approve tfplan-foundation; then
+              echo "✅ Terraform apply succeeded on attempt $i"
+              break
+            else
+              if [ $i -eq 3 ]; then
+                echo "❌ Terraform apply failed after 3 attempts"
+                exit 1
+              fi
+              echo "⚠️ Terraform apply failed on attempt $i, retrying in 30 seconds..."
+              sleep 30
+            fi
+          done
           
           FOUNDATION_END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           FOUNDATION_END_UNIX=$(date +%s)

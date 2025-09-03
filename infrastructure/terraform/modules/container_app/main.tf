@@ -242,11 +242,11 @@ resource "azurerm_container_app" "main" {
     identity = "System"
   }
 
-  # Optimized timeouts - reduce excessive wait times
+  # Extended timeouts for Container Apps creation
   timeouts {
-    create = "10m"  # Reduced from 20m to 10m
-    update = "10m"  # Keep at 10m
-    delete = "10m"
+    create = "20m"  # Increased to handle Container App startup delays
+    update = "15m"  # Sufficient for updates
+    delete = "10m"  # Keep delete timeout reasonable
   }
 
   # Lifecycle management to reduce recreation
