@@ -240,6 +240,16 @@ resource "azurerm_key_vault_secret" "cache_password" {
   ]
 }
 
+resource "azurerm_key_vault_secret" "cache_secure" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "cache-secure"
+  value        = var.cache_secure
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
 # Service Bus Secrets
 resource "azurerm_key_vault_secret" "servicebus_namespace" {
   key_vault_id = azurerm_key_vault.key_vault.id
@@ -346,6 +356,7 @@ output "secrets" {
     cache_host                         = azurerm_key_vault_secret.cache_host.id
     cache_port                         = azurerm_key_vault_secret.cache_port.id
     cache_password                     = azurerm_key_vault_secret.cache_password.id
+    cache_secure                       = azurerm_key_vault_secret.cache_secure.id
     servicebus_namespace               = azurerm_key_vault_secret.servicebus_namespace.id
     servicebus_connection_string       = azurerm_key_vault_secret.servicebus_connection_string.id
     servicebus_auto_provision          = azurerm_key_vault_secret.servicebus_auto_provision.id

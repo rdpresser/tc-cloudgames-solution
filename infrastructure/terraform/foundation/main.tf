@@ -75,7 +75,7 @@ module "postgres" {
   postgres_admin_login    = var.postgres_admin_login
   postgres_admin_password = var.postgres_admin_password
   tags                    = local.common_tags
-  
+
   depends_on = [
     module.resource_group
   ]
@@ -173,8 +173,8 @@ module "key_vault" {
   servicebus_namespace     = module.servicebus.namespace_name
 
   # Database connection info (NEW: using new variable pattern)
-  db_host        = module.postgres.postgres_server_fqdn
-  db_port        = tostring(module.postgres.postgres_port)
+  db_host = module.postgres.postgres_server_fqdn
+  db_port = tostring(module.postgres.postgres_port)
 
   # Cache connection info (NEW: using new variable pattern)
   cache_host     = module.redis.redis_hostname
@@ -275,7 +275,7 @@ module "payments_api_container_app" {
   container_registry_server    = module.acr.acr_login_server
   key_vault_name               = module.key_vault.key_vault_name
   subscription_id              = data.azurerm_client_config.current.subscription_id
-  service_name                 = "payments-api"
+  service_name                 = "payms-api"
   tags                         = local.common_tags
   db_name                      = "db-name-payments"
 

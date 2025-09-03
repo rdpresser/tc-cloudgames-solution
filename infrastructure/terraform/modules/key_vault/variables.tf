@@ -202,6 +202,12 @@ variable "cache_password" {
   sensitive   = true
 }
 
+variable "cache_secure" {
+  description = "Is SSL enabled for the Redis cache"
+  type        = bool
+  default     = true
+}
+
 # =============================================================================
 # Service Bus Connection Variables  
 # =============================================================================

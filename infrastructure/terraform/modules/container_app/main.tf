@@ -3,9 +3,27 @@
 # Creates Container App with System Managed Identity and Key Vault secret references
 # ===================================================================================================
 
+# Local values for cleaner naming
+locals {
+  # Clean and truncate the container app name to meet Azure requirements
+  # - Remove double hyphens and ensure no consecutive hyphens
+  # - Ensure it's 32 characters or less
+  # - Ensure it starts with letter and ends with alphanumeric
+  
+  # Clean the inputs
+  clean_name_prefix = replace(replace(var.name_prefix, "--", "-"), "--", "-")
+  clean_service_name = replace(replace(var.service_name, "--", "-"), "--", "-")
+  
+  # Create the full name and truncate if necessary
+  proposed_name = "${local.clean_name_prefix}-${local.clean_service_name}"
+  
+  # Ensure it's within the 32 character limit
+  container_app_name = length(local.proposed_name) > 32 ? substr(local.proposed_name, 0, 32) : local.proposed_name
+}
+
 # Container App with System Managed Identity
 resource "azurerm_container_app" "main" {
-  name                         = "${var.name_prefix}-${var.service_name}"
+  name                         = local.container_app_name
   resource_group_name          = var.resource_group_name
   container_app_environment_id = var.container_app_environment_id
   revision_mode                = "Single"
@@ -91,6 +109,11 @@ resource "azurerm_container_app" "main" {
       env {
         name        = "CACHE_PASSWORD"
         secret_name = "cache-password"
+      }
+
+      env {
+        name        = "CACHE_SECURE"
+        secret_name = "cache-secure"
       }
 
       env {
@@ -190,6 +213,12 @@ resource "azurerm_container_app" "main" {
     name                = "cache-password"
     identity            = "System"
     key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-password"
+  }
+
+  secret {
+    name                = "cache-secure"
+    identity            = "System"
+    key_vault_secret_id = "https://${var.key_vault_name}.vault.azure.net/secrets/cache-secure"
   }
 
   secret {
