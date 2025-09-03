@@ -243,51 +243,51 @@ module "users_api_container_app" {
   ]
 }
 
-module "games_api_container_app" {
-  source                       = "../modules/container_app"
-  name_prefix                  = local.full_name
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  container_registry_server    = module.acr.acr_login_server
-  key_vault_name               = module.key_vault.key_vault_name
-  key_vault_uri                = module.key_vault.key_vault_uri
-  subscription_id              = data.azurerm_client_config.current.subscription_id
-  service_name                 = "games-api"
-  container_image              = "${module.acr.acr_login_server}/games-api:latest"
-  tags                         = local.common_tags
-  db_name                      = "db-name-games"
-  use_keyvault_secrets         = var.use_keyvault_secrets
+# module "games_api_container_app" {
+#   source                       = "../modules/container_app"
+#   name_prefix                  = local.full_name
+#   resource_group_name          = module.resource_group.name
+#   container_app_environment_id = module.container_app_environment.container_app_environment_id
+#   container_registry_server    = module.acr.acr_login_server
+#   key_vault_name               = module.key_vault.key_vault_name
+#   key_vault_uri                = module.key_vault.key_vault_uri
+#   subscription_id              = data.azurerm_client_config.current.subscription_id
+#   service_name                 = "games-api"
+#   container_image              = "${module.acr.acr_login_server}/games-api:latest"
+#   tags                         = local.common_tags
+#   db_name                      = "db-name-games"
+#   use_keyvault_secrets         = var.use_keyvault_secrets
 
-  # Simplified dependencies - only essential ones
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault
-  ]
-}
+#   # Simplified dependencies - only essential ones
+#   depends_on = [
+#     module.container_app_environment,
+#     module.acr,
+#     module.key_vault
+#   ]
+# }
 
-module "payments_api_container_app" {
-  source                       = "../modules/container_app"
-  name_prefix                  = local.full_name
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  container_registry_server    = module.acr.acr_login_server
-  key_vault_name               = module.key_vault.key_vault_name
-  key_vault_uri                = module.key_vault.key_vault_uri
-  subscription_id              = data.azurerm_client_config.current.subscription_id
-  service_name                 = "payms-api"
-  container_image              = "${module.acr.acr_login_server}/payments-api:latest"
-  tags                         = local.common_tags
-  db_name                      = "db-name-payments"
-  use_keyvault_secrets         = var.use_keyvault_secrets
+# module "payments_api_container_app" {
+#   source                       = "../modules/container_app"
+#   name_prefix                  = local.full_name
+#   resource_group_name          = module.resource_group.name
+#   container_app_environment_id = module.container_app_environment.container_app_environment_id
+#   container_registry_server    = module.acr.acr_login_server
+#   key_vault_name               = module.key_vault.key_vault_name
+#   key_vault_uri                = module.key_vault.key_vault_uri
+#   subscription_id              = data.azurerm_client_config.current.subscription_id
+#   service_name                 = "payms-api"
+#   container_image              = "${module.acr.acr_login_server}/payments-api:latest"
+#   tags                         = local.common_tags
+#   db_name                      = "db-name-payments"
+#   use_keyvault_secrets         = var.use_keyvault_secrets
 
-  # Simplified dependencies - only essential ones
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault
-  ]
-}
+#   # Simplified dependencies - only essential ones
+#   depends_on = [
+#     module.container_app_environment,
+#     module.acr,
+#     module.key_vault
+#   ]
+# }
 
 # =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation

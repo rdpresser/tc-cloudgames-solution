@@ -33,7 +33,7 @@ jobs:
   destroy-infrastructure:
     runs-on: ubuntu-latest
     environment: 'dev-rodrigo'
-    timeout-minutes: 30
+    timeout-minutes: 40
     if: |
       github.event_name == 'workflow_dispatch' && 
       github.event.inputs.deployment_stage == 'destroy' &&
@@ -85,7 +85,7 @@ jobs:
   deploy-foundation:
     runs-on: ubuntu-latest
     environment: 'dev-rodrigo'
-    timeout-minutes: 40
+    timeout-minutes: 50
     outputs:
       tf_output_rg: ${{ steps.terraform-outputs.outputs.rg_name }}
       tf_output_location: ${{ steps.terraform-outputs.outputs.location }}
@@ -231,7 +231,7 @@ jobs:
   deploy-production:
     runs-on: ubuntu-latest
     environment: 'dev-rodrigo'
-    timeout-minutes: 30
+    timeout-minutes: 40
     outputs:
       production_duration: ${{ steps.timing.outputs.production_duration }}
     if: |
