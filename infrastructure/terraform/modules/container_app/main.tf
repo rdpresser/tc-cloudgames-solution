@@ -34,6 +34,35 @@ resource "azurerm_container_app" "main" {
     type = "SystemAssigned"
   }
 
+  # Key Vault secrets (conditional) - ONLY EXISTING SECRETS
+  dynamic "secret" {
+    for_each = var.use_keyvault_secrets ? [
+      { name = "db-host", secret_id = "${var.key_vault_uri}secrets/db-host" },
+      { name = "db-port", secret_id = "${var.key_vault_uri}secrets/db-port" },
+      { name = var.db_name, secret_id = "${var.key_vault_uri}secrets/${var.db_name}" },
+      { name = "db-admin-login", secret_id = "${var.key_vault_uri}secrets/db-admin-login" },
+      { name = "db-password", secret_id = "${var.key_vault_uri}secrets/db-password" },
+      { name = "db-name-maintenance", secret_id = "${var.key_vault_uri}secrets/db-name-maintenance" },
+      { name = "db-schema", secret_id = "${var.key_vault_uri}secrets/db-schema" },
+      { name = "db-connection-timeout", secret_id = "${var.key_vault_uri}secrets/db-connection-timeout" },
+      { name = "cache-host", secret_id = "${var.key_vault_uri}secrets/cache-host" },
+      { name = "cache-port", secret_id = "${var.key_vault_uri}secrets/cache-port" },
+      { name = "cache-password", secret_id = "${var.key_vault_uri}secrets/cache-password" },
+      { name = "cache-secure", secret_id = "${var.key_vault_uri}secrets/cache-secure" },
+      { name = "servicebus-connection-string", secret_id = "${var.key_vault_uri}secrets/servicebus-connection-string" },
+      { name = "servicebus-auto-provision", secret_id = "${var.key_vault_uri}secrets/servicebus-auto-provision" },
+      { name = "servicebus-max-delivery-count", secret_id = "${var.key_vault_uri}secrets/servicebus-max-delivery-count" },
+      { name = "servicebus-enable-dead-lettering", secret_id = "${var.key_vault_uri}secrets/servicebus-enable-dead-lettering" },
+      { name = "servicebus-auto-purge-on-startup", secret_id = "${var.key_vault_uri}secrets/servicebus-auto-purge-on-startup" },
+      { name = "servicebus-use-control-queues", secret_id = "${var.key_vault_uri}secrets/servicebus-use-control-queues" }
+    ] : []
+    content {
+      name                = secret.value.name
+      key_vault_secret_id = secret.value.secret_id
+      identity            = "System"
+    }
+  }
+
   # Container configuration
   template {
     min_replicas = var.min_replicas
@@ -41,7 +70,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = var.service_name
-      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"  # Using test image temporarily
+      image  = var.use_keyvault_secrets ? var.container_image : "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       cpu    = var.cpu_requests
       memory = var.memory_requests
 
@@ -56,31 +85,140 @@ resource "azurerm_container_app" "main" {
         value = "http://+:8080"
       }
 
-      # Placeholder environment variables (will be updated after role assignments)
-      # These prevent the app from failing to start while secrets are not accessible
+      # Conditional environment variables - use secrets if available, placeholders otherwise
       env {
-        name  = "DB_HOST"
-        value = "placeholder-will-be-updated"
+        name        = "DB_HOST"
+        value       = var.use_keyvault_secrets ? null : "placeholder-will-be-updated"
+        secret_name = var.use_keyvault_secrets ? "db-host" : null
       }
 
       env {
-        name  = "DB_PORT"
-        value = "5432"
+        name        = "DB_PORT"
+        value       = var.use_keyvault_secrets ? null : "5432"
+        secret_name = var.use_keyvault_secrets ? "db-port" : null
       }
 
       env {
-        name  = "DB_NAME"
-        value = "placeholder-will-be-updated"
+        name        = "DB_NAME"
+        value       = var.use_keyvault_secrets ? null : "placeholder-will-be-updated"
+        secret_name = var.use_keyvault_secrets ? var.db_name : null
       }
 
       env {
-        name  = "DB_USER"
-        value = "placeholder-will-be-updated"
+        name        = "DB_USER"
+        value       = var.use_keyvault_secrets ? null : "placeholder-will-be-updated"
+        secret_name = var.use_keyvault_secrets ? "db-admin-login" : null
       }
 
       env {
-        name  = "DB_PASSWORD"
-        value = "placeholder-will-be-updated"
+        name        = "DB_PASSWORD"
+        value       = var.use_keyvault_secrets ? null : "placeholder-will-be-updated"
+        secret_name = var.use_keyvault_secrets ? "db-password" : null
+      }
+
+      # Additional environment variables when using Key Vault
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "DB_MAINTENANCE_NAME"
+          secret_name = "db-name-maintenance"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "DB_SCHEMA"
+          secret_name = "db-schema"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "DB_CONNECTION_TIMEOUT"
+          secret_name = "db-connection-timeout"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "CACHE_HOST"
+          secret_name = "cache-host"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "CACHE_PORT"
+          secret_name = "cache-port"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "CACHE_PASSWORD"
+          secret_name = "cache-password"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "CACHE_SECURE"
+          secret_name = "cache-secure"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "AZURE_SERVICEBUS_CONNECTIONSTRING"
+          secret_name = "servicebus-connection-string"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "AZURE_SERVICEBUS_AUTO_PROVISION"
+          secret_name = "servicebus-auto-provision"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "AZURE_SERVICEBUS_MAX_DELIVERY_COUNT"
+          secret_name = "servicebus-max-delivery-count"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING"
+          secret_name = "servicebus-enable-dead-lettering"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP"
+          secret_name = "servicebus-auto-purge-on-startup"
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_keyvault_secrets ? [1] : []
+        content {
+          name        = "AZURE_SERVICEBUS_USE_CONTROL_QUEUES"
+          secret_name = "servicebus-use-control-queues"
+        }
       }
     }
   }
@@ -98,12 +236,11 @@ resource "azurerm_container_app" "main" {
     }
   }
 
-  # TEMPORARILY REMOVED ACR CONFIGURATION TO TEST IF THIS CAUSES SLOWNESS
-  # We'll add it back once Container Apps are created successfully
-  # registry {
-  #   server   = var.container_registry_server
-  #   identity = "System"
-  # }
+  # Container Registry configuration
+  registry {
+    server   = var.container_registry_server
+    identity = "System"
+  }
 
   # Optimized timeouts - reduce excessive wait times
   timeouts {
@@ -122,39 +259,39 @@ resource "azurerm_container_app" "main" {
 }
 
 # =============================================================================
-# Role Assignments for Container App (TEMPORARILY SIMPLIFIED FOR TESTING)
+# Role Assignments for Container App (ENABLED FOR PRODUCTION)
 # =============================================================================
 
-# Key Vault Secrets User Role Assignment - TEMPORARILY DISABLED FOR TESTING
-# resource "azurerm_role_assignment" "key_vault_secrets_user" {
-#   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
-#   role_definition_name = "Key Vault Secrets User"
-#   principal_id         = azurerm_container_app.main.identity[0].principal_id
-#   
-#   # Skip assignment if System Identity is not ready
-#   count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
-# 
-#   depends_on = [azurerm_container_app.main]
-#   
-#   timeouts {
-#     create = "5m"
-#     delete = "5m"
-#   }
-# }
+# Key Vault Secrets User Role Assignment
+resource "azurerm_role_assignment" "key_vault_secrets_user" {
+  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_container_app.main.identity[0].principal_id
+  
+  # Skip assignment if System Identity is not ready
+  count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
 
-# ACR Pull Role Assignment - TEMPORARILY DISABLED
-# resource "azurerm_role_assignment" "acr_pull" {
-#   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${split(".", var.container_registry_server)[0]}"
-#   role_definition_name = "AcrPull"
-#   principal_id         = azurerm_container_app.main.identity[0].principal_id
-#   
-#   # Skip assignment if System Identity is not ready
-#   count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
-# 
-#   depends_on = [azurerm_container_app.main]
-#   
-#   timeouts {
-#     create = "5m"
-#     delete = "5m"
-#   }
-# }
+  depends_on = [azurerm_container_app.main]
+  
+  timeouts {
+    create = "5m"
+    delete = "5m"
+  }
+}
+
+# ACR Pull Role Assignment - ENABLED FOR PRODUCTION
+resource "azurerm_role_assignment" "acr_pull" {
+  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${split(".", var.container_registry_server)[0]}"
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_container_app.main.identity[0].principal_id
+  
+  # Skip assignment if System Identity is not ready
+  count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
+
+  depends_on = [azurerm_container_app.main]
+  
+  timeouts {
+    create = "5m"
+    delete = "5m"
+  }
+}

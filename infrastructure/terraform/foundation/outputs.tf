@@ -120,59 +120,44 @@ output "servicebus_info" {
 }
 
 # =============================================================================
-# Users API Container App (Updated with Key Vault Secrets)
+# Users API Container App
 # =============================================================================
 
 output "users_api_container_app_info" {
-  description = "Users API Container App details (after Key Vault update)"
+  description = "Users API Container App details"
   value = {
-    name               = module.users_api_container_app_update.container_app_name
-    id                 = module.users_api_container_app_update.container_app_id
-    fqdn               = module.users_api_container_app_update.container_app_fqdn
-    system_identity_id = module.users_api_container_app_update.system_assigned_identity_principal_id
-    # Basic Container App info for reference
-    basic_container_app = {
-      name = module.users_api_container_app.container_app_name
-      id   = module.users_api_container_app.container_app_id
-    }
+    name               = module.users_api_container_app.container_app_name
+    id                 = module.users_api_container_app.container_app_id
+    fqdn               = module.users_api_container_app.container_app_fqdn
+    system_identity_id = module.users_api_container_app.system_assigned_identity_principal_id
   }
 }
 
 # =============================================================================
-# Games API Container App (Updated with Key Vault Secrets)
+# Games API Container App
 # =============================================================================
 
 output "games_api_container_app_info" {
-  description = "Games API Container App details (after Key Vault update)"
+  description = "Games API Container App details"
   value = {
-    name               = module.games_api_container_app_update.container_app_name
-    id                 = module.games_api_container_app_update.container_app_id
-    fqdn               = module.games_api_container_app_update.container_app_fqdn
-    system_identity_id = module.games_api_container_app_update.system_assigned_identity_principal_id
-    # Basic Container App info for reference
-    basic_container_app = {
-      name = module.games_api_container_app.container_app_name
-      id   = module.games_api_container_app.container_app_id
-    }
+    name               = module.games_api_container_app.container_app_name
+    id                 = module.games_api_container_app.container_app_id
+    fqdn               = module.games_api_container_app.container_app_fqdn
+    system_identity_id = module.games_api_container_app.system_assigned_identity_principal_id
   }
 }
 
 # =============================================================================
-# Payments API Container App (Updated with Key Vault Secrets)
+# Payments API Container App
 # =============================================================================
 
 output "payments_api_container_app_info" {
-  description = "Payments API Container App details (after Key Vault update)"
+  description = "Payments API Container App details"
   value = {
-    name               = module.payments_api_container_app_update.container_app_name
-    id                 = module.payments_api_container_app_update.container_app_id
-    fqdn               = module.payments_api_container_app_update.container_app_fqdn
-    system_identity_id = module.payments_api_container_app_update.system_assigned_identity_principal_id
-    # Basic Container App info for reference
-    basic_container_app = {
-      name = module.payments_api_container_app.container_app_name
-      id   = module.payments_api_container_app.container_app_id
-    }
+    name               = module.payments_api_container_app.container_app_name
+    id                 = module.payments_api_container_app.container_app_id
+    fqdn               = module.payments_api_container_app.container_app_fqdn
+    system_identity_id = module.payments_api_container_app.system_assigned_identity_principal_id
   }
 }
 
@@ -205,22 +190,22 @@ output "container_apps_role_assignments" {
 output "all_resources" {
   description = "Aggregated resource names for quick reference"
   value = {
-    resource_group            = module.resource_group.name
-    acr_name                  = module.acr.acr_name
-    acr_login_server          = module.acr.acr_login_server
-    postgres_server           = module.postgres.postgres_server_name
-    postgres_fqdn             = module.postgres.postgres_server_fqdn
-    redis_name                = module.redis.redis_name
-    redis_host                = module.redis.redis_hostname
-    log_analytics_name        = module.logs.log_analytics_name
-    servicebus_ns             = module.servicebus.namespace_name
-    servicebus_topic          = module.servicebus.topic_name
-    users_api_container_app   = module.users_api_container_app_update.container_app_name
-    games_api_container_app   = module.games_api_container_app_update.container_app_name
-    payments_api_container_app = module.payments_api_container_app_update.container_app_name
-    container_app_environment = module.container_app_environment.container_app_environment_name
-    key_vault                 = module.key_vault.key_vault_name
-    location                  = module.resource_group.location
+    resource_group             = module.resource_group.name
+    acr_name                   = module.acr.acr_name
+    acr_login_server           = module.acr.acr_login_server
+    postgres_server            = module.postgres.postgres_server_name
+    postgres_fqdn              = module.postgres.postgres_server_fqdn
+    redis_name                 = module.redis.redis_name
+    redis_host                 = module.redis.redis_hostname
+    log_analytics_name         = module.logs.log_analytics_name
+    servicebus_ns              = module.servicebus.namespace_name
+    servicebus_topic           = module.servicebus.topic_name
+    users_api_container_app    = module.users_api_container_app.container_app_name
+    games_api_container_app    = module.games_api_container_app.container_app_name
+    payments_api_container_app = module.payments_api_container_app.container_app_name
+    container_app_environment  = module.container_app_environment.container_app_environment_name
+    key_vault                  = module.key_vault.key_vault_name
+    location                   = module.resource_group.location
   }
 }
 

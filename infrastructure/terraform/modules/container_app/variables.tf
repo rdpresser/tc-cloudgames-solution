@@ -94,3 +94,15 @@ variable "db_name" {
   description = "Database name for the application"
   type        = string
 }
+
+variable "use_keyvault_secrets" {
+  description = "Whether to use Key Vault secrets or placeholders"
+  type        = bool
+  default     = false
+}
+
+variable "key_vault_uri" {
+  description = "Key Vault URI for secret references (when use_keyvault_secrets is true)"
+  type        = string
+  default     = ""
+}

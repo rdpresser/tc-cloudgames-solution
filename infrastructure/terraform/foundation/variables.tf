@@ -74,3 +74,13 @@ variable "github_actions_object_id" {
   description = "Object ID of the GitHub Actions service principal for CI/CD pipelines"
   default     = null
 }
+
+# =============================================================================
+# Container Apps Key Vault Integration Control
+# =============================================================================
+
+variable "use_keyvault_secrets" {
+  type        = bool
+  description = "Enable Key Vault secrets integration for Container Apps. Set to false for initial deployment with basic env vars, then true for managed identity integration."
+  default     = false
+}
