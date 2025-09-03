@@ -268,8 +268,8 @@ resource "azurerm_role_assignment" "key_vault_secrets_user" {
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
   
-  # Skip assignment if System Identity is not ready
-  count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
+  # Only create this role assignment when Key Vault integration is enabled
+  count = var.use_keyvault_secrets ? 1 : 0
 
   depends_on = [azurerm_container_app.main]
   
@@ -285,8 +285,8 @@ resource "azurerm_role_assignment" "acr_pull" {
   role_definition_name = "AcrPull"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
   
-  # Skip assignment if System Identity is not ready
-  count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
+  # Only create this role assignment when Key Vault integration is enabled
+  count = var.use_keyvault_secrets ? 1 : 0
 
   depends_on = [azurerm_container_app.main]
   
