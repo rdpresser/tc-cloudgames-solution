@@ -1,4 +1,4 @@
-name: 🏗️ Infrastructure | Pure Terraform Foundation
+name: 🎯 TC CloudGames | Smart Infrastructure Pipeline
 
 on:
   pull_request:
@@ -7,31 +7,96 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      deployment_stage:
+        description: '🎯 Select Infrastructure Stage'
+        required: true
+        type: choice
+        default: 'foundation'
+        options:
+          - 'foundation'           # Stage 1: Basic infrastructure (use_keyvault_secrets=false)
+          - 'production'           # Stage 2: Full production with Key Vault (use_keyvault_secrets=true)
+          - 'destroy'              # Destroy all infrastructure
+      
       confirm_deploy:
-        description: 'Type "deploy" to confirm'
+        description: '✅ Type "deploy" or "destroy" to confirm'
         required: true
         default: ''
 
 env:
   TF_VERSION: '1.13.1'
   TF_WORKING_DIR: './infrastructure/terraform/foundation'
-  TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
-  TF_WORKSPACE: ${{ vars.TF_WORKSPACE_DEV }}
 
 jobs:
+  # =============================================================================
+  # DESTROY JOB - Runs when deployment_stage is 'destroy'
+  # =============================================================================
+  destroy-infrastructure:
+    runs-on: ubuntu-latest
+    environment: 'dev-rodrigo'
+    timeout-minutes: 30
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      github.event.inputs.deployment_stage == 'destroy' &&
+      github.event.inputs.confirm_deploy == 'destroy'
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
 
-  terraform-deploy:
+      - name: 🔒 Validate Required Secrets
+        run: |
+          if [ -z "${{ secrets.TF_API_TOKEN }}" ]; then
+            echo "❌ TF_API_TOKEN secret is required"
+            exit 1
+          fi
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: 💥 Destroy Infrastructure
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "🔥 Starting infrastructure destruction"
+          terraform init -upgrade
+          terraform destroy -auto-approve
+          echo "✅ Infrastructure successfully destroyed"
+
+      - name: 📋 Destruction Summary
+        run: |
+          echo "## 💥 Infrastructure Destroyed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔥 **All TC CloudGames infrastructure has been removed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🗑️ Resources Removed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ All Container Apps" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Container App Environment" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Key Vault & Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Container Registry" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ PostgreSQL Database" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Redis Cache" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Service Bus" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Resource Group" >> $GITHUB_STEP_SUMMARY
+
+  # =============================================================================
+  # STAGE 1: FOUNDATION - Basic infrastructure (use_keyvault_secrets=false)
+  # =============================================================================
+  deploy-foundation:
     runs-on: ubuntu-latest
     environment: 'dev-rodrigo'
     timeout-minutes: 40
     outputs:
       tf_output_rg: ${{ steps.terraform-outputs.outputs.rg_name }}
       tf_output_location: ${{ steps.terraform-outputs.outputs.location }}
-      tf_output_log_analytics_id: ${{ steps.terraform-outputs.outputs.log_analytics_id }}
+      tf_output_acr_name: ${{ steps.terraform-outputs.outputs.acr_name }}
+      tf_output_acr_login_server: ${{ steps.terraform-outputs.outputs.acr_login_server }}
+      foundation_duration: ${{ steps.timing.outputs.foundation_duration }}
     if: |
       (github.event_name == 'pull_request' && 
        github.event.pull_request.merged == true) ||
       (github.event_name == 'workflow_dispatch' && 
+       github.event.inputs.deployment_stage == 'foundation' &&
        github.event.inputs.confirm_deploy == 'deploy')
     steps:
       - name: ⏬ Checkout repository
@@ -62,126 +127,206 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: 🏗️ Terraform Deploy Foundation
+      - name: 🏗️ Deploy Foundation Infrastructure
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          # Record deployment start time
-          DEPLOYMENT_START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          DEPLOYMENT_START_UNIX=$(date +%s)
-          echo "DEPLOYMENT_START_TIME=$DEPLOYMENT_START_TIME" >> $GITHUB_ENV
-          echo "DEPLOYMENT_START_UNIX=$DEPLOYMENT_START_UNIX" >> $GITHUB_ENV
+          FOUNDATION_START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          FOUNDATION_START_UNIX=$(date +%s)
+          echo "FOUNDATION_START_TIME=$FOUNDATION_START_TIME" >> $GITHUB_ENV
+          echo "FOUNDATION_START_UNIX=$FOUNDATION_START_UNIX" >> $GITHUB_ENV
           
-          echo "🚀 Starting Terraform deployment at $DEPLOYMENT_START_TIME"
+          echo "🚀 STAGE 1: Foundation Infrastructure at $FOUNDATION_START_TIME"
+          echo "📝 Using use_keyvault_secrets=false for basic setup"
           
           terraform init -upgrade
           terraform validate
-          terraform plan -out=tfplan
-          terraform apply -auto-approve tfplan
+          terraform plan -var="use_keyvault_secrets=false" -out=tfplan-foundation
+          terraform apply -auto-approve tfplan-foundation
           
-          # Record deployment end time
-          DEPLOYMENT_END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          DEPLOYMENT_END_UNIX=$(date +%s)
-          echo "DEPLOYMENT_END_TIME=$DEPLOYMENT_END_TIME" >> $GITHUB_ENV
-          echo "DEPLOYMENT_END_UNIX=$DEPLOYMENT_END_UNIX" >> $GITHUB_ENV
+          FOUNDATION_END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          FOUNDATION_END_UNIX=$(date +%s)
+          echo "FOUNDATION_END_TIME=$FOUNDATION_END_TIME" >> $GITHUB_ENV
+          echo "FOUNDATION_END_UNIX=$FOUNDATION_END_UNIX" >> $GITHUB_ENV
           
-          # Calculate duration
-          DURATION_SECONDS=$((DEPLOYMENT_END_UNIX - DEPLOYMENT_START_UNIX))
-          DURATION_MINUTES=$(echo "scale=2; $DURATION_SECONDS / 60" | bc -l)
-          echo "DEPLOYMENT_DURATION_SECONDS=$DURATION_SECONDS" >> $GITHUB_ENV
-          echo "DEPLOYMENT_DURATION_MINUTES=$DURATION_MINUTES" >> $GITHUB_ENV
+          FOUNDATION_DURATION_SECONDS=$((FOUNDATION_END_UNIX - FOUNDATION_START_UNIX))
+          FOUNDATION_DURATION_MINUTES=$(echo "scale=2; $FOUNDATION_DURATION_SECONDS / 60" | bc -l)
+          echo "FOUNDATION_DURATION_SECONDS=$FOUNDATION_DURATION_SECONDS" >> $GITHUB_ENV
+          echo "FOUNDATION_DURATION_MINUTES=$FOUNDATION_DURATION_MINUTES" >> $GITHUB_ENV
           
-          # Performance rating
-          if [ $DURATION_SECONDS -lt 300 ]; then
-            PERFORMANCE_RATING="🚀 Excellent (< 5min)"
-          elif [ $DURATION_SECONDS -lt 600 ]; then
-            PERFORMANCE_RATING="✅ Good (5-10min)"
-          elif [ $DURATION_SECONDS -lt 900 ]; then
-            PERFORMANCE_RATING="⚠️ Acceptable (10-15min)"
-          else
-            PERFORMANCE_RATING="🐌 Slow (> 15min)"
-          fi
-          echo "PERFORMANCE_RATING=$PERFORMANCE_RATING" >> $GITHUB_ENV
-          
-          # Resources per minute
-          RESOURCES_PER_MIN=$(echo "scale=2; 8 / ($DURATION_SECONDS / 60)" | bc -l)
-          echo "RESOURCES_PER_MINUTE=$RESOURCES_PER_MIN" >> $GITHUB_ENV
-          
-          echo "✅ Deployment completed at $DEPLOYMENT_END_TIME"
-          echo "⏱️ Total duration: ${DURATION_MINUTES} minutes (${DURATION_SECONDS}s)"
+          echo "✅ Foundation deployment completed at $FOUNDATION_END_TIME"
+          echo "⏱️ Duration: ${FOUNDATION_DURATION_MINUTES} minutes"
 
-      - name: � Extract Infrastructure Outputs
+      - name: 📤 Extract Infrastructure Outputs
         id: terraform-outputs
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           TERRAFORM_OUTPUT=$(terraform output -json)
           
-          # Extract and set outputs for downstream deployments
           RG_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_name.value')
           LOCATION=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_location.value')
-          LOG_ANALYTICS_ID=$(echo $TERRAFORM_OUTPUT | jq -r '.log_analytics_workspace_id.value')
+          ACR_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.acr_info.value.name')
+          ACR_LOGIN_SERVER=$(echo $TERRAFORM_OUTPUT | jq -r '.acr_info.value.login_server')
           
           echo "rg_name=$RG_NAME" >> $GITHUB_OUTPUT
           echo "location=$LOCATION" >> $GITHUB_OUTPUT
-          echo "log_analytics_id=$LOG_ANALYTICS_ID" >> $GITHUB_OUTPUT
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
 
-      - name: � Infrastructure Deployment Summary
+      - name: ⏱️ Set Foundation Timing Output
+        id: timing
+        run: |
+          echo "foundation_duration=$FOUNDATION_DURATION_MINUTES minutes ($FOUNDATION_DURATION_SECONDS seconds)" >> $GITHUB_OUTPUT
+
+      - name: 📋 Foundation Deployment Summary
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           TERRAFORM_OUTPUT=$(terraform output -json)
           
-          # Extract key infrastructure details
           RG_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_name.value')
           LOCATION=$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_location.value')
           CONTAINER_APP_ENV=$(echo $TERRAFORM_OUTPUT | jq -r '.container_app_environment_info.value.name')
           KEY_VAULT_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.key_vault_info.value.name')
+          ACR_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.acr_info.value.name')
           
-          # Extract deployment timing metrics from environment variables
-          DEPLOYMENT_DURATION_MIN=$DEPLOYMENT_DURATION_MINUTES
-          DEPLOYMENT_DURATION_SEC=$DEPLOYMENT_DURATION_SECONDS
-          PERFORMANCE_RATING="$PERFORMANCE_RATING"
-          RESOURCES_PER_MIN=$RESOURCES_PER_MINUTE
-          START_TIME="$DEPLOYMENT_START_TIME"
-          END_TIME="$DEPLOYMENT_END_TIME"
-          
-          # Generate comprehensive deployment summary
-          echo "## 🏗️ TC CloudGames Infrastructure - Pure Terraform Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## 🏗️ STAGE 1: Foundation Infrastructure Ready!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ⏱️ Deployment Performance Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "### ⏱️ Performance" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Total Duration** | ${DEPLOYMENT_DURATION_MIN} minutes (${DEPLOYMENT_DURATION_SEC}s) |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Performance Rating** | ${PERFORMANCE_RATING} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Deployment Speed** | ${RESOURCES_PER_MIN} resources/minute |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Start Time** | ${START_TIME} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **End Time** | ${END_TIME} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Duration** | $FOUNDATION_DURATION_MINUTES minutes |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Configuration** | Basic env vars (use_keyvault_secrets=false) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | ✅ Ready for Application Deployment |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Foundation Resources" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource Type | Resource Name | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------------|---------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource Group | $RG_NAME | ✅ Deployed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Location | $LOCATION | ✅ Configured |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container App Environment | $CONTAINER_APP_ENV | ✅ Ready for Container Apps |" >> $GITHUB_STEP_SUMMARY
-          echo "| Key Vault | $KEY_VAULT_NAME | ✅ Configured with RBAC |" >> $GITHUB_STEP_SUMMARY
-          echo "| PostgreSQL Server | $(echo $TERRAFORM_OUTPUT | jq -r '.postgres_info.value.name') | ✅ Ready for connections |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container Registry | $(echo $TERRAFORM_OUTPUT | jq -r '.acr_info.value.name') | ✅ Ready for images |" >> $GITHUB_STEP_SUMMARY
-          echo "| Redis Cache | $(echo $TERRAFORM_OUTPUT | jq -r '.redis_info.value.name') | ✅ Ready for caching |" >> $GITHUB_STEP_SUMMARY
-          echo "| Service Bus | $(echo $TERRAFORM_OUTPUT | jq -r '.servicebus_info.value.namespace') | ✅ Ready for messaging |" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏗️ Infrastructure Created" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Name | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Resource Group** | $RG_NAME | ✅ Active |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Container App Environment** | $CONTAINER_APP_ENV | ✅ Ready for apps |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Container Registry** | $ACR_NAME | ✅ Ready for images |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Key Vault** | $KEY_VAULT_NAME | ✅ Basic access configured |" >> $GITHUB_STEP_SUMMARY
+          echo "| **PostgreSQL** | $(echo $TERRAFORM_OUTPUT | jq -r '.postgres_info.value.name') | ✅ Ready for connections |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Redis Cache** | $(echo $TERRAFORM_OUTPUT | jq -r '.redis_info.value.name') | ✅ Ready for caching |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Service Bus** | $(echo $TERRAFORM_OUTPUT | jq -r '.servicebus_info.value.namespace') | ✅ Ready for messaging |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚀 Application Deployment Ready" >> $GITHUB_STEP_SUMMARY  
-          echo "- **Users API**: Infrastructure ready for Container App deployment" >> $GITHUB_STEP_SUMMARY
-          echo "- **Games API**: Infrastructure ready for Container App deployment" >> $GITHUB_STEP_SUMMARY
-          echo "- **Payments API**: Infrastructure ready for Container App deployment" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔄 Next Steps in Your Workflow" >> $GITHUB_STEP_SUMMARY
+          echo "1. **🚀 Run API Pipelines**: Deploy your application containers" >> $GITHUB_STEP_SUMMARY
+          echo "   - Users API pipeline → Builds image and pushes to ACR" >> $GITHUB_STEP_SUMMARY
+          echo "   - Games API pipeline → Builds image and pushes to ACR" >> $GITHUB_STEP_SUMMARY
+          echo "   - Payments API pipeline → Builds image and pushes to ACR" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Infrastructure in Azure Portal](https://portal.azure.com/#@/resource$(echo $TERRAFORM_OUTPUT | jq -r '.foundation_rg_id.value')/overview)" >> $GITHUB_STEP_SUMMARY
+          echo "2. **🔐 Run Production Stage**: Enable full Key Vault integration" >> $GITHUB_STEP_SUMMARY
+          echo "   - Run this pipeline again with **'production'** stage" >> $GITHUB_STEP_SUMMARY
+          echo "   - Will set use_keyvault_secrets=true" >> $GITHUB_STEP_SUMMARY
+          echo "   - Container Apps get managed identity + Key Vault secrets" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔐 Security & Access Control" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Service Principal**: Full Key Vault access configured via Terraform" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **GitHub Actions**: Secrets access configured via Terraform" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **User Account**: Administrative access configured via Terraform" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Connection Secrets**: Pre-populated and ready for applications" >> $GITHUB_STEP_SUMMARY
+          echo "3. **🔄 Re-run API Pipelines**: Final deployment with full configuration" >> $GITHUB_STEP_SUMMARY
+          echo "   - APIs will now connect with Key Vault secrets" >> $GITHUB_STEP_SUMMARY
+          echo "   - Full production configuration active" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 Pure Terraform Architecture Benefits" >> $GITHUB_STEP_SUMMARY
-          echo "✨ **Single Source of Truth**: All infrastructure managed through Terraform" >> $GITHUB_STEP_SUMMARY
-          echo "🔄 **Consistent Deployments**: Reproducible infrastructure across environments" >> $GITHUB_STEP_SUMMARY
-          echo "🛡️ **Proper RBAC Sequencing**: Key Vault → Roles → Secrets in correct order" >> $GITHUB_STEP_SUMMARY
-          echo "🎮 **Ready for Gaming Platform**: Foundation optimized for gaming workloads" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **Foundation stage complete! Ready for application deployment.**"
+
+  # =============================================================================
+  # STAGE 2: PRODUCTION - Full production with Key Vault (use_keyvault_secrets=true)
+  # =============================================================================
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment: 'dev-rodrigo'
+    timeout-minutes: 30
+    outputs:
+      production_duration: ${{ steps.timing.outputs.production_duration }}
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      github.event.inputs.deployment_stage == 'production' &&
+      github.event.inputs.confirm_deploy == 'deploy'
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔒 Validate Required Secrets
+        run: |
+          if [ -z "${{ secrets.TF_API_TOKEN }}" ]; then
+            echo "❌ TF_API_TOKEN secret is required"
+            exit 1
+          fi
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: 🔐 Deploy Production Configuration
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          PRODUCTION_START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          PRODUCTION_START_UNIX=$(date +%s)
+          echo "PRODUCTION_START_TIME=$PRODUCTION_START_TIME" >> $GITHUB_ENV
+          echo "PRODUCTION_START_UNIX=$PRODUCTION_START_UNIX" >> $GITHUB_ENV
+          
+          echo "🔐 STAGE 2: Production Configuration at $PRODUCTION_START_TIME"
+          echo "📝 Using use_keyvault_secrets=true for full Key Vault integration"
+          
+          terraform init -upgrade
+          terraform validate
+          terraform plan -var="use_keyvault_secrets=true" -out=tfplan-production
+          terraform apply -auto-approve tfplan-production
+          
+          PRODUCTION_END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          PRODUCTION_END_UNIX=$(date +%s)
+          echo "PRODUCTION_END_TIME=$PRODUCTION_END_TIME" >> $GITHUB_ENV
+          echo "PRODUCTION_END_UNIX=$PRODUCTION_END_UNIX" >> $GITHUB_ENV
+          
+          PRODUCTION_DURATION_SECONDS=$((PRODUCTION_END_UNIX - PRODUCTION_START_UNIX))
+          PRODUCTION_DURATION_MINUTES=$(echo "scale=2; $PRODUCTION_DURATION_SECONDS / 60" | bc -l)
+          echo "PRODUCTION_DURATION_SECONDS=$PRODUCTION_DURATION_SECONDS" >> $GITHUB_ENV
+          echo "PRODUCTION_DURATION_MINUTES=$PRODUCTION_DURATION_MINUTES" >> $GITHUB_ENV
+          
+          echo "✅ Production configuration completed at $PRODUCTION_END_TIME"
+          echo "⏱️ Duration: ${PRODUCTION_DURATION_MINUTES} minutes"
+
+      - name: ⏱️ Set Production Timing Output
+        id: timing
+        run: |
+          echo "production_duration=$PRODUCTION_DURATION_MINUTES minutes ($PRODUCTION_DURATION_SECONDS seconds)" >> $GITHUB_OUTPUT
+
+      - name: 📋 Production Deployment Summary
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          TERRAFORM_OUTPUT=$(terraform output -json)
+          
+          USERS_API_URL=$(echo $TERRAFORM_OUTPUT | jq -r '.users_api_container_app_info.value.fqdn')
+          GAMES_API_URL=$(echo $TERRAFORM_OUTPUT | jq -r '.games_api_container_app_info.value.fqdn')
+          PAYMENTS_API_URL=$(echo $TERRAFORM_OUTPUT | jq -r '.payments_api_container_app_info.value.fqdn')
+          KEY_VAULT_NAME=$(echo $TERRAFORM_OUTPUT | jq -r '.key_vault_info.value.name')
+          
+          echo "## 🔐 STAGE 2: Production Configuration Active!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⏱️ Performance" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Duration** | $PRODUCTION_DURATION_MINUTES minutes |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Configuration** | Full Key Vault secrets (use_keyvault_secrets=true) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | ✅ Production Ready |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 Production Features Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "| Feature | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Managed Identity** | ✅ Active | Container Apps use system identity |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Key Vault Secrets** | ✅ Connected | All sensitive data from Key Vault |" >> $GITHUB_STEP_SUMMARY
+          echo "| **RBAC Security** | ✅ Enforced | Proper role assignments active |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Custom Images** | ✅ Ready | Container Apps ready for real images |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Live Application Endpoints" >> $GITHUB_STEP_SUMMARY
+          echo "| API | Status | URL |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Users API** | ✅ Production Ready | https://$USERS_API_URL |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Games API** | ✅ Production Ready | https://$GAMES_API_URL |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Payments API** | ✅ Production Ready | https://$PAYMENTS_API_URL |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔄 Final Step in Your Workflow" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **Re-run API Pipelines**: Now with full production configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- APIs will connect using Key Vault secrets" >> $GITHUB_STEP_SUMMARY
+          echo "- Managed identity authentication active" >> $GITHUB_STEP_SUMMARY
+          echo "- Full production security enabled" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 **Production deployment complete! Your TC CloudGames platform is fully configured.**"
