@@ -33,15 +33,15 @@ output "system_assigned_identity_tenant_id" {
 }
 
 # =============================================================================
-# Role Assignment Outputs
+# Role Assignment Outputs (considering count parameter)
 # =============================================================================
 
 output "role_assignment_key_vault_secrets_user_id" {
-  description = "ID of the Key Vault Secrets User role assignment"
-  value       = azurerm_role_assignment.key_vault_secrets_user.id
+  description = "ID of the Key Vault Secrets User role assignment (temporarily disabled)"
+  value       = ""  # Temporarily disabled
 }
 
 output "role_assignment_acr_pull_id" {
-  description = "ID of the ACR Pull role assignment"
-  value       = azurerm_role_assignment.acr_pull.id
+  description = "ID of the ACR Pull role assignment (temporarily disabled)"
+  value       = ""  # Temporarily disabled
 }

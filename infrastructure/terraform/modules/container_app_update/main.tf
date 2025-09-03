@@ -280,8 +280,16 @@ resource "azurerm_container_app" "updated" {
   depends_on = [var.role_assignment_dependencies]
 
   timeouts {
-    create = "20m"
-    update = "20m"
-    delete = "20m"
+    create = "10m"  # Reduced from 20m to 10m
+    update = "10m"  # Reduced from 20m to 10m  
+    delete = "10m"  # Reduced from 20m to 10m
+  }
+
+  # Lifecycle management to reduce recreation
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes that don't require recreation
+      template[0].revision_suffix
+    ]
   }
 }

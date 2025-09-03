@@ -41,7 +41,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = var.service_name
-      image  = var.container_image
+      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"  # Using test image temporarily
       cpu    = var.cpu_requests
       memory = var.memory_requests
 
@@ -98,38 +98,63 @@ resource "azurerm_container_app" "main" {
     }
   }
 
-  # ACR configuration using System Managed Identity
-  registry {
-    server   = var.container_registry_server
-    identity = "System"
-  }
+  # TEMPORARILY REMOVED ACR CONFIGURATION TO TEST IF THIS CAUSES SLOWNESS
+  # We'll add it back once Container Apps are created successfully
+  # registry {
+  #   server   = var.container_registry_server
+  #   identity = "System"
+  # }
 
-  # Custom timeouts to prevent operation expired errors
+  # Optimized timeouts - reduce excessive wait times
   timeouts {
-    create = "20m"  # Increased from 15m to 20m
-    update = "15m"  # Increased from 10m to 15m
+    create = "10m"  # Reduced from 20m to 10m
+    update = "10m"  # Keep at 10m
     delete = "10m"
   }
+
+  # Lifecycle management to reduce recreation
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to template during updates - will be handled by update module
+      template[0].container[0].env
+    ]
+  }
 }
 
 # =============================================================================
-# Role Assignments for Container App (created AFTER Container App exists)
+# Role Assignments for Container App (TEMPORARILY SIMPLIFIED FOR TESTING)
 # =============================================================================
 
-# Key Vault Secrets User Role Assignment
-resource "azurerm_role_assignment" "key_vault_secrets_user" {
-  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_container_app.main.identity[0].principal_id
+# Key Vault Secrets User Role Assignment - TEMPORARILY DISABLED FOR TESTING
+# resource "azurerm_role_assignment" "key_vault_secrets_user" {
+#   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
+#   role_definition_name = "Key Vault Secrets User"
+#   principal_id         = azurerm_container_app.main.identity[0].principal_id
+#   
+#   # Skip assignment if System Identity is not ready
+#   count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
+# 
+#   depends_on = [azurerm_container_app.main]
+#   
+#   timeouts {
+#     create = "5m"
+#     delete = "5m"
+#   }
+# }
 
-  depends_on = [azurerm_container_app.main]
-}
-
-# ACR Pull Role Assignment
-resource "azurerm_role_assignment" "acr_pull" {
-  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${split(".", var.container_registry_server)[0]}"
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_container_app.main.identity[0].principal_id
-
-  depends_on = [azurerm_container_app.main]
-}
+# ACR Pull Role Assignment - TEMPORARILY DISABLED
+# resource "azurerm_role_assignment" "acr_pull" {
+#   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${split(".", var.container_registry_server)[0]}"
+#   role_definition_name = "AcrPull"
+#   principal_id         = azurerm_container_app.main.identity[0].principal_id
+#   
+#   # Skip assignment if System Identity is not ready
+#   count = can(azurerm_container_app.main.identity[0].principal_id) ? 1 : 0
+# 
+#   depends_on = [azurerm_container_app.main]
+#   
+#   timeouts {
+#     create = "5m"
+#     delete = "5m"
+#   }
+# }

@@ -232,14 +232,10 @@ module "users_api_container_app" {
   db_name                      = "db-name-users"
   tags                         = local.common_tags
 
+  # Simplified dependencies - only essential ones
   depends_on = [
-    module.resource_group,
-    module.acr,
     module.container_app_environment,
-    module.postgres,
-    module.redis,
-    module.servicebus,
-    module.key_vault
+    module.acr
   ]
 }
 
@@ -260,14 +256,10 @@ module "games_api_container_app" {
   tags                         = local.common_tags
   db_name                      = "db-name-games"
 
+  # Simplified dependencies - only essential ones
   depends_on = [
-    module.resource_group,
-    module.acr,
     module.container_app_environment,
-    module.postgres,
-    module.redis,
-    module.servicebus,
-    module.key_vault
+    module.acr
   ]
 }
 
@@ -288,14 +280,10 @@ module "payments_api_container_app" {
   tags                         = local.common_tags
   db_name                      = "db-name-payments"
 
+  # Simplified dependencies - only essential ones
   depends_on = [
-    module.resource_group,
-    module.acr,
     module.container_app_environment,
-    module.postgres,
-    module.redis,
-    module.servicebus,
-    module.key_vault
+    module.acr
   ]
 }
 
