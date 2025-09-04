@@ -21,7 +21,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (userDb != null) project = project.WithReference(userDb);
             if (maintenanceDb != null) project = project.WithReference(maintenanceDb);
             if (redis != null) project = project.WithReference(redis);
-            
+
             // Add message broker references baseado no tipo
             AddMessageBrokerReferences(project, messageBroker);
 
@@ -30,7 +30,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (userDb != null) project = project.WaitFor(userDb);
             if (maintenanceDb != null) project = project.WaitFor(maintenanceDb);
             if (redis != null) project = project.WaitFor(redis);
-            
+
             // Wait for message broker only if it has local resources
             WaitForMessageBrokerIfNeeded(project, messageBroker);
 
@@ -55,7 +55,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 case MessageBrokerType.RabbitMQ when messageBroker.RabbitMQ != null:
                     project = project.WithReference(messageBroker.RabbitMQ);
                     break;
-                
+
                 case MessageBrokerType.AzureServiceBus when messageBroker.ServiceBus != null:
                     // Para Azure Service Bus, o recurso pode ser um parâmetro ou connection string
                     // Parâmetros não precisam de WithReference, apenas variáveis de ambiente
@@ -70,7 +70,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 case MessageBrokerType.RabbitMQ when messageBroker.RabbitMQ != null:
                     project.WaitFor(messageBroker.RabbitMQ);
                     break;
-                
+
                 case MessageBrokerType.AzureServiceBus:
                     // Azure Service Bus externo não precisa de WaitFor
                     break;
@@ -83,13 +83,15 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ServiceParameterRegistry registry)
         {
             var dbConfig = registry.GetDatabaseConfig(builder.Configuration);
-            
+
             project
                 .WithEnvironment("DB_HOST", dbConfig.Host)
                 .WithEnvironment("DB_PORT", dbConfig.Port.ToString())
-                .WithEnvironment("DB_USERS_NAME", dbConfig.UsersDbName)
-                .WithEnvironment("DB_GAMES_NAME", dbConfig.GamesDbName)
-                .WithEnvironment("DB_PAYMENTS_NAME", dbConfig.PaymentsDbName)
+                //******** Criar configuração especifica para cada projeto com o seu DB_NAME proprio ********************
+                .WithEnvironment("DB_NAME", dbConfig.UsersDbName)
+                ////.WithEnvironment("DB_USERS_NAME", dbConfig.UsersDbName)
+                ////.WithEnvironment("DB_GAMES_NAME", dbConfig.GamesDbName)
+                ////.WithEnvironment("DB_PAYMENTS_NAME", dbConfig.PaymentsDbName)
                 .WithEnvironment("DB_MAINTENANCE_NAME", dbConfig.MaintenanceDbName)
                 .WithEnvironment("DB_SCHEMA", dbConfig.Schema)
                 .WithEnvironment("DB_CONNECTION_TIMEOUT", dbConfig.ConnectionTimeout.ToString());
@@ -97,7 +99,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             // Add parameters for secrets
             if (dbConfig.UserParameter != null)
                 project.WithParameterEnv("DB_USER", dbConfig.UserParameter);
-            
+
             if (dbConfig.PasswordParameter != null)
                 project.WithParameterEnv("DB_PASSWORD", dbConfig.PasswordParameter);
         }
@@ -116,7 +118,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 case MessageBrokerType.RabbitMQ:
                     ConfigureRabbitMqEnvironment(project, builder, registry);
                     break;
-                
+
                 case MessageBrokerType.AzureServiceBus:
                     ConfigureAzureServiceBusEnvironment(project, builder, registry);
                     break;
@@ -129,7 +131,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ServiceParameterRegistry registry)
         {
             var rabbitConfig = registry.GetRabbitMqConfig(builder.Configuration);
-            
+
             project
                 .WithEnvironment("RABBITMQ_HOST", rabbitConfig.Host)
                 .WithEnvironment("RABBITMQ_PORT", rabbitConfig.Port.ToString())
@@ -143,7 +145,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             // Add parameters for secrets
             if (rabbitConfig.UserParameter != null)
                 project.WithParameterEnv("RABBITMQ_USERNAME", rabbitConfig.UserParameter);
-                
+
             if (rabbitConfig.PasswordParameter != null)
                 project.WithParameterEnv("RABBITMQ_PASSWORD", rabbitConfig.PasswordParameter);
         }
@@ -154,7 +156,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ServiceParameterRegistry registry)
         {
             var serviceBusConfig = registry.GetAzureServiceBusConfig(builder.Configuration);
-            
+
             project
                 .WithEnvironment("AZURE_SERVICEBUS_TOPIC_NAME", serviceBusConfig.TopicName)
                 .WithEnvironment("AZURE_SERVICEBUS_SUBSCRIPTION_NAME", serviceBusConfig.SubscriptionName)
@@ -175,7 +177,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ServiceParameterRegistry registry)
         {
             var cacheConfig = registry.GetCacheConfig(builder.Configuration);
-            
+
             project
                 .WithEnvironment("CACHE_HOST", cacheConfig.Host)
                 .WithEnvironment("CACHE_PORT", cacheConfig.Port.ToString())
