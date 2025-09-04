@@ -1,5 +1,7 @@
 provider "azurerm" {
-  features {}
+  features {
+    # Outras configurações do provider
+  }
 }
 
 data "azurerm_client_config" "current" {}
@@ -12,12 +14,10 @@ locals {
 }
 
 # =============================================================================
-# Azure Resource Provider Registration (Microsoft.App) - REMOVED
+# Azure Resource Provider Registration (Microsoft.App) - Automatic
 # =============================================================================
-# Note: Microsoft.App provider is assumed to be already registered
-# Container Apps require this provider but it's managed at subscription level
-# If you get errors about Microsoft.App not being registered, run:
-# az provider register --namespace Microsoft.App
+# Provider azurerm automatically registers required providers when creating resources
+# No manual registration needed for Microsoft.App
 
 # =============================================================================
 # Random suffix for unique naming
@@ -141,8 +141,6 @@ module "container_app_environment" {
   depends_on = [
     module.resource_group,
     module.logs
-    # Note: Microsoft.App provider dependency removed
-    # Provider is assumed to be registered at subscription level
   ]
 }
 
@@ -216,76 +214,232 @@ module "servicebus" {
 }
 
 #########################################
-# Container Apps with Progressive Configuration
-# Now using conditional logic within the same module
+# Container Apps with Single Shot Configuration
+# Using new single shot module with AzAPI PATCH
 #########################################
 
 module "users_api_container_app" {
-  source                       = "../modules/container_app"
+  source = "../modules/container_app_single_shot"
+
   name_prefix                  = local.full_name
+  service_name                 = "users-api"
   resource_group_name          = module.resource_group.name
   container_app_environment_id = module.container_app_environment.container_app_environment_id
-  container_registry_server    = module.acr.acr_login_server
-  key_vault_name               = module.key_vault.key_vault_name
-  key_vault_uri                = module.key_vault.key_vault_uri
   subscription_id              = data.azurerm_client_config.current.subscription_id
-  service_name                 = "users-api"
-  container_image              = "${module.acr.acr_login_server}/users-api:latest"
-  db_name                      = "db-name-users"
-  use_keyvault_secrets         = var.use_keyvault_secrets
-  tags                         = local.common_tags
+  location                     = module.resource_group.location
 
-  # Simplified dependencies - only essential ones
+  container_image_acr       = "${module.acr.acr_login_server}/users-api:latest"
+  container_registry_server = module.acr.acr_login_server
+
+  key_vault_name = module.key_vault.key_vault_name
+  key_vault_uri  = module.key_vault.key_vault_uri
+
+  tags = local.common_tags
+
+  # map: secret name (as it will appear in the Container App) -> KeyVault secret URI
+  kv_secret_refs = {
+    db-host                          = "${module.key_vault.key_vault_uri}secrets/db-host"
+    db-port                          = "${module.key_vault.key_vault_uri}secrets/db-port"
+    db-name-users                    = "${module.key_vault.key_vault_uri}secrets/db-name-users"
+    db-admin-login                   = "${module.key_vault.key_vault_uri}secrets/db-admin-login"
+    db-password                      = "${module.key_vault.key_vault_uri}secrets/db-password"
+    db-name-maintenance              = "${module.key_vault.key_vault_uri}secrets/db-name-maintenance"
+    db-schema                        = "${module.key_vault.key_vault_uri}secrets/db-schema"
+    db-connection-timeout            = "${module.key_vault.key_vault_uri}secrets/db-connection-timeout"
+    cache-host                       = "${module.key_vault.key_vault_uri}secrets/cache-host"
+    cache-port                       = "${module.key_vault.key_vault_uri}secrets/cache-port"
+    cache-password                   = "${module.key_vault.key_vault_uri}secrets/cache-password"
+    cache-secure                     = "${module.key_vault.key_vault_uri}secrets/cache-secure"
+    servicebus-connection-string     = "${module.key_vault.key_vault_uri}secrets/servicebus-connection-string"
+    servicebus-auto-provision        = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-provision"
+    servicebus-max-delivery-count    = "${module.key_vault.key_vault_uri}secrets/servicebus-max-delivery-count"
+    servicebus-enable-dead-lettering = "${module.key_vault.key_vault_uri}secrets/servicebus-enable-dead-lettering"
+    servicebus-auto-purge-on-startup = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-purge-on-startup"
+    servicebus-use-control-queues    = "${module.key_vault.key_vault_uri}secrets/servicebus-use-control-queues"
+  }
+
+  # map: env var -> secret name (must match keys of kv_secret_refs)
+  env_secret_refs = {
+    DB_HOST                                = "db-host"
+    DB_PORT                                = "db-port"
+    DB_NAME                                = "db-name-users"
+    DB_USER                                = "db-admin-login"
+    DB_PASSWORD                            = "db-password"
+    DB_MAINTENANCE_NAME                    = "db-name-maintenance"
+    DB_SCHEMA                              = "db-schema"
+    DB_CONNECTION_TIMEOUT                  = "db-connection-timeout"
+    CACHE_HOST                             = "cache-host"
+    CACHE_PORT                             = "cache-port"
+    CACHE_PASSWORD                         = "cache-password"
+    CACHE_SECURE                           = "cache-secure"
+    AZURE_SERVICEBUS_CONNECTIONSTRING      = "servicebus-connection-string"
+    AZURE_SERVICEBUS_AUTO_PROVISION        = "servicebus-auto-provision"
+    AZURE_SERVICEBUS_MAX_DELIVERY_COUNT    = "servicebus-max-delivery-count"
+    AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING = "servicebus-enable-dead-lettering"
+    AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP = "servicebus-auto-purge-on-startup"
+    AZURE_SERVICEBUS_USE_CONTROL_QUEUES    = "servicebus-use-control-queues"
+  }
+
+  rbac_propagation_wait_seconds = 45
+
   depends_on = [
+
     module.container_app_environment,
     module.acr,
-    module.key_vault
+    module.key_vault,
+    module.postgres,
+    module.redis,
+    module.servicebus
   ]
 }
 
 module "games_api_container_app" {
-  source                       = "../modules/container_app"
+  source = "../modules/container_app_single_shot"
+
   name_prefix                  = local.full_name
+  service_name                 = "games-api"
   resource_group_name          = module.resource_group.name
   container_app_environment_id = module.container_app_environment.container_app_environment_id
-  container_registry_server    = module.acr.acr_login_server
-  key_vault_name               = module.key_vault.key_vault_name
-  key_vault_uri                = module.key_vault.key_vault_uri
   subscription_id              = data.azurerm_client_config.current.subscription_id
-  service_name                 = "games-api"
-  container_image              = "${module.acr.acr_login_server}/games-api:latest"
-  tags                         = local.common_tags
-  db_name                      = "db-name-games"
-  use_keyvault_secrets         = var.use_keyvault_secrets
+  location                     = module.resource_group.location
 
-  # Simplified dependencies - only essential ones
+  container_image_acr       = "${module.acr.acr_login_server}/games-api:latest"
+  container_registry_server = module.acr.acr_login_server
+
+  key_vault_name = module.key_vault.key_vault_name
+  key_vault_uri  = module.key_vault.key_vault_uri
+
+  tags = local.common_tags
+
+  # map: secret name (as it will appear in the Container App) -> KeyVault secret URI
+  kv_secret_refs = {
+    db-host                          = "${module.key_vault.key_vault_uri}secrets/db-host"
+    db-port                          = "${module.key_vault.key_vault_uri}secrets/db-port"
+    db-name-games                    = "${module.key_vault.key_vault_uri}secrets/db-name-games"
+    db-admin-login                   = "${module.key_vault.key_vault_uri}secrets/db-admin-login"
+    db-password                      = "${module.key_vault.key_vault_uri}secrets/db-password"
+    db-name-maintenance              = "${module.key_vault.key_vault_uri}secrets/db-name-maintenance"
+    db-schema                        = "${module.key_vault.key_vault_uri}secrets/db-schema"
+    db-connection-timeout            = "${module.key_vault.key_vault_uri}secrets/db-connection-timeout"
+    cache-host                       = "${module.key_vault.key_vault_uri}secrets/cache-host"
+    cache-port                       = "${module.key_vault.key_vault_uri}secrets/cache-port"
+    cache-password                   = "${module.key_vault.key_vault_uri}secrets/cache-password"
+    cache-secure                     = "${module.key_vault.key_vault_uri}secrets/cache-secure"
+    servicebus-connection-string     = "${module.key_vault.key_vault_uri}secrets/servicebus-connection-string"
+    servicebus-auto-provision        = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-provision"
+    servicebus-max-delivery-count    = "${module.key_vault.key_vault_uri}secrets/servicebus-max-delivery-count"
+    servicebus-enable-dead-lettering = "${module.key_vault.key_vault_uri}secrets/servicebus-enable-dead-lettering"
+    servicebus-auto-purge-on-startup = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-purge-on-startup"
+    servicebus-use-control-queues    = "${module.key_vault.key_vault_uri}secrets/servicebus-use-control-queues"
+  }
+
+  # map: env var -> secret name (must match keys of kv_secret_refs)
+  env_secret_refs = {
+    DB_HOST                                = "db-host"
+    DB_PORT                                = "db-port"
+    DB_NAME                                = "db-name-games"
+    DB_USER                                = "db-admin-login"
+    DB_PASSWORD                            = "db-password"
+    DB_MAINTENANCE_NAME                    = "db-name-maintenance"
+    DB_SCHEMA                              = "db-schema"
+    DB_CONNECTION_TIMEOUT                  = "db-connection-timeout"
+    CACHE_HOST                             = "cache-host"
+    CACHE_PORT                             = "cache-port"
+    CACHE_PASSWORD                         = "cache-password"
+    CACHE_SECURE                           = "cache-secure"
+    AZURE_SERVICEBUS_CONNECTIONSTRING      = "servicebus-connection-string"
+    AZURE_SERVICEBUS_AUTO_PROVISION        = "servicebus-auto-provision"
+    AZURE_SERVICEBUS_MAX_DELIVERY_COUNT    = "servicebus-max-delivery-count"
+    AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING = "servicebus-enable-dead-lettering"
+    AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP = "servicebus-auto-purge-on-startup"
+    AZURE_SERVICEBUS_USE_CONTROL_QUEUES    = "servicebus-use-control-queues"
+  }
+
+  rbac_propagation_wait_seconds = 45
+
   depends_on = [
+
     module.container_app_environment,
     module.acr,
-    module.key_vault
+    module.key_vault,
+    module.postgres,
+    module.redis,
+    module.servicebus
   ]
 }
 
 module "payments_api_container_app" {
-  source                       = "../modules/container_app"
+  source = "../modules/container_app_single_shot"
+
   name_prefix                  = local.full_name
+  service_name                 = "payms-api"
   resource_group_name          = module.resource_group.name
   container_app_environment_id = module.container_app_environment.container_app_environment_id
-  container_registry_server    = module.acr.acr_login_server
-  key_vault_name               = module.key_vault.key_vault_name
-  key_vault_uri                = module.key_vault.key_vault_uri
   subscription_id              = data.azurerm_client_config.current.subscription_id
-  service_name                 = "payms-api"
-  container_image              = "${module.acr.acr_login_server}/payments-api:latest"
-  tags                         = local.common_tags
-  db_name                      = "db-name-payments"
-  use_keyvault_secrets         = var.use_keyvault_secrets
+  location                     = module.resource_group.location
 
-  # Simplified dependencies - only essential ones
+  container_image_acr       = "${module.acr.acr_login_server}/payments-api:latest"
+  container_registry_server = module.acr.acr_login_server
+
+  key_vault_name = module.key_vault.key_vault_name
+  key_vault_uri  = module.key_vault.key_vault_uri
+
+  tags = local.common_tags
+
+  # map: secret name (as it will appear in the Container App) -> KeyVault secret URI
+  kv_secret_refs = {
+    db-host                          = "${module.key_vault.key_vault_uri}secrets/db-host"
+    db-port                          = "${module.key_vault.key_vault_uri}secrets/db-port"
+    db-name-payments                 = "${module.key_vault.key_vault_uri}secrets/db-name-payments"
+    db-admin-login                   = "${module.key_vault.key_vault_uri}secrets/db-admin-login"
+    db-password                      = "${module.key_vault.key_vault_uri}secrets/db-password"
+    db-name-maintenance              = "${module.key_vault.key_vault_uri}secrets/db-name-maintenance"
+    db-schema                        = "${module.key_vault.key_vault_uri}secrets/db-schema"
+    db-connection-timeout            = "${module.key_vault.key_vault_uri}secrets/db-connection-timeout"
+    cache-host                       = "${module.key_vault.key_vault_uri}secrets/cache-host"
+    cache-port                       = "${module.key_vault.key_vault_uri}secrets/cache-port"
+    cache-password                   = "${module.key_vault.key_vault_uri}secrets/cache-password"
+    cache-secure                     = "${module.key_vault.key_vault_uri}secrets/cache-secure"
+    servicebus-connection-string     = "${module.key_vault.key_vault_uri}secrets/servicebus-connection-string"
+    servicebus-auto-provision        = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-provision"
+    servicebus-max-delivery-count    = "${module.key_vault.key_vault_uri}secrets/servicebus-max-delivery-count"
+    servicebus-enable-dead-lettering = "${module.key_vault.key_vault_uri}secrets/servicebus-enable-dead-lettering"
+    servicebus-auto-purge-on-startup = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-purge-on-startup"
+    servicebus-use-control-queues    = "${module.key_vault.key_vault_uri}secrets/servicebus-use-control-queues"
+  }
+
+  # map: env var -> secret name (must match keys of kv_secret_refs)
+  env_secret_refs = {
+    DB_HOST                                = "db-host"
+    DB_PORT                                = "db-port"
+    DB_NAME                                = "db-name-payments"
+    DB_USER                                = "db-admin-login"
+    DB_PASSWORD                            = "db-password"
+    DB_MAINTENANCE_NAME                    = "db-name-maintenance"
+    DB_SCHEMA                              = "db-schema"
+    DB_CONNECTION_TIMEOUT                  = "db-connection-timeout"
+    CACHE_HOST                             = "cache-host"
+    CACHE_PORT                             = "cache-port"
+    CACHE_PASSWORD                         = "cache-password"
+    CACHE_SECURE                           = "cache-secure"
+    AZURE_SERVICEBUS_CONNECTIONSTRING      = "servicebus-connection-string"
+    AZURE_SERVICEBUS_AUTO_PROVISION        = "servicebus-auto-provision"
+    AZURE_SERVICEBUS_MAX_DELIVERY_COUNT    = "servicebus-max-delivery-count"
+    AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING = "servicebus-enable-dead-lettering"
+    AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP = "servicebus-auto-purge-on-startup"
+    AZURE_SERVICEBUS_USE_CONTROL_QUEUES    = "servicebus-use-control-queues"
+  }
+
+  rbac_propagation_wait_seconds = 45
+
   depends_on = [
+
     module.container_app_environment,
     module.acr,
-    module.key_vault
+    module.key_vault,
+    module.postgres,
+    module.redis,
+    module.servicebus
   ]
 }
 
