@@ -236,23 +236,27 @@ resource "azurerm_container_app" "main" {
     }
   }
 
-  # Container Registry configuration
-  registry {
-    server   = var.container_registry_server
-    identity = "System"
+  # Container Registry configuration - ONLY for production stage
+  dynamic "registry" {
+    for_each = var.use_keyvault_secrets ? [1] : []
+    content {
+      server   = var.container_registry_server
+      identity = "System"
+    }
   }
 
-  # Extended timeouts for Container Apps creation
+  # Optimized timeouts for Container Apps creation
   timeouts {
-    create = "20m"  # Increased to handle Container App startup delays
-    update = "15m"  # Sufficient for updates
-    delete = "10m"  # Keep delete timeout reasonable
+    create = "15m"  # Reduced - if it doesn't work in 15min, there's a real problem
+    update = "10m"  # Reduced for faster feedback
+    delete = "10m"  # Reasonable delete timeout
   }
 
-  # Lifecycle management to reduce recreation
+  # Lifecycle management - static configuration
   lifecycle {
     ignore_changes = [
-      # Ignore changes to template during updates - will be handled by update module
+      # Ignore environment variable changes to prevent unnecessary recreations
+      # This is especially important when Key Vault secrets change externally
       template[0].container[0].env
     ]
   }
