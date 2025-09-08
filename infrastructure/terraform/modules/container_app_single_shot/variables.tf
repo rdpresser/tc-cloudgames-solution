@@ -18,11 +18,6 @@ variable "container_app_environment_id" {
   type        = string
 }
 
-variable "subscription_id" {
-  description = "Subscription ID used to compute scopes for RBAC"
-  type        = string
-}
-
 variable "location" {
   description = "Azure location (for AzAPI resource)"
   type        = string
@@ -44,8 +39,18 @@ variable "container_registry_server" {
   type        = string
 }
 
+variable "container_registry_id" {
+  description = "Azure Container Registry resource ID for RBAC assignment"
+  type        = string
+}
+
 variable "key_vault_name" {
   description = "Key Vault name"
+  type        = string
+}
+
+variable "key_vault_id" {
+  description = "Key Vault resource ID for RBAC assignment"
   type        = string
 }
 

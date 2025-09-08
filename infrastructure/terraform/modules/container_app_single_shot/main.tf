@@ -20,8 +20,6 @@ locals {
   clean_service     = replace(replace(var.service_name, "--", "-"), "--", "-")
   proposed_name     = "${local.clean_prefix}-${local.clean_service}"
   containerapp_name = length(local.proposed_name) > 32 ? substr(local.proposed_name, 0, 32) : local.proposed_name
-
-  acr_name = split(".", var.container_registry_server)[0]
 }
 
 # =============================================================================
@@ -204,7 +202,7 @@ resource "azurerm_container_app" "main" {
 # 2) RBAC: Container App MI pode pull do ACR
 # -------------------------------------------------------------------
 resource "azurerm_role_assignment" "acr_pull" {
-  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.ContainerRegistry/registries/${local.acr_name}"
+  scope                = var.container_registry_id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
 
@@ -215,7 +213,7 @@ resource "azurerm_role_assignment" "acr_pull" {
 # 3) RBAC: Container App MI pode ler secrets do Key Vault
 # -------------------------------------------------------------------
 resource "azurerm_role_assignment" "kv_secrets_user" {
-  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.KeyVault/vaults/${var.key_vault_name}"
+  scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
 

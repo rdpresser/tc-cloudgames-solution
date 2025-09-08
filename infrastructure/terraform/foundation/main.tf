@@ -206,13 +206,14 @@ module "users_api_container_app" {
   service_name                 = "users-api"
   resource_group_name          = module.resource_group.name
   container_app_environment_id = module.container_app_environment.container_app_environment_id
-  subscription_id              = data.azurerm_client_config.current.subscription_id
   location                     = module.resource_group.location
 
-  container_image_acr       = "${module.acr.acr_login_server}/users-api:latest"
-  container_registry_server = module.acr.acr_login_server
+  container_image_acr         = "${module.acr.acr_login_server}/users-api:latest"
+  container_registry_server   = module.acr.acr_login_server
+  container_registry_id       = module.acr.acr_id
 
   key_vault_name = module.key_vault.key_vault_name
+  key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
 
   # Database name secret ref specific for users service
@@ -243,13 +244,14 @@ module "games_api_container_app" {
   service_name                 = "games-api"
   resource_group_name          = module.resource_group.name
   container_app_environment_id = module.container_app_environment.container_app_environment_id
-  subscription_id              = data.azurerm_client_config.current.subscription_id
   location                     = module.resource_group.location
 
-  container_image_acr       = "${module.acr.acr_login_server}/games-api:latest"
-  container_registry_server = module.acr.acr_login_server
+  container_image_acr         = "${module.acr.acr_login_server}/games-api:latest"
+  container_registry_server   = module.acr.acr_login_server
+  container_registry_id       = module.acr.acr_id
 
   key_vault_name = module.key_vault.key_vault_name
+  key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
 
   # Database name secret ref specific for games service
@@ -277,13 +279,14 @@ module "payments_api_container_app" {
   service_name                 = "payms-api"
   resource_group_name          = module.resource_group.name
   container_app_environment_id = module.container_app_environment.container_app_environment_id
-  subscription_id              = data.azurerm_client_config.current.subscription_id
   location                     = module.resource_group.location
 
-  container_image_acr       = "${module.acr.acr_login_server}/payments-api:latest"
-  container_registry_server = module.acr.acr_login_server
+  container_image_acr         = "${module.acr.acr_login_server}/payments-api:latest"
+  container_registry_server   = module.acr.acr_login_server
+  container_registry_id       = module.acr.acr_id
 
   key_vault_name = module.key_vault.key_vault_name
+  key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
 
   # Database name secret ref specific for payments service
