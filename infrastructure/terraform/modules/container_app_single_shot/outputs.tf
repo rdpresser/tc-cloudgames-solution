@@ -9,7 +9,7 @@ output "container_app_name" {
 }
 
 output "container_app_fqdn" {
-  description = "Latest revision FQDN"
+  description = "Latest revision FQDN (ingress endpoint)"
   value       = azurerm_container_app.main.latest_revision_fqdn
 }
 
@@ -31,4 +31,9 @@ output "role_assignment_key_vault_secrets_user_id" {
 output "role_assignment_acr_pull_id" {
   description = "ACR Pull role assignment ID"
   value       = azurerm_role_assignment.acr_pull.id
+}
+
+output "container_image_deployed" {
+  value       = var.container_image_acr
+  description = "Final container image used in the deployment"
 }

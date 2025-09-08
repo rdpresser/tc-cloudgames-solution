@@ -1,23 +1,15 @@
 provider "azurerm" {
-  features {
-    # Outras configurações do provider
-  }
+  features {}
 }
 
 data "azurerm_client_config" "current" {}
 
 # =============================================================================
-# Deployment Timing - Start Timestamp (using locals)
+# Deployment Timing - Start Timestamp
 # =============================================================================
 locals {
   deployment_start_time = timestamp()
 }
-
-# =============================================================================
-# Azure Resource Provider Registration (Microsoft.App) - Automatic
-# =============================================================================
-# Provider azurerm automatically registers required providers when creating resources
-# No manual registration needed for Microsoft.App
 
 # =============================================================================
 # Random suffix for unique naming
@@ -58,15 +50,11 @@ module "resource_group" {
   name_prefix = "${local.project_name}-solution-${local.environment}-rg"
   location    = var.azure_resource_group_location
   tags        = local.common_tags
-
-  # Note: Microsoft.App provider dependency removed
-  # Provider is assumed to be registered at subscription level
 }
 
 # =============================================================================
 # PostgreSQL Flexible Server
 # =============================================================================
-
 module "postgres" {
   source                  = "../modules/postgres"
   name_prefix             = local.full_name
@@ -126,10 +114,9 @@ module "logs" {
   ]
 }
 
-// -----------------------------------------------------------------------------
-// Container App Environment Module
-// Creates environment ready for Container Apps with System Managed Identity
-// -----------------------------------------------------------------------------
+# =============================================================================
+# Container App Environment Module
+# =============================================================================
 module "container_app_environment" {
   source                     = "../modules/container_app_env"
   name_prefix                = local.full_name
@@ -144,10 +131,9 @@ module "container_app_environment" {
   ]
 }
 
-// -----------------------------------------------------------------------------
-// Key Vault Module (PURE TERRAFORM RBAC APPROACH)
-// Creates: Key Vault -> RBAC Roles -> Secrets (in correct sequence)
-// -----------------------------------------------------------------------------
+# =============================================================================
+# Key Vault Module (Terraform RBAC)
+# =============================================================================
 module "key_vault" {
   source              = "../modules/key_vault"
   name_prefix         = replace(local.full_name, "-", "")
@@ -157,7 +143,7 @@ module "key_vault" {
   tags                = local.common_tags
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
-  # Infrastructure values to populate secrets (keeping original variable names)
+  # Infrastructure values
   acr_name                 = module.acr.acr_name
   acr_login_server         = module.acr.acr_login_server
   acr_admin_username       = module.acr.acr_admin_username
@@ -170,19 +156,17 @@ module "key_vault" {
   redis_primary_access_key = module.redis.redis_primary_access_key
   servicebus_namespace     = module.servicebus.namespace_name
 
-  # Database connection info (NEW: using new variable pattern)
+  # Database & Cache
   db_host = module.postgres.postgres_server_fqdn
   db_port = tostring(module.postgres.postgres_port)
 
-  # Cache connection info (NEW: using new variable pattern)
   cache_host     = module.redis.redis_hostname
   cache_port     = tostring(module.redis.redis_ssl_port)
   cache_password = module.redis.redis_primary_access_key
 
   # Service Bus info
   servicebus_connection_string = module.servicebus.namespace_connection_string
-
-  # RBAC Access Control (NEW: using new variable names)
+  # RBAC
   service_principal_object_id = var.app_object_id
   user_object_id              = var.user_object_id
   github_actions_object_id    = var.github_actions_object_id
@@ -197,10 +181,9 @@ module "key_vault" {
   ]
 }
 
-#########################################
+# =============================================================================
 # Service Bus module
-#########################################
-
+# =============================================================================
 module "servicebus" {
   source              = "../modules/service_bus"
   name_prefix         = local.full_name
@@ -213,11 +196,9 @@ module "servicebus" {
   ]
 }
 
-#########################################
-# Container Apps with Single Shot Configuration
-# Using new single shot module with AzAPI PATCH
-#########################################
-
+# =============================================================================
+# Container Apps (Single-Shot) - RBAC propagation wait aumentado para 90s
+# =============================================================================
 module "users_api_container_app" {
   source = "../modules/container_app_single_shot"
 
@@ -234,56 +215,17 @@ module "users_api_container_app" {
   key_vault_name = module.key_vault.key_vault_name
   key_vault_uri  = module.key_vault.key_vault_uri
 
+  # Database name secret ref specific for users service
+  db_name_secret_ref = "db-name-users"
+
   tags = local.common_tags
 
-  # map: secret name (as it will appear in the Container App) -> KeyVault secret URI
-  kv_secret_refs = {
-    db-host                          = "${module.key_vault.key_vault_uri}secrets/db-host"
-    db-port                          = "${module.key_vault.key_vault_uri}secrets/db-port"
-    db-name-users                    = "${module.key_vault.key_vault_uri}secrets/db-name-users"
-    db-admin-login                   = "${module.key_vault.key_vault_uri}secrets/db-admin-login"
-    db-password                      = "${module.key_vault.key_vault_uri}secrets/db-password"
-    db-name-maintenance              = "${module.key_vault.key_vault_uri}secrets/db-name-maintenance"
-    db-schema                        = "${module.key_vault.key_vault_uri}secrets/db-schema"
-    db-connection-timeout            = "${module.key_vault.key_vault_uri}secrets/db-connection-timeout"
-    cache-host                       = "${module.key_vault.key_vault_uri}secrets/cache-host"
-    cache-port                       = "${module.key_vault.key_vault_uri}secrets/cache-port"
-    cache-password                   = "${module.key_vault.key_vault_uri}secrets/cache-password"
-    cache-secure                     = "${module.key_vault.key_vault_uri}secrets/cache-secure"
-    servicebus-connection-string     = "${module.key_vault.key_vault_uri}secrets/servicebus-connection-string"
-    servicebus-auto-provision        = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-provision"
-    servicebus-max-delivery-count    = "${module.key_vault.key_vault_uri}secrets/servicebus-max-delivery-count"
-    servicebus-enable-dead-lettering = "${module.key_vault.key_vault_uri}secrets/servicebus-enable-dead-lettering"
-    servicebus-auto-purge-on-startup = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-purge-on-startup"
-    servicebus-use-control-queues    = "${module.key_vault.key_vault_uri}secrets/servicebus-use-control-queues"
-  }
+  # Environment variables and secret refs are configured via GitHub Actions pipeline
+  # using azure/container-apps-deploy-action@v2 with secretref pattern
 
-  # map: env var -> secret name (must match keys of kv_secret_refs)
-  env_secret_refs = {
-    DB_HOST                                = "db-host"
-    DB_PORT                                = "db-port"
-    DB_NAME                                = "db-name-users"
-    DB_USER                                = "db-admin-login"
-    DB_PASSWORD                            = "db-password"
-    DB_MAINTENANCE_NAME                    = "db-name-maintenance"
-    DB_SCHEMA                              = "db-schema"
-    DB_CONNECTION_TIMEOUT                  = "db-connection-timeout"
-    CACHE_HOST                             = "cache-host"
-    CACHE_PORT                             = "cache-port"
-    CACHE_PASSWORD                         = "cache-password"
-    CACHE_SECURE                           = "cache-secure"
-    AZURE_SERVICEBUS_CONNECTIONSTRING      = "servicebus-connection-string"
-    AZURE_SERVICEBUS_AUTO_PROVISION        = "servicebus-auto-provision"
-    AZURE_SERVICEBUS_MAX_DELIVERY_COUNT    = "servicebus-max-delivery-count"
-    AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING = "servicebus-enable-dead-lettering"
-    AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP = "servicebus-auto-purge-on-startup"
-    AZURE_SERVICEBUS_USE_CONTROL_QUEUES    = "servicebus-use-control-queues"
-  }
-
-  rbac_propagation_wait_seconds = 45
+  rbac_propagation_wait_seconds = 120
 
   depends_on = [
-
     module.container_app_environment,
     module.acr,
     module.key_vault,
@@ -292,6 +234,7 @@ module "users_api_container_app" {
     module.servicebus
   ]
 }
+
 
 module "games_api_container_app" {
   source = "../modules/container_app_single_shot"
@@ -309,62 +252,21 @@ module "games_api_container_app" {
   key_vault_name = module.key_vault.key_vault_name
   key_vault_uri  = module.key_vault.key_vault_uri
 
+  # Database name secret ref specific for games service
+  db_name_secret_ref = "db-name-games"
+
   tags = local.common_tags
 
-  # map: secret name (as it will appear in the Container App) -> KeyVault secret URI
-  kv_secret_refs = {
-    db-host                          = "${module.key_vault.key_vault_uri}secrets/db-host"
-    db-port                          = "${module.key_vault.key_vault_uri}secrets/db-port"
-    db-name-games                    = "${module.key_vault.key_vault_uri}secrets/db-name-games"
-    db-admin-login                   = "${module.key_vault.key_vault_uri}secrets/db-admin-login"
-    db-password                      = "${module.key_vault.key_vault_uri}secrets/db-password"
-    db-name-maintenance              = "${module.key_vault.key_vault_uri}secrets/db-name-maintenance"
-    db-schema                        = "${module.key_vault.key_vault_uri}secrets/db-schema"
-    db-connection-timeout            = "${module.key_vault.key_vault_uri}secrets/db-connection-timeout"
-    cache-host                       = "${module.key_vault.key_vault_uri}secrets/cache-host"
-    cache-port                       = "${module.key_vault.key_vault_uri}secrets/cache-port"
-    cache-password                   = "${module.key_vault.key_vault_uri}secrets/cache-password"
-    cache-secure                     = "${module.key_vault.key_vault_uri}secrets/cache-secure"
-    servicebus-connection-string     = "${module.key_vault.key_vault_uri}secrets/servicebus-connection-string"
-    servicebus-auto-provision        = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-provision"
-    servicebus-max-delivery-count    = "${module.key_vault.key_vault_uri}secrets/servicebus-max-delivery-count"
-    servicebus-enable-dead-lettering = "${module.key_vault.key_vault_uri}secrets/servicebus-enable-dead-lettering"
-    servicebus-auto-purge-on-startup = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-purge-on-startup"
-    servicebus-use-control-queues    = "${module.key_vault.key_vault_uri}secrets/servicebus-use-control-queues"
-  }
-
-  # map: env var -> secret name (must match keys of kv_secret_refs)
-  env_secret_refs = {
-    DB_HOST                                = "db-host"
-    DB_PORT                                = "db-port"
-    DB_NAME                                = "db-name-games"
-    DB_USER                                = "db-admin-login"
-    DB_PASSWORD                            = "db-password"
-    DB_MAINTENANCE_NAME                    = "db-name-maintenance"
-    DB_SCHEMA                              = "db-schema"
-    DB_CONNECTION_TIMEOUT                  = "db-connection-timeout"
-    CACHE_HOST                             = "cache-host"
-    CACHE_PORT                             = "cache-port"
-    CACHE_PASSWORD                         = "cache-password"
-    CACHE_SECURE                           = "cache-secure"
-    AZURE_SERVICEBUS_CONNECTIONSTRING      = "servicebus-connection-string"
-    AZURE_SERVICEBUS_AUTO_PROVISION        = "servicebus-auto-provision"
-    AZURE_SERVICEBUS_MAX_DELIVERY_COUNT    = "servicebus-max-delivery-count"
-    AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING = "servicebus-enable-dead-lettering"
-    AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP = "servicebus-auto-purge-on-startup"
-    AZURE_SERVICEBUS_USE_CONTROL_QUEUES    = "servicebus-use-control-queues"
-  }
+  # Environment variables and secret refs are configured via GitHub Actions pipeline
+  # using azure/container-apps-deploy-action@v2 with secretref pattern
 
   rbac_propagation_wait_seconds = 45
 
   depends_on = [
-
     module.container_app_environment,
     module.acr,
     module.key_vault,
-    module.postgres,
-    module.redis,
-    module.servicebus
+    module.postgres
   ]
 }
 
@@ -384,64 +286,24 @@ module "payments_api_container_app" {
   key_vault_name = module.key_vault.key_vault_name
   key_vault_uri  = module.key_vault.key_vault_uri
 
+  # Database name secret ref specific for payments service
+  db_name_secret_ref = "db-name-payments"
+
   tags = local.common_tags
 
-  # map: secret name (as it will appear in the Container App) -> KeyVault secret URI
-  kv_secret_refs = {
-    db-host                          = "${module.key_vault.key_vault_uri}secrets/db-host"
-    db-port                          = "${module.key_vault.key_vault_uri}secrets/db-port"
-    db-name-payments                 = "${module.key_vault.key_vault_uri}secrets/db-name-payments"
-    db-admin-login                   = "${module.key_vault.key_vault_uri}secrets/db-admin-login"
-    db-password                      = "${module.key_vault.key_vault_uri}secrets/db-password"
-    db-name-maintenance              = "${module.key_vault.key_vault_uri}secrets/db-name-maintenance"
-    db-schema                        = "${module.key_vault.key_vault_uri}secrets/db-schema"
-    db-connection-timeout            = "${module.key_vault.key_vault_uri}secrets/db-connection-timeout"
-    cache-host                       = "${module.key_vault.key_vault_uri}secrets/cache-host"
-    cache-port                       = "${module.key_vault.key_vault_uri}secrets/cache-port"
-    cache-password                   = "${module.key_vault.key_vault_uri}secrets/cache-password"
-    cache-secure                     = "${module.key_vault.key_vault_uri}secrets/cache-secure"
-    servicebus-connection-string     = "${module.key_vault.key_vault_uri}secrets/servicebus-connection-string"
-    servicebus-auto-provision        = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-provision"
-    servicebus-max-delivery-count    = "${module.key_vault.key_vault_uri}secrets/servicebus-max-delivery-count"
-    servicebus-enable-dead-lettering = "${module.key_vault.key_vault_uri}secrets/servicebus-enable-dead-lettering"
-    servicebus-auto-purge-on-startup = "${module.key_vault.key_vault_uri}secrets/servicebus-auto-purge-on-startup"
-    servicebus-use-control-queues    = "${module.key_vault.key_vault_uri}secrets/servicebus-use-control-queues"
-  }
-
-  # map: env var -> secret name (must match keys of kv_secret_refs)
-  env_secret_refs = {
-    DB_HOST                                = "db-host"
-    DB_PORT                                = "db-port"
-    DB_NAME                                = "db-name-payments"
-    DB_USER                                = "db-admin-login"
-    DB_PASSWORD                            = "db-password"
-    DB_MAINTENANCE_NAME                    = "db-name-maintenance"
-    DB_SCHEMA                              = "db-schema"
-    DB_CONNECTION_TIMEOUT                  = "db-connection-timeout"
-    CACHE_HOST                             = "cache-host"
-    CACHE_PORT                             = "cache-port"
-    CACHE_PASSWORD                         = "cache-password"
-    CACHE_SECURE                           = "cache-secure"
-    AZURE_SERVICEBUS_CONNECTIONSTRING      = "servicebus-connection-string"
-    AZURE_SERVICEBUS_AUTO_PROVISION        = "servicebus-auto-provision"
-    AZURE_SERVICEBUS_MAX_DELIVERY_COUNT    = "servicebus-max-delivery-count"
-    AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING = "servicebus-enable-dead-lettering"
-    AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP = "servicebus-auto-purge-on-startup"
-    AZURE_SERVICEBUS_USE_CONTROL_QUEUES    = "servicebus-use-control-queues"
-  }
+  # Environment variables and secret refs are configured via GitHub Actions pipeline
+  # using azure/container-apps-deploy-action@v2 with secretref pattern
 
   rbac_propagation_wait_seconds = 45
 
   depends_on = [
-
     module.container_app_environment,
     module.acr,
     module.key_vault,
-    module.postgres,
-    module.redis,
-    module.servicebus
+    module.postgres
   ]
 }
+
 
 # =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation

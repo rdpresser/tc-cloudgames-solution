@@ -90,49 +90,35 @@ variable "tags" {
   default     = {}
 }
 
-# Map of secret name -> KeyVault secret URI (versionless)
-# Example:
-# {
-#   db-host     = "https://kv.vault.azure.net/secrets/db-host"
-#   db-port     = "https://kv.vault.azure.net/secrets/db-port"
-#   db-password = "https://kv.vault.azure.net/secrets/db-password"
-# }
-variable "kv_secret_refs" {
-  description = "Map of Container App secret names to Key Vault secret URIs"
-  type        = map(string)
-  default     = {}
+variable "db_name_secret_ref" {
+  description = "Database name secret reference (e.g., 'db-name-users', 'db-name-games', 'db-name-payments')"
+  type        = string
 }
 
-# Map of environment variable -> Container App secret name
-# Example:
-# {
-#   DB_HOST     = "db-host"
-#   DB_PORT     = "db-port"
-#   DB_PASSWORD = "db-password"
-# }
-variable "env_secret_refs" {
-  description = "Map of environment variables to Container App secret names"
-  type        = map(string)
-  default     = {}
-}
+# Note: Environment variables are now configured via GitHub Actions pipeline
+# using azure/container-apps-deploy-action@v2. This module creates the secret 
+# bindings via System Managed Identity for Key Vault access.
 
-# Optional plain environment variables (non-secret)
-# Example: [{ name = "ASPNETCORE_ENVIRONMENT", value = "Production" }]
-variable "env_plain" {
-  description = "Plain env vars (non-secret) to set on the container"
-  type = list(object({
-    name  = string
-    value = string
-  }))
-  default = [
-    { name = "ASPNETCORE_ENVIRONMENT", value = "Production" },
-    { name = "ASPNETCORE_URLS",        value = "http://+:8080" }
-  ]
-}
-
-# Extra wait (seconds) after RBAC to avoid AAD propagation flakiness
 variable "rbac_propagation_wait_seconds" {
   description = "Seconds to wait after RBAC assignment before patching secrets"
   type        = number
-  default     = 30
+  default     = 120
+}
+
+variable "timeouts_create" {
+  description = "Timeout for create operations"
+  type        = string
+  default     = "30m"
+}
+
+variable "timeouts_update" {
+  description = "Timeout for update operations"
+  type        = string
+  default     = "20m"
+}
+
+variable "timeouts_delete" {
+  description = "Timeout for delete operations"
+  type        = string
+  default     = "20m"
 }
