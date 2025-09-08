@@ -86,111 +86,111 @@ resource "azurerm_container_app" "main" {
   secret {
     name                = "db-host"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/db-host"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "db-port"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/db-port"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = var.db_name_secret_ref
     key_vault_secret_id = "${var.key_vault_uri}/secrets/${var.db_name_secret_ref}"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "db-admin-login"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/db-admin-login"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "db-password"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/db-password"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "db-name-maintenance"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/db-name-maintenance"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "db-schema"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/db-schema"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "db-connection-timeout"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/db-connection-timeout"
-    identity            = "system"
+    identity            = "System"
   }
 
   # Cache secrets
   secret {
     name                = "cache-host"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-host"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "cache-port"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-port"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "cache-password"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-password"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "cache-secure"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-secure"
-    identity            = "system"
+    identity            = "System"
   }
 
   # Service Bus secrets
   secret {
     name                = "servicebus-connection-string"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-connection-string"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "servicebus-auto-provision"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-provision"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "servicebus-max-delivery-count"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-max-delivery-count"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "servicebus-enable-dead-lettering"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-enable-dead-lettering"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "servicebus-auto-purge-on-startup"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-purge-on-startup"
-    identity            = "system"
+    identity            = "System"
   }
 
   secret {
     name                = "servicebus-use-control-queues"
     key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-use-control-queues"
-    identity            = "system"
+    identity            = "System"
   }
 
   timeouts {
