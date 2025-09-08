@@ -221,7 +221,7 @@ resource "azurerm_role_assignment" "kv_secrets_user" {
 }
 
 # -------------------------------------------------------------------
-# 4) Espera de propagação RBAC
+# 4) Espera de propagação RBAC - Ensures RBAC is propagated
 # -------------------------------------------------------------------
 resource "time_sleep" "wait_for_rbac" {
   create_duration = "${var.rbac_propagation_wait_seconds}s"
