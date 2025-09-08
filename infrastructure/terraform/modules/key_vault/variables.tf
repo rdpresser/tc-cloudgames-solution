@@ -252,12 +252,6 @@ variable "servicebus_use_control_queues" {
 # Legacy Variables (keeping for backward compatibility)
 # =============================================================================
 
-variable "app_object_id" {
-  description = "Object ID of the application service principal that needs Key Vault access (deprecated, use service_principal_object_id)"
-  type        = string
-  default     = null
-}
-
 variable "subscription_id" {
   description = "Azure subscription ID for role assignments"
   type        = string

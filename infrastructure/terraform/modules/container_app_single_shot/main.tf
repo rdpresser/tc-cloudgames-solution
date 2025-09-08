@@ -61,6 +61,14 @@ resource "azurerm_container_app" "main" {
   }
 
   # -------------------------------------------------------------------
+  # Container Registry Configuration (System Identity authentication)
+  # -------------------------------------------------------------------
+  registry {
+    server   = var.container_registry_server
+    identity = "System"
+  }
+
+  # -------------------------------------------------------------------
   # Public ingress (HTTP)
   # -------------------------------------------------------------------
   ingress {
