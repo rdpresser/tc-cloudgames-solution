@@ -208,9 +208,9 @@ module "users_api_container_app" {
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   location                     = module.resource_group.location
 
-  container_image_acr         = "${module.acr.acr_login_server}/users-api:latest"
-  container_registry_server   = module.acr.acr_login_server
-  container_registry_id       = module.acr.acr_id
+  container_image_acr       = "${module.acr.acr_login_server}/users-api:latest"
+  container_registry_server = module.acr.acr_login_server
+  container_registry_id     = module.acr.acr_id
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -246,9 +246,9 @@ module "games_api_container_app" {
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   location                     = module.resource_group.location
 
-  container_image_acr         = "${module.acr.acr_login_server}/games-api:latest"
-  container_registry_server   = module.acr.acr_login_server
-  container_registry_id       = module.acr.acr_id
+  container_image_acr       = "${module.acr.acr_login_server}/games-api:latest"
+  container_registry_server = module.acr.acr_login_server
+  container_registry_id     = module.acr.acr_id
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -281,9 +281,9 @@ module "payments_api_container_app" {
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   location                     = module.resource_group.location
 
-  container_image_acr         = "${module.acr.acr_login_server}/payments-api:latest"
-  container_registry_server   = module.acr.acr_login_server
-  container_registry_id       = module.acr.acr_id
+  container_image_acr       = "${module.acr.acr_login_server}/payments-api:latest"
+  container_registry_server = module.acr.acr_login_server
+  container_registry_id     = module.acr.acr_id
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
