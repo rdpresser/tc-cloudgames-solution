@@ -62,13 +62,14 @@ resource "azurerm_container_app" "main" {
   }
 
   # -------------------------------------------------------------------
-  # Lifecycle: Pipeline manages images
-  # This allows the pipeline to manage image updates without Terraform interference
-  # Terraform will not override images deployed by the pipeline
+  # Lifecycle: Pipeline manages images and environment variables
+  # This allows the pipeline to manage both image updates and env vars without Terraform interference
+  # Terraform manages infrastructure, pipeline manages application deployment configuration
   # -------------------------------------------------------------------
   lifecycle {
     ignore_changes = [
-      template[0].container[0].image
+      template[0].container[0].image,
+      template[0].container[0].env
     ]
   }
 
