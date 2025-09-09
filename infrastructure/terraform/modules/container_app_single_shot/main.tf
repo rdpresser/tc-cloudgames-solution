@@ -47,6 +47,7 @@ resource "azurerm_container_app" "main" {
 
   # -------------------------------------------------------------------
   # Application Template (basic container config, no env vars here)
+  # Pipeline manages image updates after initial deployment
   # -------------------------------------------------------------------
   template {
     min_replicas = var.min_replicas
@@ -58,6 +59,17 @@ resource "azurerm_container_app" "main" {
       cpu    = var.cpu_requests
       memory = var.memory_requests
     }
+  }
+
+  # -------------------------------------------------------------------
+  # Lifecycle: Pipeline manages images
+  # This allows the pipeline to manage image updates without Terraform interference
+  # Terraform will not override images deployed by the pipeline
+  # -------------------------------------------------------------------
+  lifecycle {
+    ignore_changes = [
+      template[0].container[0].image
+    ]
   }
 
   # -------------------------------------------------------------------
