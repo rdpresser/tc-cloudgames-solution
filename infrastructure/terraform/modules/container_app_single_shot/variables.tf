@@ -68,25 +68,25 @@ variable "target_port" {
 variable "cpu_requests" {
   description = "Container CPU request"
   type        = string
-  default     = "0.5"
+  default     = "0.25"
 }
 
 variable "memory_requests" {
   description = "Container memory request"
   type        = string
-  default     = "1Gi"
+  default     = "0.5Gi"
 }
 
 variable "min_replicas" {
   description = "Minimum replicas"
   type        = number
-  default     = 1
+  default     = 0
 }
 
 variable "max_replicas" {
   description = "Maximum replicas"
   type        = number
-  default     = 10
+  default     = 3
 }
 
 variable "tags" {
