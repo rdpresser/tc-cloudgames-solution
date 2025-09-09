@@ -75,6 +75,8 @@ resource "azurerm_container_app" "main" {
 
   # -------------------------------------------------------------------
   # Container Registry Configuration (System Identity authentication)
+  # Uses the Container App's System Assigned Managed Identity for ACR authentication
+  # "System" indicates the system-assigned managed identity should be used
   # -------------------------------------------------------------------
   registry {
     server   = var.container_registry_server
