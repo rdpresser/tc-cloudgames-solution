@@ -4,6 +4,16 @@ using Microsoft.Extensions.Logging;
 namespace TC.CloudGames.AppHost.Aspire.Extensions
 {
     /// <summary>
+    /// Tipos de projetos suportados na solução
+    /// </summary>
+    public enum ProjectType
+    {
+        Users,
+        Games,
+        Payments
+    }
+
+    /// <summary>
     /// Configuração base para todos os serviços
     /// </summary>
     public abstract record ServiceConfig
@@ -43,11 +53,91 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         public required string Host { get; init; }
         public required int Port { get; init; }
         public required string Password { get; init; }
-        public required string InstanceName { get; init; }
+        public required Dictionary<string, string> InstanceNames { get; init; }
         public required bool Secure { get; init; }
 
         // Recursos Aspire para parâmetros secretos
         public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
+
+        /// <summary>
+        /// Obtém o nome da instância para um projeto específico
+        /// </summary>
+        public string GetInstanceNameForProject(ProjectType projectType)
+        {
+            var projectKey = projectType.ToString().ToLowerInvariant();
+            return InstanceNames.GetValueOrDefault(projectKey, $"TC.CloudGames.{projectType}.Api:");
+        }
+
+        /// <summary>
+        /// Cria configuração de cache a partir da configuração do sistema
+        /// </summary>
+        public static CacheServiceConfig CreateFromConfiguration(
+            ConfigurationManager configuration, 
+            IResourceBuilder<ParameterResource>? passwordParameter = null,
+            ILogger? logger = null)
+        {
+            var useExternal = ServiceConfigResolver.ShouldUseExternalService(configuration, "Cache", logger);
+
+            return new CacheServiceConfig
+            {
+                UseExternalService = useExternal,
+                ContainerName = ServiceConfigResolver.GetResolvedValue("Cache:ContainerName", "CACHE_CONTAINER_NAME", configuration, "TC-CloudGames-Redis", logger),
+                Host = ServiceConfigResolver.GetResolvedValue("Cache:Host", "CACHE_HOST", configuration, useExternal ? "" : "localhost", logger),
+                Port = int.Parse(ServiceConfigResolver.GetResolvedValue("Cache:Port", "CACHE_PORT", configuration, "6379", logger)),
+                Password = ServiceConfigResolver.GetResolvedValue("Cache:Password", "CACHE_PASSWORD", configuration, "Redis@123", logger),
+                InstanceNames = ParseInstanceNamesFromConfiguration(configuration, logger),
+                Secure = bool.Parse(ServiceConfigResolver.GetResolvedValue("Cache:Secure", "CACHE_SECURE", configuration, "false", logger)),
+                PasswordParameter = passwordParameter
+            };
+        }
+
+        /// <summary>
+        /// Parse instance names from configuration, supporting both old and new format
+        /// </summary>
+        private static Dictionary<string, string> ParseInstanceNamesFromConfiguration(ConfigurationManager configuration, ILogger? logger = null)
+        {
+            var instanceNames = new Dictionary<string, string>();
+
+            // Try new format first (Cache:InstanceNames:users, etc.)
+            var instanceNamesSection = configuration.GetSection("Cache:InstanceNames");
+            if (instanceNamesSection.Exists() && instanceNamesSection.GetChildren().Any())
+            {
+                foreach (var child in instanceNamesSection.GetChildren())
+                {
+                    instanceNames[child.Key] = child.Value ?? string.Empty;
+                }
+                logger?.LogDebug("Cache instance names loaded from new format: {Count} entries", instanceNames.Count);
+                return instanceNames;
+            }
+
+            // Fallback to old format (single InstanceName)
+            var singleInstanceName = ServiceConfigResolver.GetResolvedValue("Cache:InstanceName", "CACHE_INSTANCE_NAME", configuration, "TC.CloudGames.Users.Api:", logger);
+            
+            // Try to determine project type from single instance name
+            if (singleInstanceName.Contains("Users", StringComparison.OrdinalIgnoreCase))
+            {
+                instanceNames["users"] = singleInstanceName;
+            }
+            else if (singleInstanceName.Contains("Games", StringComparison.OrdinalIgnoreCase))
+            {
+                instanceNames["games"] = singleInstanceName;
+            }
+            else if (singleInstanceName.Contains("Payments", StringComparison.OrdinalIgnoreCase))
+            {
+                instanceNames["payments"] = singleInstanceName;
+            }
+            else
+            {
+                // Default mapping for all project types
+                instanceNames["users"] = "TC.CloudGames.Users.Api:";
+                instanceNames["games"] = "TC.CloudGames.Games.Api:";
+                instanceNames["payments"] = "TC.CloudGames.Payments.Api:";
+                logger?.LogWarning("Could not parse instance name '{InstanceName}', using default mappings", singleInstanceName);
+            }
+
+            logger?.LogDebug("Cache instance names loaded from legacy format: {Count} entries", instanceNames.Count);
+            return instanceNames;
+        }
     }
 
     /// <summary>

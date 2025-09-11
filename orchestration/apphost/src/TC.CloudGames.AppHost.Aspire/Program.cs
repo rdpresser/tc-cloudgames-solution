@@ -23,8 +23,9 @@ var (postgres, userDb, gamesDb, paymentsDb, maintenanceDb) = ServiceSetup.Config
 var redis = ServiceSetup.ConfigureRedis(builder, registry, logger);
 var messageBroker = ServiceSetup.ConfigureMessageBroker(builder, registry, logger);
 
-// Setup projects
+// Setup projects - cada projeto com seu banco específico
 ProjectSetup.ConfigureUsersApi(builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
+ProjectSetup.ConfigureGamesApi(builder, registry, postgres, gamesDb, maintenanceDb, redis, messageBroker);
 
 // Run
 await builder.Build().RunAsync();

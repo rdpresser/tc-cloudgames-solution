@@ -193,21 +193,8 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         /// </summary>
         public CacheServiceConfig GetCacheConfig(ConfigurationManager configuration, ILogger? logger = null)
         {
-            var useExternal = ServiceConfigResolver.ShouldUseExternalService(configuration, "Cache", logger);
-
-            return new CacheServiceConfig
-            {
-                UseExternalService = useExternal,
-                ContainerName = ServiceConfigResolver.GetResolvedValue("Cache:ContainerName", "CACHE_CONTAINER_NAME", configuration, "TC-CloudGames-Redis", logger),
-                Host = ServiceConfigResolver.GetResolvedValue("Cache:Host", "CACHE_HOST", configuration, useExternal ? "" : "localhost", logger),
-                Port = int.Parse(ServiceConfigResolver.GetResolvedValue("Cache:Port", "CACHE_PORT", configuration, "6379", logger)),
-                Password = ServiceConfigResolver.GetResolvedValue("Cache:Password", "CACHE_PASSWORD", configuration, "Redis@123", logger),
-                InstanceName = ServiceConfigResolver.GetResolvedValue("Cache:InstanceName", "CACHE_INSTANCE_NAME", configuration, "TC.CloudGames.Users.Api:", logger),
-                Secure = bool.Parse(ServiceConfigResolver.GetResolvedValue("Cache:Secure", "CACHE_SECURE", configuration, "false", logger)),
-
-                // Aspire Parameters
-                PasswordParameter = Contains("redis-password") ? this["redis-password"] : null
-            };
+            var passwordParameter = Contains("redis-password") ? this["redis-password"] : null;
+            return CacheServiceConfig.CreateFromConfiguration(configuration, passwordParameter, logger);
         }
 
         /// <summary>

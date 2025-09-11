@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\services\games\src\Adapters\Inbound\TC.CloudGames.Games.Api\TC.CloudGames.Games.Api.csproj" />
     <ProjectReference Include="..\..\..\..\services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\TC.CloudGames.Users.Api.csproj" />
   </ItemGroup>
 

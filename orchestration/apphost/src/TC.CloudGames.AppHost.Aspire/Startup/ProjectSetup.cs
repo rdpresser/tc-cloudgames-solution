@@ -13,12 +13,41 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             IResourceBuilder<RedisResource>? redis,
             MessageBrokerResources messageBroker)
         {
-            var project = builder.AddProject<Projects.TC_CloudGames_Users_Api>("users-api")
+            var usersProject = builder.AddProject<Projects.TC_CloudGames_Users_Api>("users-api")
                 .WithHealthChecks();
 
+            ConfigureProject(usersProject, ProjectType.Users, builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
+        }
+
+        public static void ConfigureGamesApi(
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry,
+            IResourceBuilder<PostgresServerResource>? postgres,
+            IResourceBuilder<PostgresDatabaseResource>? gamesDb,
+            IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
+            IResourceBuilder<RedisResource>? redis,
+            MessageBrokerResources messageBroker)
+        {
+            var gamesProject = builder.AddProject<Projects.TC_CloudGames_Games_Api>("games-api")
+                .WithHealthChecks();
+
+            ConfigureProject(gamesProject, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, messageBroker);
+        }
+
+        private static void ConfigureProject(
+            IResourceBuilder<ProjectResource> project,
+            ProjectType projectType,
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry,
+            IResourceBuilder<PostgresServerResource>? postgres,
+            IResourceBuilder<PostgresDatabaseResource>? projectDb,
+            IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
+            IResourceBuilder<RedisResource>? redis,
+            MessageBrokerResources messageBroker)
+        {
             // Add references only for local services (containers)
             if (postgres != null) project = project.WithReference(postgres);
-            if (userDb != null) project = project.WithReference(userDb);
+            if (projectDb != null) project = project.WithReference(projectDb);
             if (maintenanceDb != null) project = project.WithReference(maintenanceDb);
             if (redis != null) project = project.WithReference(redis);
 
@@ -27,17 +56,17 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             // Wait only for local services
             if (postgres != null) project = project.WaitFor(postgres);
-            if (userDb != null) project = project.WaitFor(userDb);
+            if (projectDb != null) project = project.WaitFor(projectDb);
             if (maintenanceDb != null) project = project.WaitFor(maintenanceDb);
             if (redis != null) project = project.WaitFor(redis);
 
             // Wait for message broker only if it has local resources
             WaitForMessageBrokerIfNeeded(project, messageBroker);
 
-            // Configure environment variables uniformly
-            ConfigureDatabaseEnvironment(project, builder, registry);
+            // Configure environment variables específicas para o tipo de projeto
+            ConfigureDatabaseEnvironment(project, projectType, builder, registry);
             ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type);
-            ConfigureCacheEnvironment(project, builder, registry);
+            ConfigureCacheEnvironment(project, projectType, builder, registry);
         }
 
         private static IResourceBuilder<ProjectResource> WithHealthChecks(this IResourceBuilder<ProjectResource> project)
@@ -79,19 +108,19 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
         private static void ConfigureDatabaseEnvironment(
             IResourceBuilder<ProjectResource> project,
+            ProjectType projectType,
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry)
         {
             var dbConfig = registry.GetDatabaseConfig(builder.Configuration);
 
+            // Seleciona o nome do banco baseado no tipo de projeto
+            var databaseName = GetDatabaseNameForProject(projectType, dbConfig);
+
             project
                 .WithEnvironment("DB_HOST", dbConfig.Host)
                 .WithEnvironment("DB_PORT", dbConfig.Port.ToString())
-                //******** Criar configuração especifica para cada projeto com o seu DB_NAME proprio ********************
-                .WithEnvironment("DB_NAME", dbConfig.UsersDbName)
-                ////.WithEnvironment("DB_USERS_NAME", dbConfig.UsersDbName)
-                ////.WithEnvironment("DB_GAMES_NAME", dbConfig.GamesDbName)
-                ////.WithEnvironment("DB_PAYMENTS_NAME", dbConfig.PaymentsDbName)
+                .WithEnvironment("DB_NAME", databaseName)
                 .WithEnvironment("DB_MAINTENANCE_NAME", dbConfig.MaintenanceDbName)
                 .WithEnvironment("DB_SCHEMA", dbConfig.Schema)
                 .WithEnvironment("DB_CONNECTION_TIMEOUT", dbConfig.ConnectionTimeout.ToString());
@@ -102,6 +131,20 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             if (dbConfig.PasswordParameter != null)
                 project.WithParameterEnv("DB_PASSWORD", dbConfig.PasswordParameter);
+        }
+
+        /// <summary>
+        /// Retorna o nome do banco de dados apropriado baseado no tipo de projeto
+        /// </summary>
+        private static string GetDatabaseNameForProject(ProjectType projectType, DatabaseServiceConfig dbConfig)
+        {
+            return projectType switch
+            {
+                ProjectType.Users => dbConfig.UsersDbName,
+                ProjectType.Games => dbConfig.GamesDbName,
+                ProjectType.Payments => dbConfig.PaymentsDbName,
+                _ => throw new ArgumentException($"Tipo de projeto não suportado: {projectType}")
+            };
         }
 
         private static void ConfigureMessageBrokerEnvironment(
@@ -173,15 +216,19 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
         private static void ConfigureCacheEnvironment(
             IResourceBuilder<ProjectResource> project,
+            ProjectType projectType,
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry)
         {
             var cacheConfig = registry.GetCacheConfig(builder.Configuration);
 
+            // Seleciona o nome da instância baseado no tipo de projeto
+            var instanceName = cacheConfig.GetInstanceNameForProject(projectType);
+
             project
                 .WithEnvironment("CACHE_HOST", cacheConfig.Host)
                 .WithEnvironment("CACHE_PORT", cacheConfig.Port.ToString())
-                .WithEnvironment("CACHE_INSTANCE_NAME", cacheConfig.InstanceName)
+                .WithEnvironment("CACHE_INSTANCE_NAME", instanceName)
                 .WithEnvironment("CACHE_SECURE", cacheConfig.Secure.ToString());
 
             // Add parameters for secrets
