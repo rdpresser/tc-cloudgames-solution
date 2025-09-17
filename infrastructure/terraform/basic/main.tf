@@ -47,7 +47,7 @@ locals {
 # =============================================================================
 module "resource_group" {
   source      = "../modules/resource_group"
-  name_prefix = "${local.project_name}-solution-${local.environment}-rg"
+  name_prefix = "${local.project_name}-basic-${local.environment}-rg"
   location    = var.azure_resource_group_location
   tags        = local.common_tags
 }
