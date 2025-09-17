@@ -29,10 +29,12 @@ output "azure_portal_rg_url" {
 output "servicebus_info" {
   description = "Azure Service Bus details"
   value = {
-    namespace    = module.servicebus.namespace_name
-    namespace_id = module.servicebus.namespace_id
-    topic        = module.servicebus.topic_name
-    subscription = module.servicebus.subscription_name
+    namespace          = module.servicebus.namespace_name
+    namespace_id       = module.servicebus.namespace_id
+    topic_names        = module.servicebus.topic_names
+    topic_ids          = module.servicebus.topic_ids
+    subscription_names = module.servicebus.subscription_names
+    subscription_ids   = module.servicebus.subscription_ids
   }
 }
 
@@ -43,10 +45,10 @@ output "servicebus_info" {
 output "all_resources" {
   description = "Aggregated resource names for quick reference"
   value = {
-    resource_group   = module.resource_group.name
-    servicebus_ns    = module.servicebus.namespace_name
-    servicebus_topic = module.servicebus.topic_name
-    location         = module.resource_group.location
+    resource_group    = module.resource_group.name
+    servicebus_ns     = module.servicebus.namespace_name
+    servicebus_topics = module.servicebus.topic_names
+    location          = module.resource_group.location
   }
 }
 
@@ -58,7 +60,7 @@ output "connection_info" {
   description = "Non-sensitive connection info for debugging or next stages"
   value = {
     servicebus_namespace = module.servicebus.namespace_name
-    servicebus_topic     = module.servicebus.topic_name
+    servicebus_topics    = module.servicebus.topic_names
   }
 }
 

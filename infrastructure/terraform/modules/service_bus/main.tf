@@ -14,9 +14,10 @@ resource "azurerm_servicebus_namespace" "this" {
   tags = var.tags
 }
 
-# Create Topic
+# Create Topics
 resource "azurerm_servicebus_topic" "this" {
-  name         = var.topic_name
+  for_each     = toset(var.topics)
+  name         = each.value
   namespace_id = azurerm_servicebus_namespace.this.id
 
   # Correto nas versões novas
@@ -24,10 +25,11 @@ resource "azurerm_servicebus_topic" "this" {
   default_message_ttl   = "P7D" # 7 dias
 }
 
-# Create Subscription (fanout style: recebe todas as mensagens)
+# Create Subscriptions (fanout style: recebe todas as mensagens)
 resource "azurerm_servicebus_subscription" "this" {
-  name     = var.subscription_name
-  topic_id = azurerm_servicebus_topic.this.id
+  for_each = var.topic_subscriptions
+  name     = each.value
+  topic_id = azurerm_servicebus_topic.this[each.key].id
 
   max_delivery_count = 10
   lock_duration      = "PT1M"

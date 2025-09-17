@@ -25,16 +25,18 @@ variable "sku" {
   default     = "Standard"
 }
 
-variable "topic_name" {
-  description = "Name of the Service Bus topic."
-  type        = string
-  default     = "user-events"
+variable "topics" {
+  description = "List of Service Bus topics to create."
+  type        = list(string)
+  default     = ["user-events"]
 }
 
-variable "subscription_name" {
-  description = "Name of the subscription for the topic."
-  type        = string
-  default     = "fanout-subscription"
+variable "topic_subscriptions" {
+  description = "Map of topic names to their associated subscriptions. Key is topic name, value is subscription name."
+  type        = map(string)
+  default = {
+    "user-events" = "fanout-subscription"
+  }
 }
 
 variable "tags" {

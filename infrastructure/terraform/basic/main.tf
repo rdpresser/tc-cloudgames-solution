@@ -62,6 +62,17 @@ module "servicebus" {
   resource_group_name = module.resource_group.name
   tags                = local.common_tags
 
+  # Configuração de tópicos e subscriptions
+  topics = [
+    "user.events-topic",
+    "game.events-topic",
+    "payment.events-topic"
+  ]
+
+  topic_subscriptions = {
+    "user.events-topic"     = "games.user.events-subscription"    
+  }
+
   depends_on = [
     module.resource_group
   ]
