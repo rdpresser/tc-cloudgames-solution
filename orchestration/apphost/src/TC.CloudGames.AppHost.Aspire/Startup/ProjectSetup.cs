@@ -65,7 +65,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             // Configure environment variables específicas para o tipo de projeto
             ConfigureDatabaseEnvironment(project, projectType, builder, registry);
-            ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type);
+            ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type, projectType);
             ConfigureCacheEnvironment(project, projectType, builder, registry);
         }
 
@@ -151,17 +151,16 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             IResourceBuilder<ProjectResource> project,
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
-            MessageBrokerType messageBrokerType)
+            MessageBrokerType messageBrokerType,
+            ProjectType projectType)
         {
-            // Set the message broker type
             project.WithEnvironment("MESSAGE_BROKER_TYPE", messageBrokerType.ToString());
 
             switch (messageBrokerType)
             {
                 case MessageBrokerType.RabbitMQ:
-                    ConfigureRabbitMqEnvironment(project, builder, registry);
+                    ConfigureRabbitMqEnvironment(project, builder, registry, projectType);
                     break;
-
                 case MessageBrokerType.AzureServiceBus:
                     ConfigureAzureServiceBusEnvironment(project, builder, registry);
                     break;
@@ -171,15 +170,17 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         private static void ConfigureRabbitMqEnvironment(
             IResourceBuilder<ProjectResource> project,
             IDistributedApplicationBuilder builder,
-            ServiceParameterRegistry registry)
+            ServiceParameterRegistry registry,
+            ProjectType projectType)
         {
             var rabbitConfig = registry.GetRabbitMqConfig(builder.Configuration);
+            var exchange = rabbitConfig.GetExchangeForProject(projectType);
 
             project
                 .WithEnvironment("RABBITMQ_HOST", rabbitConfig.Host)
                 .WithEnvironment("RABBITMQ_PORT", rabbitConfig.Port.ToString())
                 .WithEnvironment("RABBITMQ_VHOST", rabbitConfig.VirtualHost)
-                .WithEnvironment("RABBITMQ_EXCHANGE", rabbitConfig.Exchange)
+                .WithEnvironment("RABBITMQ_EXCHANGE", exchange)
                 .WithEnvironment("RABBITMQ_AUTO_PROVISION", rabbitConfig.AutoProvision.ToString())
                 .WithEnvironment("RABBITMQ_DURABLE", rabbitConfig.Durable.ToString())
                 .WithEnvironment("RABBITMQ_USE_QUORUM_QUEUES", rabbitConfig.UseQuorumQueues.ToString())

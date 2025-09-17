@@ -4,16 +4,14 @@ tc-cloudgames-solution
 - - workflows
 - docs
 - infrastructure
-- - azd		==> aqui preciso entender se faz sentido de manter ou não aqui ou em cada api ter a sua própria pasta de azd e projects
-- - - foundation
-- - - - scripts
-- - - resources
-- - - - container_app_env
 - - terraform
 - - - foundation
+- - - - environments
 - - - modules
 - - - - container_app
 - - - - container_app_env
+- - - - container_app_single_shot
+- - - - container_app_update
 - - - - container_registry
 - - - - key_vault
 - - - - log_analytics
@@ -27,33 +25,150 @@ tc-cloudgames-solution
 - services
 - - games
 - - - .git
+- - - .github
+- - - - workflows
+- - - src
+- - - - Adapters
+- - - - - Inbound
+- - - - - - TC.CloudGames.Games.Api
+- - - - - - - Endpoints
+- - - - - - - Exceptions
+- - - - - - - Extensions
+- - - - - - - Middleware
+- - - - - - - Properties
+- - - - - - - Telemetry
+- - - - - Outbound
+- - - - - - TC.CloudGames.Games.Infrastructure
+- - - - - - - Projections
+- - - - - - - Repositories
+- - - - - - - Snapshots
+- - - - Core
+- - - - - TC.CloudGames.Games.Application
+- - - - - - Abstractions
+- - - - - - - Mappers
+- - - - - - - Ports
+- - - - - - MessageBrokerHandlers
+- - - - - - UseCases
+- - - - - - - ActivateGame
+- - - - - - - CreateGame
+- - - - - - - DeactivateGame
+- - - - - - - GetGameById
+- - - - - - - GetGameList
+- - - - - - - UpdateGameBasicInfo
+- - - - - - - UpdateGameDetails
+- - - - - - - UpdateGamePrice
+- - - - - - - UpdateGameRating
+- - - - - - - UpdateGameStatus
+- - - - - TC.CloudGames.Games.Domain
+- - - - - - Abstractions
+- - - - - - Aggregates
+- - - - - - ValueObjects
+- - - test
 - - payments
 - - - .git
 - - users
 - - - .git
 - - - .github
-- - - - workflows       ==> estou pensando em manter os pipelines de user nessa pasta, para manter tudo referente ao projeto dentro da sua infra de pipeline especifica
-- - - azd               ===> aqui penso em manter o azd também especifico para cada serviço, nesse caso o de users
+- - - - workflows
 - - - src
 - - - - Adapters
 - - - - - Inbound
-- - - - - - TC.CloudGames.Users.Api  ==> projeto de api
+- - - - - - TC.CloudGames.Users.Api
+- - - - - - - Endpoints
+- - - - - - - - Auth
+- - - - - - - - User
+- - - - - - - Exceptions
+- - - - - - - Extensions
+- - - - - - - Middleware
+- - - - - - - Properties
+- - - - - - - Telemetry
 - - - - - Outbound
-- - - - - - TC.CloudGames.Users.Infrastructure ==> projeto de infra
+- - - - - - TC.CloudGames.Users.Infrastructure
+- - - - - - - Projections
+- - - - - - - Repositories
 - - - - Core
-- - - - - TC.CloudGames.Users.Application ==> camada de application
-- - - - - TC.CloudGames.Users.Domain ==> camada de domain
+- - - - - TC.CloudGames.Users.Application
+- - - - - - Abstractions
+- - - - - - - Mappers
+- - - - - - - Ports
+- - - - - - UseCases
+- - - - - - - ActivateUser
+- - - - - - - ChangeUserPassword
+- - - - - - - ChangeUserRole
+- - - - - - - CreateUser
+- - - - - - - DeactivateUser
+- - - - - - - GetUserByEmail
+- - - - - - - GetUserById
+- - - - - - - GetUserList
+- - - - - - - LoginUser
+- - - - - TC.CloudGames.Users.Domain
+- - - - - - Abstractions
+- - - - - - Aggregates
+- - - - - - Validation
+- - - - - - ValueObjects
 - - - test
-- - - - TC.CloudGames.Users.Unit.Tests ==> testes unitarios
+- - - - TC.CloudGames.Users.Unit.Tests
 - - - - - Api
+- - - - - - Abstractions
+- - - - - - Endpoints
+- - - - - - - Auth
+- - - - - - - User
+- - - - - - Middleware
 - - - - - Application
+- - - - - - UseCases
+- - - - - - - ActivateUser
+- - - - - - - ChangeUserPassword
+- - - - - - - ChangeUserRole
+- - - - - - - CreateUser
+- - - - - - - DeactivateUser
+- - - - - - - GetUserByEmail
+- - - - - - - GetUserById
+- - - - - - - GetUserList
+- - - - - - - LoginUser
 - - - - - Common
 - - - - - Domain
+- - - - - - Aggregates
+- - - - - - Extensions
+- - - - - - User
+- - - - - - Validation
+- - - - - - ValueObjects
 - - - - - Fakes
 - - - - - Shared
-- shared  ==> projeto de shared kernel em comum com todos os projetos
+- shared
 - - common
 - - - .git
 - - - src
-- - - - TC.CloudGames.Contracts ==> contratos messagebroker wolverine
-- - - - TC.CloudGames.SharedKernel ==> kernel compartilhado
+- - - - TC.CloudGames.Contracts
+- - - - - Events
+- - - - - - Games
+- - - - - - Payments
+- - - - - - Users
+- - - - TC.CloudGames.SharedKernel
+- - - - - Api
+- - - - - - EndPoints
+- - - - - Application
+- - - - - - Behaviors
+- - - - - - Commands
+- - - - - - Handlers
+- - - - - - Ports
+- - - - - - Queries
+- - - - - Domain
+- - - - - - Aggregate
+- - - - - - Enums
+- - - - - - Events
+- - - - - - ValueObjects
+- - - - - Extensions
+- - - - - Infrastructure
+- - - - - - Authentication
+- - - - - - Caching
+- - - - - - - HealthCheck
+- - - - - - - Provider
+- - - - - - - Service
+- - - - - - Clock
+- - - - - - Database
+- - - - - - - Initializer
+- - - - - - MessageBroker
+- - - - - - Messaging
+- - - - - - Middleware
+- - - - - - Repositories
+- - - - - - UserClaims

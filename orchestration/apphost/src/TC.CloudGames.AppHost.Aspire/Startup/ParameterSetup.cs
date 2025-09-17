@@ -213,10 +213,12 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 VirtualHost = ServiceConfigResolver.GetResolvedValue("RabbitMq:VirtualHost", "RABBITMQ_VHOST", configuration, "/", logger),
                 UserName = ServiceConfigResolver.GetResolvedValue("RabbitMq:UserName", "RABBITMQ_USERNAME", configuration, "guest", logger),
                 Password = ServiceConfigResolver.GetResolvedValue("RabbitMq:Password", "RABBITMQ_PASSWORD", configuration, "guest", logger),
-                Exchange = ServiceConfigResolver.GetResolvedValue("RabbitMq:Exchange", "RABBITMQ_EXCHANGE", configuration, "user.events", logger),
+                UsersExchange = ServiceConfigResolver.GetResolvedValue("RabbitMq:UsersExchange", "RABBITMQ_USERS_EXCHANGE", configuration, "user.events", logger),
+                GamesExchange = ServiceConfigResolver.GetResolvedValue("RabbitMq:GamesExchange", "RABBITMQ_GAMES_EXCHANGE", configuration, "game.events", logger),
+                PaymentsExchange = ServiceConfigResolver.GetResolvedValue("RabbitMq:PaymentsExchange", "RABBITMQ_PAYMENTS_EXCHANGE", configuration, "payment.events", logger),
                 AutoProvision = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:AutoProvision", "RABBITMQ_AUTO_PROVISION", configuration, "true", logger)),
                 Durable = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:Durable", "RABBITMQ_DURABLE", configuration, "true", logger)),
-                UseQuorumQueues = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:UseQuorumQueues", "RABBITMQ_USE_QUORUM_QUEUES", configuration, "true", logger)),
+                UseQuorumQueues = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:UseQuorumQueues", "RABBITMQ_USE_QUORUM_QUEUES", configuration, "false", logger)),
                 AutoPurgeOnStartup = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:AutoPurgeOnStartup", "RABBITMQ_AUTO_PURGE_ON_STARTUP", configuration, "true", logger)),
 
                 // Aspire Parameters

@@ -72,7 +72,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         /// Cria configuração de cache a partir da configuração do sistema
         /// </summary>
         public static CacheServiceConfig CreateFromConfiguration(
-            ConfigurationManager configuration, 
+            ConfigurationManager configuration,
             IResourceBuilder<ParameterResource>? passwordParameter = null,
             ILogger? logger = null)
         {
@@ -112,7 +112,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
 
             // Fallback to old format (single InstanceName)
             var singleInstanceName = ServiceConfigResolver.GetResolvedValue("Cache:InstanceName", "CACHE_INSTANCE_NAME", configuration, "TC.CloudGames.Users.Api:", logger);
-            
+
             // Try to determine project type from single instance name
             if (singleInstanceName.Contains("Users", StringComparison.OrdinalIgnoreCase))
             {
@@ -151,7 +151,9 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         public required string VirtualHost { get; init; }
         public required string UserName { get; init; }
         public required string Password { get; init; }
-        public required string Exchange { get; init; }
+        public required string UsersExchange { get; init; }
+        public required string GamesExchange { get; init; }
+        public required string PaymentsExchange { get; init; }
         public required bool AutoProvision { get; init; }
         public required bool Durable { get; init; }
         public required bool UseQuorumQueues { get; init; }
@@ -160,6 +162,17 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         // Recursos Aspire para parâmetros secretos
         public IResourceBuilder<ParameterResource>? UserParameter { get; init; }
         public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
+
+        /// <summary>
+        /// Retorna o exchange correto baseado no tipo de projeto
+        /// </summary>
+        public string GetExchangeForProject(ProjectType projectType) => projectType switch
+        {
+            ProjectType.Users => UsersExchange,
+            ProjectType.Games => GamesExchange,
+            ProjectType.Payments => PaymentsExchange,
+            _ => UsersExchange
+        };
     }
 
     /// <summary>
