@@ -23,7 +23,7 @@ variable "project_name" {
 variable "azure_resource_group_location" {
   description = "Location for the resource group"
   type        = string
-  default     = "brazilsouth"
+  default     = "eastus2"
 
   validation {
     condition = contains([
