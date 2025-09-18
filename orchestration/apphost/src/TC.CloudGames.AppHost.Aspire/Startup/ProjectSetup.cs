@@ -4,7 +4,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 {
     public static class ProjectSetup
     {
-        public static void ConfigureUsersApi(
+        public static IResourceBuilder<ProjectResource> ConfigureUsersApi(
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
             IResourceBuilder<PostgresServerResource>? postgres,
@@ -16,12 +16,13 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             var usersProject = builder.AddProject<Projects.TC_CloudGames_Users_Api>("users-api")
                 .WithHealthChecks();
 
-            ConfigureProject(usersProject, ProjectType.Users, builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
+            return ConfigureProject(usersProject, null, ProjectType.Users, builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
         }
 
         public static void ConfigureGamesApi(
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
+            IResourceBuilder<ProjectResource>? projectDependency,
             IResourceBuilder<PostgresServerResource>? postgres,
             IResourceBuilder<PostgresDatabaseResource>? gamesDb,
             IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
@@ -31,11 +32,12 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             var gamesProject = builder.AddProject<Projects.TC_CloudGames_Games_Api>("games-api")
                 .WithHealthChecks();
 
-            ConfigureProject(gamesProject, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, messageBroker);
+            ConfigureProject(gamesProject, projectDependency, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, messageBroker);
         }
 
-        private static void ConfigureProject(
+        private static IResourceBuilder<ProjectResource> ConfigureProject(
             IResourceBuilder<ProjectResource> project,
+            IResourceBuilder<ProjectResource>? projectDependency,
             ProjectType projectType,
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
@@ -59,6 +61,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (projectDb != null) project = project.WaitFor(projectDb);
             if (maintenanceDb != null) project = project.WaitFor(maintenanceDb);
             if (redis != null) project = project.WaitFor(redis);
+            if (projectDependency != null) project = project.WaitFor(projectDependency);
 
             // Wait for message broker only if it has local resources
             WaitForMessageBrokerIfNeeded(project, messageBroker);
@@ -67,6 +70,8 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ConfigureDatabaseEnvironment(project, projectType, builder, registry);
             ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type, projectType);
             ConfigureCacheEnvironment(project, projectType, builder, registry);
+
+            return project;
         }
 
         private static IResourceBuilder<ProjectResource> WithHealthChecks(this IResourceBuilder<ProjectResource> project)
@@ -162,7 +167,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                     ConfigureRabbitMqEnvironment(project, builder, registry, projectType);
                     break;
                 case MessageBrokerType.AzureServiceBus:
-                    ConfigureAzureServiceBusEnvironment(project, builder, registry);
+                    ConfigureAzureServiceBusEnvironment(project, builder, registry, projectType);
                     break;
             }
         }
@@ -197,13 +202,14 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         private static void ConfigureAzureServiceBusEnvironment(
             IResourceBuilder<ProjectResource> project,
             IDistributedApplicationBuilder builder,
-            ServiceParameterRegistry registry)
+            ServiceParameterRegistry registry,
+            ProjectType projectType)
         {
             var serviceBusConfig = registry.GetAzureServiceBusConfig(builder.Configuration);
+            var topicName = serviceBusConfig.GetTopicNameForProject(projectType);
 
             project
-                .WithEnvironment("AZURE_SERVICEBUS_TOPIC_NAME", serviceBusConfig.TopicName)
-                .WithEnvironment("AZURE_SERVICEBUS_SUBSCRIPTION_NAME", serviceBusConfig.SubscriptionName)
+                .WithEnvironment("AZURE_SERVICEBUS_TOPIC_NAME", topicName)
                 .WithEnvironment("AZURE_SERVICEBUS_AUTO_PROVISION", serviceBusConfig.AutoProvision.ToString())
                 .WithEnvironment("AZURE_SERVICEBUS_MAX_DELIVERY_COUNT", serviceBusConfig.MaxDeliveryCount.ToString())
                 .WithEnvironment("AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING", serviceBusConfig.EnableDeadLettering.ToString())

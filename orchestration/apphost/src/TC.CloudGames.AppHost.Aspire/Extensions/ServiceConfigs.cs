@@ -157,7 +157,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         public required bool AutoProvision { get; init; }
         public required bool Durable { get; init; }
         public required bool UseQuorumQueues { get; init; }
-        public required bool AutoPurgeOnStartup { get; init; }
+        public required bool AutoPurgeOnStartup { get; init; } = false;
 
         // Recursos Aspire para parâmetros secretos
         public IResourceBuilder<ParameterResource>? UserParameter { get; init; }
@@ -182,16 +182,28 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     {
         public override string ContainerName { get; init; } = "TC-CloudGames-AzureServiceBus";
         public required string ConnectionString { get; init; }
-        public required string TopicName { get; init; }
-        public required string SubscriptionName { get; init; }
+        public required string UsersTopicName { get; init; }
+        public required string GamesTopicName { get; init; }
+        public required string PaymentsTopicName { get; init; }
         public required bool AutoProvision { get; init; }
         public required int MaxDeliveryCount { get; init; }
         public required bool EnableDeadLettering { get; init; }
-        public required bool AutoPurgeOnStartup { get; init; }
+        public required bool AutoPurgeOnStartup { get; init; } = false;
         public required bool UseControlQueues { get; init; }
 
         // Recursos Aspire para parâmetros secretos
         public IResourceBuilder<ParameterResource>? ConnectionStringParameter { get; init; }
+
+        /// <summary>
+        /// Retorna o topicName correto baseado no tipo de projeto
+        /// </summary>
+        public string GetTopicNameForProject(ProjectType projectType) => projectType switch
+        {
+            ProjectType.Users => UsersTopicName,
+            ProjectType.Games => GamesTopicName,
+            ProjectType.Payments => PaymentsTopicName,
+            _ => UsersTopicName
+        };
     }
 
     /// <summary>

@@ -219,7 +219,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 AutoProvision = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:AutoProvision", "RABBITMQ_AUTO_PROVISION", configuration, "true", logger)),
                 Durable = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:Durable", "RABBITMQ_DURABLE", configuration, "true", logger)),
                 UseQuorumQueues = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:UseQuorumQueues", "RABBITMQ_USE_QUORUM_QUEUES", configuration, "false", logger)),
-                AutoPurgeOnStartup = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:AutoPurgeOnStartup", "RABBITMQ_AUTO_PURGE_ON_STARTUP", configuration, "true", logger)),
+                AutoPurgeOnStartup = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:AutoPurgeOnStartup", "RABBITMQ_AUTO_PURGE_ON_STARTUP", configuration, "false", logger)),
 
                 // Aspire Parameters
                 UserParameter = Contains("rabbitmq-user") ? this["rabbitmq-user"] : null,
@@ -239,12 +239,13 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 UseExternalService = useExternal,
                 ContainerName = ServiceConfigResolver.GetResolvedValue("AzureServiceBus:ContainerName", "AZURE_SERVICEBUS_CONTAINER_NAME", configuration, "TC-CloudGames-AzureServiceBus", logger),
                 ConnectionString = ServiceConfigResolver.GetResolvedValue("AzureServiceBus:ConnectionString", "AZURE_SERVICEBUS_CONNECTIONSTRING", configuration, "", logger),
-                TopicName = ServiceConfigResolver.GetResolvedValue("AzureServiceBus:TopicName", "AZURE_SERVICEBUS_TOPIC_NAME", configuration, "user-events", logger),
-                SubscriptionName = ServiceConfigResolver.GetResolvedValue("AzureServiceBus:SubscriptionName", "AZURE_SERVICEBUS_SUBSCRIPTION_NAME", configuration, "fanout-subscription", logger),
+                UsersTopicName = ServiceConfigResolver.GetResolvedValue("AzureServiceBus:UsersTopicName", "AZURE_SERVICEBUS_USERS_TOPIC", configuration, "user.events", logger),
+                GamesTopicName = ServiceConfigResolver.GetResolvedValue("AzureServiceBus:GamesTopicName", "AZURE_SERVICEBUS_GAMES_TOPIC", configuration, "game.events", logger),
+                PaymentsTopicName = ServiceConfigResolver.GetResolvedValue("AzureServiceBus:PaymentsTopicName", "AZURE_SERVICEBUS_PAYMENTS_TOPIC", configuration, "payment.events", logger),
                 AutoProvision = bool.Parse(ServiceConfigResolver.GetResolvedValue("AzureServiceBus:AutoProvision", "AZURE_SERVICEBUS_AUTO_PROVISION", configuration, "true", logger)),
                 MaxDeliveryCount = int.Parse(ServiceConfigResolver.GetResolvedValue("AzureServiceBus:MaxDeliveryCount", "AZURE_SERVICEBUS_MAX_DELIVERY_COUNT", configuration, "10", logger)),
                 EnableDeadLettering = bool.Parse(ServiceConfigResolver.GetResolvedValue("AzureServiceBus:EnableDeadLettering", "AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING", configuration, "true", logger)),
-                AutoPurgeOnStartup = bool.Parse(ServiceConfigResolver.GetResolvedValue("AzureServiceBus:AutoPurgeOnStartup", "AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP", configuration, "true", logger)),
+                AutoPurgeOnStartup = bool.Parse(ServiceConfigResolver.GetResolvedValue("AzureServiceBus:AutoPurgeOnStartup", "AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP", configuration, "false", logger)),
                 UseControlQueues = bool.Parse(ServiceConfigResolver.GetResolvedValue("AzureServiceBus:UseControlQueues", "AZURE_SERVICEBUS_USE_CONTROL_QUEUES", configuration, "true", logger)),
 
                 // Aspire Parameters
