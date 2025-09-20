@@ -70,7 +70,15 @@ module "servicebus" {
   ]
 
   topic_subscriptions = {
-    "user.events-topic"     = "games.user.events-subscription"    
+    "user.events-topic" = {
+      subscription_name = "games.user.events-subscription"
+      sql_filter_rules = {
+        "UsersDomainAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'UserAggregate'"
+          action            = ""
+        }
+      }
+    }
   }
 
   depends_on = [

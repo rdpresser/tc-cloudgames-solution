@@ -32,10 +32,19 @@ variable "topics" {
 }
 
 variable "topic_subscriptions" {
-  description = "Map of topic names to their associated subscriptions. Key is topic name, value is subscription name."
-  type        = map(string)
+  description = "Map of topic names to their subscription configurations. Each subscription can have a name and optional SQL filter rules."
+  type = map(object({
+    subscription_name = string
+    sql_filter_rules = optional(map(object({
+      filter_expression = string
+      action            = optional(string, "")
+    })), {})
+  }))
   default = {
-    "user-events" = "fanout-subscription"
+    "user-events" = {
+      subscription_name = "fanout-subscription"
+      sql_filter_rules  = {}
+    }
   }
 }
 

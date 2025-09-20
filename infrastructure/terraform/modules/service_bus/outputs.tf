@@ -26,15 +26,28 @@ output "topic_names" {
 }
 
 output "subscription_ids" {
-  description = "Map of subscription names to their IDs"
+  description = "Map of topic names to their subscription IDs"
   value = {
-    for subscription_name, subscription in azurerm_servicebus_subscription.this : subscription_name => subscription.id
+    for topic_name, subscription in azurerm_servicebus_subscription.this : topic_name => subscription.id
   }
 }
 
 output "subscription_names" {
-  description = "List of created subscription names"
-  value       = [for subscription in azurerm_servicebus_subscription.this : subscription.name]
+  description = "Map of topic names to their subscription names"
+  value = {
+    for topic_name, subscription in azurerm_servicebus_subscription.this : topic_name => subscription.name
+  }
+}
+
+output "subscription_rules" {
+  description = "Map of subscription rules created"
+  value = {
+    for rule_key, rule in azurerm_servicebus_subscription_rule.sql_filter : rule_key => {
+      id          = rule.id
+      name        = rule.name
+      sql_filter  = rule.sql_filter
+    }
+  }
 }
 
 output "namespace_connection_string" {
