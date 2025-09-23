@@ -19,7 +19,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             return ConfigureProject(usersProject, null, ProjectType.Users, builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
         }
 
-        public static void ConfigureGamesApi(
+        public static IResourceBuilder<ProjectResource> ConfigureGamesApi(
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
             IResourceBuilder<ProjectResource>? projectDependency,
@@ -32,7 +32,23 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             var gamesProject = builder.AddProject<Projects.TC_CloudGames_Games_Api>("games-api")
                 .WithHealthChecks();
 
-            ConfigureProject(gamesProject, projectDependency, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, messageBroker);
+            return ConfigureProject(gamesProject, projectDependency, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, messageBroker);
+        }
+
+        public static void ConfigurePaymentsApi(
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry,
+            IResourceBuilder<ProjectResource>? projectDependency,
+            IResourceBuilder<PostgresServerResource>? postgres,
+            IResourceBuilder<PostgresDatabaseResource>? paymentsDb,
+            IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
+            IResourceBuilder<RedisResource>? redis,
+            MessageBrokerResources messageBroker)
+        {
+            var paymentsProject = builder.AddProject<Projects.TC_CloudGames_Payments_Api>("payments-api")
+                .WithHealthChecks();
+
+            ConfigureProject(paymentsProject, projectDependency, ProjectType.Payments, builder, registry, postgres, paymentsDb, maintenanceDb, redis, messageBroker);
         }
 
         private static IResourceBuilder<ProjectResource> ConfigureProject(

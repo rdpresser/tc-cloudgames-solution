@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11012.119 d18.0
+VisualStudioVersion = 18.0.11012.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Users.Api", "..\..\services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\TC.CloudGames.Users.Api.csproj", "{0487F409-946B-8964-7BA6-D4B7971032F0}"
 EndProject
@@ -38,6 +38,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Games.Infrastructure", "..\..\services\games\src\Adapters\Outbound\TC.CloudGames.Games.Infrastructure\TC.CloudGames.Games.Infrastructure.csproj", "{16A896F5-74C3-633F-20E8-6B68471273E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Messaging", "..\..\shared\common\src\TC.CloudGames.Messaging\TC.CloudGames.Messaging.csproj", "{12C5B4EA-84B6-23C9-9EC4-83BB986F10B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Payments_Solution", "Payments_Solution", "{BE20752C-2FA4-4006-8EA3-15359AB6ED1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Application", "..\..\services\payments\src\Core\TC.CloudGames.Payments.Application\TC.CloudGames.Payments.Application.csproj", "{8CF5895D-6F2C-0597-0D77-AD2C279548FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Domain", "..\..\services\payments\src\Core\TC.CloudGames.Payments.Domain\TC.CloudGames.Payments.Domain.csproj", "{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Api", "..\..\services\payments\src\Adapters\Inbound\TC.CloudGames.Payments.Api\TC.CloudGames.Payments.Api.csproj", "{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Infrastructure", "..\..\services\payments\src\Adapters\Outbound\TC.CloudGames.Payments.Infrastructure\TC.CloudGames.Payments.Infrastructure.csproj", "{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -97,6 +107,22 @@ Global
 		{12C5B4EA-84B6-23C9-9EC4-83BB986F10B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12C5B4EA-84B6-23C9-9EC4-83BB986F10B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12C5B4EA-84B6-23C9-9EC4-83BB986F10B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CF5895D-6F2C-0597-0D77-AD2C279548FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CF5895D-6F2C-0597-0D77-AD2C279548FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CF5895D-6F2C-0597-0D77-AD2C279548FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CF5895D-6F2C-0597-0D77-AD2C279548FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +143,11 @@ Global
 		{EDB39323-AD36-1AB3-94CB-FEAE20CF1E0D} = {9998130E-67FA-45B2-8E4E-A6C44363DD54}
 		{16A896F5-74C3-633F-20E8-6B68471273E4} = {9998130E-67FA-45B2-8E4E-A6C44363DD54}
 		{12C5B4EA-84B6-23C9-9EC4-83BB986F10B1} = {E2D71EEB-AED4-4B01-9C63-5EABA41D5BEA}
+		{BE20752C-2FA4-4006-8EA3-15359AB6ED1B} = {924EF059-1DF2-4EEE-A14F-361DF03A065C}
+		{8CF5895D-6F2C-0597-0D77-AD2C279548FC} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
+		{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
+		{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
+		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F1278D4F-DD5E-4308-B75D-11D57F7520A7}

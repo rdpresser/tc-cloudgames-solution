@@ -25,7 +25,8 @@ var messageBroker = ServiceSetup.ConfigureMessageBroker(builder, registry, logge
 
 // Setup projects - cada projeto com seu banco específico
 var usersApi = ProjectSetup.ConfigureUsersApi(builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
-ProjectSetup.ConfigureGamesApi(builder, registry, usersApi, postgres, gamesDb, maintenanceDb, redis, messageBroker);
+var gamesApi = ProjectSetup.ConfigureGamesApi(builder, registry, usersApi, postgres, gamesDb, maintenanceDb, redis, messageBroker);
+ProjectSetup.ConfigurePaymentsApi(builder, registry, gamesApi, postgres, paymentsDb, maintenanceDb, redis, messageBroker);
 
 // Run
 await builder.Build().RunAsync();
