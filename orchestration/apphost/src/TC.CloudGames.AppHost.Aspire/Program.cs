@@ -7,6 +7,18 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Configure environment variables from .env files
 builder.ConfigureEnvironmentVariables();
 
+// Elasticsearch container
+var elastic = builder.AddContainer("elasticsearch", "docker.elastic.co/elasticsearch/elasticsearch", "8.10.2")
+    .WithEnvironment("discovery.type", "single-node")
+    .WithEnvironment("xpack.security.enabled", "false")
+    .WithEnvironment("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+    .WithHttpEndpoint(name: "http", port: 9200, targetPort: 9200);
+
+// Kibana container
+var kibana = builder.AddContainer("kibana", "docker.elastic.co/kibana/kibana", "8.10.2")
+    .WithEnvironment("ELASTICSEARCH_HOSTS", "http://elasticsearch:9200")
+    .WithHttpEndpoint(port: 5601, targetPort: 5601);
+
 // Setup logger
 var loggerFactory = LoggerFactory.Create(config =>
 {
