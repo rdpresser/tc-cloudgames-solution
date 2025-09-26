@@ -16,6 +16,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ConfigurePostgresParameters(builder, registry, logger);
             ConfigureRedisParameters(builder, registry, logger);
             ConfigureApplicationParameters(builder, registry, logger);
+            ConfigureElasticParameters(builder, registry, logger);
 
             // Configurar message broker baseado no tipo
             ConfigureMessageBrokerParameters(builder, registry, logger);
@@ -100,6 +101,17 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             registry.AddParameter(builder, "message-broker-type", "MessageBroker:Type", "MESSAGE_BROKER_TYPE",
                 environment == "development" ? "RabbitMQ" : "AzureServiceBus");
         }
+
+        private static void ConfigureElasticParameters(IDistributedApplicationBuilder builder, ServiceParameterRegistry registry, ILogger logger)
+        {
+            logger.LogDebug("🔎 Configurando parâmetros do Elasticsearch...");
+
+            registry.AddParameter(builder, "elastic-url", "Elasticsearch:Url", "ELASTICSEARCH__URL", "http://localhost:9200");
+            registry.AddParameter(builder, "elastic-username", "Elasticsearch:Username", "ELASTICSEARCH__USERNAME", "elastic");
+            registry.AddParameter(builder, "elastic-password", "Elasticsearch:Password", "ELASTICSEARCH__PASSWORD", "changeme", secret: true);
+            registry.AddParameter(builder, "elastic-index", "Elasticsearch:IndexPrefix", "ELASTICSEARCH__INDEXPREFIX", "games");
+        }
+
     }
 
     /// <summary>
@@ -252,6 +264,47 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 ConnectionStringParameter = Contains("servicebus-connection") ? this["servicebus-connection"] : null
             };
         }
+
+        public ElasticServiceConfig GetElasticConfig(ConfigurationManager configuration, ILogger? logger = null)
+        {
+            var useExternal = ServiceConfigResolver.ShouldUseExternalService(configuration, "Elasticsearch", logger);
+
+            return new ElasticServiceConfig
+            {
+                UseExternalService = useExternal,
+                Host = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Host", "ELASTICSEARCH__URL", configuration, useExternal ? "" : "localhost", logger),
+                Port = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Port", "ELASTICSEARCH__URL", configuration, "9200", logger),
+                Username = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Username", "ELASTICSEARCH__USERNAME", configuration, "elastic", logger),
+                Password = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Password", "ELASTICSEARCH__PASSWORD", configuration, "changeme", logger),
+                IndexName = ServiceConfigResolver.GetResolvedValue("Elasticsearch:IndexPrefix", "ELASTICSEARCH__INDEXPREFIX", configuration, "games", logger)
+            };
+
+            /*
+
+            return new RabbitMqServiceConfig
+            {
+                UseExternalService = useExternal,
+                ContainerName = ServiceConfigResolver.GetResolvedValue("RabbitMq:ContainerName", "RABBITMQ_CONTAINER_NAME", configuration, "TC-CloudGames-RabbitMq", logger),
+                Host = ServiceConfigResolver.GetResolvedValue("RabbitMq:Host", "RABBITMQ_HOST", configuration, useExternal ? "" : "localhost", logger),
+                Port = int.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:Port", "RABBITMQ_PORT", configuration, "5672", logger)),
+                VirtualHost = ServiceConfigResolver.GetResolvedValue("RabbitMq:VirtualHost", "RABBITMQ_VHOST", configuration, "/", logger),
+                UserName = ServiceConfigResolver.GetResolvedValue("RabbitMq:UserName", "RABBITMQ_USERNAME", configuration, "guest", logger),
+                Password = ServiceConfigResolver.GetResolvedValue("RabbitMq:Password", "RABBITMQ_PASSWORD", configuration, "guest", logger),
+                UsersExchange = ServiceConfigResolver.GetResolvedValue("RabbitMq:UsersExchange", "RABBITMQ_USERS_EXCHANGE", configuration, "user.events", logger),
+                GamesExchange = ServiceConfigResolver.GetResolvedValue("RabbitMq:GamesExchange", "RABBITMQ_GAMES_EXCHANGE", configuration, "game.events", logger),
+                PaymentsExchange = ServiceConfigResolver.GetResolvedValue("RabbitMq:PaymentsExchange", "RABBITMQ_PAYMENTS_EXCHANGE", configuration, "payment.events", logger),
+                AutoProvision = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:AutoProvision", "RABBITMQ_AUTO_PROVISION", configuration, "true", logger)),
+                Durable = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:Durable", "RABBITMQ_DURABLE", configuration, "true", logger)),
+                UseQuorumQueues = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:UseQuorumQueues", "RABBITMQ_USE_QUORUM_QUEUES", configuration, "false", logger)),
+                AutoPurgeOnStartup = bool.Parse(ServiceConfigResolver.GetResolvedValue("RabbitMq:AutoPurgeOnStartup", "RABBITMQ_AUTO_PURGE_ON_STARTUP", configuration, "false", logger)),
+
+                // Aspire Parameters
+                UserParameter = Contains("rabbitmq-user") ? this["rabbitmq-user"] : null,
+                PasswordParameter = Contains("rabbitmq-password") ? this["rabbitmq-password"] : null
+            };
+             */
+        }
+
 
         public void LogAll(ConfigurationManager config, ILogger logger)
         {
