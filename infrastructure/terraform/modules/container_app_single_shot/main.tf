@@ -20,6 +20,12 @@ locals {
   clean_service     = replace(replace(var.service_name, "--", "-"), "--", "-")
   proposed_name     = "${local.clean_prefix}-${local.clean_service}"
   containerapp_name = length(local.proposed_name) > 32 ? substr(local.proposed_name, 0, 32) : local.proposed_name
+
+  # Estratégia única: use_hello_world_images controla tudo
+  # true  = Hello World (sem ACR, sem Key Vault) - primeira execução
+  # false = Produção (com ACR, com Key Vault) - execuções posteriores
+  enable_acr        = !var.use_hello_world_images
+  enable_key_vault  = !var.use_hello_world_images
 }
 
 # =============================================================================
@@ -74,13 +80,15 @@ resource "azurerm_container_app" "main" {
   }
 
   # -------------------------------------------------------------------
-  # Container Registry Configuration (System Identity authentication)
-  # Uses the Container App's System Assigned Managed Identity for ACR authentication
-  # "System" indicates the system-assigned managed identity should be used
+  # Container Registry Configuration (condicional)
+  # Só habilita ACR quando não estiver usando hello-world images
   # -------------------------------------------------------------------
-  registry {
-    server   = var.container_registry_server
-    identity = "System"
+  dynamic "registry" {
+    for_each = local.enable_acr ? [1] : []
+    content {
+      server   = var.container_registry_server
+      identity = "System"
+    }
   }
 
   # -------------------------------------------------------------------
@@ -98,120 +106,90 @@ resource "azurerm_container_app" "main" {
   }
 
   # -------------------------------------------------------------------
-  # Key Vault Secret References (system identity authentication)
-  # These secrets are injected into the Container App and later mapped
-  # as environment variables using `secretref` in the CI/CD pipeline.
+  # Key Vault Secret References (condicional)
+  # Só cria secrets quando não estiver usando hello-world images
   # -------------------------------------------------------------------
+  dynamic "secret" {
+    for_each = local.enable_key_vault ? [
+      {
+        name = "db-host"
+        path = "db-host"
+      },
+      {
+        name = "db-port"
+        path = "db-port"
+      },
+      {
+        name = var.db_name_secret_ref
+        path = var.db_name_secret_ref
+      },
+      {
+        name = "db-admin-login"
+        path = "db-admin-login"
+      },
+      {
+        name = "db-password"
+        path = "db-password"
+      },
+      {
+        name = "db-name-maintenance"
+        path = "db-name-maintenance"
+      },
+      {
+        name = "db-schema"
+        path = "db-schema"
+      },
+      {
+        name = "db-connection-timeout"
+        path = "db-connection-timeout"
+      },
+      {
+        name = "cache-host"
+        path = "cache-host"
+      },
+      {
+        name = "cache-port"
+        path = "cache-port"
+      },
+      {
+        name = "cache-password"
+        path = "cache-password"
+      },
+      {
+        name = "cache-secure"
+        path = "cache-secure"
+      },
+      {
+        name = "servicebus-connection-string"
+        path = "servicebus-connection-string"
+      },
+      {
+        name = "servicebus-auto-provision"
+        path = "servicebus-auto-provision"
+      },
+      {
+        name = "servicebus-max-delivery-count"
+        path = "servicebus-max-delivery-count"
+      },
+      {
+        name = "servicebus-enable-dead-lettering"
+        path = "servicebus-enable-dead-lettering"
+      },
+      {
+        name = "servicebus-auto-purge-on-startup"
+        path = "servicebus-auto-purge-on-startup"
+      },
+      {
+        name = "servicebus-use-control-queues"
+        path = "servicebus-use-control-queues"
+      }
+    ] : []
 
-  # Database secrets
-  secret {
-    name                = "db-host"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-host"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "db-port"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-port"
-    identity            = "System"
-  }
-
-  secret {
-    name                = var.db_name_secret_ref
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/${var.db_name_secret_ref}"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "db-admin-login"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-admin-login"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "db-password"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-password"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "db-name-maintenance"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-name-maintenance"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "db-schema"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-schema"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "db-connection-timeout"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-connection-timeout"
-    identity            = "System"
-  }
-
-  # Cache secrets
-  secret {
-    name                = "cache-host"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-host"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "cache-port"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-port"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "cache-password"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-password"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "cache-secure"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-secure"
-    identity            = "System"
-  }
-
-  # Service Bus secrets
-  secret {
-    name                = "servicebus-connection-string"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-connection-string"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "servicebus-auto-provision"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-provision"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "servicebus-max-delivery-count"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-max-delivery-count"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "servicebus-enable-dead-lettering"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-enable-dead-lettering"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "servicebus-auto-purge-on-startup"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-purge-on-startup"
-    identity            = "System"
-  }
-
-  secret {
-    name                = "servicebus-use-control-queues"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-use-control-queues"
-    identity            = "System"
+    content {
+      name                = secret.value.name
+      key_vault_secret_id = "${var.key_vault_uri}/secrets/${secret.value.path}"
+      identity            = "System"
+    }
   }
 
   timeouts {
@@ -222,9 +200,11 @@ resource "azurerm_container_app" "main" {
 }
 
 # -------------------------------------------------------------------
-# 2) RBAC: Container App MI pode pull do ACR
+# RBAC Assignments (condicionais)
+# Só cria quando não estiver usando hello-world images
 # -------------------------------------------------------------------
 resource "azurerm_role_assignment" "acr_pull" {
+  count                = local.enable_acr ? 1 : 0
   scope                = var.container_registry_id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
@@ -232,10 +212,8 @@ resource "azurerm_role_assignment" "acr_pull" {
   depends_on = [azurerm_container_app.main]
 }
 
-# -------------------------------------------------------------------
-# 3) RBAC: Container App MI pode ler secrets do Key Vault
-# -------------------------------------------------------------------
 resource "azurerm_role_assignment" "kv_secrets_user" {
+  count                = local.enable_key_vault ? 1 : 0
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
@@ -244,9 +222,10 @@ resource "azurerm_role_assignment" "kv_secrets_user" {
 }
 
 # -------------------------------------------------------------------
-# 4) Espera de propagação RBAC - Ensures RBAC is propagated
+# Espera de propagação RBAC (condicional)
 # -------------------------------------------------------------------
 resource "time_sleep" "wait_for_rbac" {
+  count           = local.enable_acr || local.enable_key_vault ? 1 : 0
   create_duration = "${var.rbac_propagation_wait_seconds}s"
   depends_on = [
     azurerm_role_assignment.acr_pull,

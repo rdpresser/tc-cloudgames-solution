@@ -25,12 +25,12 @@ output "system_assigned_identity_tenant_id" {
 
 output "role_assignment_key_vault_secrets_user_id" {
   description = "Key Vault Secrets User role assignment ID"
-  value       = azurerm_role_assignment.kv_secrets_user.id
+  value       = local.enable_key_vault ? azurerm_role_assignment.kv_secrets_user[0].id : null
 }
 
 output "role_assignment_acr_pull_id" {
   description = "ACR Pull role assignment ID"
-  value       = azurerm_role_assignment.acr_pull.id
+  value       = local.enable_acr ? azurerm_role_assignment.acr_pull[0].id : null
 }
 
 output "container_image_deployed" {

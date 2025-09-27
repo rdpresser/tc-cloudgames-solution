@@ -228,6 +228,7 @@ module "users_api_container_app" {
   container_image_acr       = local.container_images.users_api
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
+  use_hello_world_images    = var.use_hello_world_images
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -252,7 +253,6 @@ module "users_api_container_app" {
     module.servicebus
   ]
 }
-
 
 module "games_api_container_app" {
   source = "../modules/container_app_single_shot"
