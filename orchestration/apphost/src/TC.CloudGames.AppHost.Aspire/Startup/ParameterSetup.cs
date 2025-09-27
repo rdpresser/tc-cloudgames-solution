@@ -269,11 +269,14 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         {
             var useExternal = ServiceConfigResolver.ShouldUseExternalService(configuration, "Elasticsearch", logger);
 
+            var host = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Host", "ELASTICSEARCH__HOST", configuration, useExternal ? "" : "localhost", logger);
+            var port = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Port", "ELASTICSEARCH__PORT", configuration, "9200", logger);
+
             return new ElasticServiceConfig
             {
                 UseExternalService = useExternal,
-                Host = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Host", "ELASTICSEARCH__URL", configuration, useExternal ? "" : "localhost", logger),
-                Port = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Port", "ELASTICSEARCH__URL", configuration, "9200", logger),
+                Host = host,
+                Port = port,
                 Username = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Username", "ELASTICSEARCH__USERNAME", configuration, "elastic", logger),
                 Password = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Password", "ELASTICSEARCH__PASSWORD", configuration, "changeme", logger),
                 IndexName = ServiceConfigResolver.GetResolvedValue("Elasticsearch:IndexPrefix", "ELASTICSEARCH__INDEXPREFIX", configuration, "games", logger)

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace TC.CloudGames.AppHost.Aspire.Extensions
 {
     /// <summary>
-    /// Tipos de projetos suportados na solução
+    /// Tipos de projetos suportados na soluï¿½ï¿½o
     /// </summary>
     public enum ProjectType
     {
@@ -14,7 +14,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     }
 
     /// <summary>
-    /// Configuração base para todos os serviços
+    /// Configuraï¿½ï¿½o base para todos os serviï¿½os
     /// </summary>
     public abstract record ServiceConfig
     {
@@ -23,7 +23,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     }
 
     /// <summary>
-    /// Configuração unificada para PostgreSQL
+    /// Configuraï¿½ï¿½o unificada para PostgreSQL
     /// </summary>
     public record DatabaseServiceConfig : ServiceConfig
     {
@@ -39,13 +39,13 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         public required string Schema { get; init; }
         public required int ConnectionTimeout { get; init; }
 
-        // Recursos Aspire para parâmetros secretos
+        // Recursos Aspire para parï¿½metros secretos
         public IResourceBuilder<ParameterResource>? UserParameter { get; init; }
         public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
     }
 
     /// <summary>
-    /// Configuração unificada para Redis
+    /// Configuraï¿½ï¿½o unificada para Redis
     /// </summary>
     public record CacheServiceConfig : ServiceConfig
     {
@@ -56,11 +56,11 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         public required Dictionary<string, string> InstanceNames { get; init; }
         public required bool Secure { get; init; }
 
-        // Recursos Aspire para parâmetros secretos
+        // Recursos Aspire para parï¿½metros secretos
         public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
 
         /// <summary>
-        /// Obtém o nome da instância para um projeto específico
+        /// Obtï¿½m o nome da instï¿½ncia para um projeto especï¿½fico
         /// </summary>
         public string GetInstanceNameForProject(ProjectType projectType)
         {
@@ -69,7 +69,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         }
 
         /// <summary>
-        /// Cria configuração de cache a partir da configuração do sistema
+        /// Cria configuraï¿½ï¿½o de cache a partir da configuraï¿½ï¿½o do sistema
         /// </summary>
         public static CacheServiceConfig CreateFromConfiguration(
             ConfigurationManager configuration,
@@ -141,7 +141,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     }
 
     /// <summary>
-    /// Configuração unificada para RabbitMQ
+    /// Configuraï¿½ï¿½o unificada para RabbitMQ
     /// </summary>
     public record RabbitMqServiceConfig : ServiceConfig
     {
@@ -159,7 +159,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         public required bool UseQuorumQueues { get; init; }
         public required bool AutoPurgeOnStartup { get; init; } = false;
 
-        // Recursos Aspire para parâmetros secretos
+        // Recursos Aspire para parï¿½metros secretos
         public IResourceBuilder<ParameterResource>? UserParameter { get; init; }
         public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
 
@@ -176,7 +176,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     }
 
     /// <summary>
-    /// Configuração unificada para Azure Service Bus
+    /// Configuraï¿½ï¿½o unificada para Azure Service Bus
     /// </summary>
     public record AzureServiceBusServiceConfig : ServiceConfig
     {
@@ -191,7 +191,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         public required bool AutoPurgeOnStartup { get; init; } = false;
         public required bool UseControlQueues { get; init; }
 
-        // Recursos Aspire para parâmetros secretos
+        // Recursos Aspire para parï¿½metros secretos
         public IResourceBuilder<ParameterResource>? ConnectionStringParameter { get; init; }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     }
 
     /// <summary>
-    /// Helper para resolver configurações de serviços
+    /// Helper para resolver configuraï¿½ï¿½es de serviï¿½os
     /// </summary>
     public static class ServiceConfigResolver
     {
@@ -223,7 +223,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         {
             var sources = new List<(string source, string? value)>();
 
-            // 1. Prioridade: Variável de ambiente
+            // 1. Prioridade: Variï¿½vel de ambiente
             var envValue = Environment.GetEnvironmentVariable(envVarName);
             sources.Add(($"Environment Variable '{envVarName}'", envValue));
 
@@ -244,7 +244,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
                 return configValue;
             }
 
-            // 3. Terceira prioridade: Valor padrão
+            // 3. Terceira prioridade: Valor padrï¿½o
             if (!string.IsNullOrEmpty(defaultValue))
             {
                 sources.Add(("Default Value", defaultValue));
@@ -252,7 +252,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
                 return defaultValue;
             }
 
-            // 4. Se não encontrou, exceção
+            // 4. Se nï¿½o encontrou, exceï¿½ï¿½o
             logger?.LogError("Configuration '{ConfigKey}' not found in any source. Checked sources: {Sources}",
                 configKey, string.Join(", ", sources.Select(s => $"{s.source}: {(s.value ?? "null")}")));
 
@@ -262,7 +262,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         }
 
         /// <summary>
-        /// Determina se deve usar serviço externo baseado na configuração
+        /// Determina se deve usar serviï¿½o externo baseado na configuraï¿½ï¿½o
         /// </summary>
         public static bool ShouldUseExternalService(
             ConfigurationManager configuration,
