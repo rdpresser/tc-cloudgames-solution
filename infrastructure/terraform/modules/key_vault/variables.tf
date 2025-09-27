@@ -236,6 +236,26 @@ variable "servicebus_connection_string" {
   sensitive   = true
 }
 
+# =============================================================================
+# Elasticsearch Connection Variables
+# =============================================================================
+
+variable "elasticsearch_url" {
+  description = "Elasticsearch URL"
+  type        = string
+}
+
+variable "elasticsearch_host" {
+  description = "Elasticsearch hostname"
+  type        = string
+}
+
+variable "elasticsearch_port" {
+  description = "Elasticsearch port"
+  type        = string
+  default     = "9200"
+}
+
 variable "servicebus_auto_provision" {
   description = "Service Bus auto provision setting"
   type        = bool

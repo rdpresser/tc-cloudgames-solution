@@ -122,6 +122,54 @@ output "servicebus_info" {
 }
 
 # =============================================================================
+# Elasticsearch
+# =============================================================================
+
+output "elasticsearch_info" {
+  description = "Elasticsearch details"
+  value = {
+    container_group_name = module.elasticsearch.container_group_name
+    container_group_id   = module.elasticsearch.container_group_id
+    fqdn                 = module.elasticsearch.elasticsearch_fqdn
+    ip_address           = module.elasticsearch.elasticsearch_ip_address
+    url                  = module.elasticsearch.elasticsearch_url
+    host                 = module.elasticsearch.elasticsearch_host
+    port                 = module.elasticsearch.elasticsearch_port
+    connection_string    = module.elasticsearch.connection_string
+    health_check_url     = module.elasticsearch.health_check_url
+    cluster_info_url     = module.elasticsearch.cluster_info_url
+  }
+}
+
+output "kibana_info" {
+  description = "Kibana details (if enabled)"
+  value = {
+    url  = module.elasticsearch.kibana_url
+    host = module.elasticsearch.kibana_host
+    port = module.elasticsearch.kibana_port
+  }
+}
+
+output "elasticsearch_storage_info" {
+  description = "Elasticsearch storage details"
+  value = {
+    storage_account_name = module.elasticsearch.storage_account_name
+    storage_account_id   = module.elasticsearch.storage_account_id
+    storage_share_name   = module.elasticsearch.storage_share_name
+  }
+}
+
+output "elasticsearch_monitoring_info" {
+  description = "Elasticsearch monitoring details (if enabled)"
+  value = {
+    application_insights_id                = module.elasticsearch.application_insights_id
+    application_insights_instrumentation_key = module.elasticsearch.application_insights_instrumentation_key
+    log_analytics_workspace_id             = module.elasticsearch.log_analytics_workspace_id
+    log_analytics_workspace_name           = module.elasticsearch.log_analytics_workspace_name
+  }
+}
+
+# =============================================================================
 # Users API Container App
 # =============================================================================
 

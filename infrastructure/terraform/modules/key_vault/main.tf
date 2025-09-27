@@ -280,6 +280,37 @@ resource "azurerm_key_vault_secret" "cache_payments_instance_name" {
   ]
 }
 
+# Elasticsearch Secrets
+resource "azurerm_key_vault_secret" "elasticsearch_url" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "elasticsearch-url"
+  value        = var.elasticsearch_url
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "elasticsearch_host" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "elasticsearch-host"
+  value        = var.elasticsearch_host
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "elasticsearch_port" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "elasticsearch-port"
+  value        = var.elasticsearch_port
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
 # Service Bus Secrets
 resource "azurerm_key_vault_secret" "servicebus_namespace" {
   key_vault_id = azurerm_key_vault.key_vault.id
