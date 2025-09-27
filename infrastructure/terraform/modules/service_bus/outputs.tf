@@ -40,19 +40,38 @@ output "subscription_names" {
 }
 
 output "subscription_rules" {
-  description = "Map of subscription rules created"
-  value = {
+  description = "Map of subscription rules created (empty if rules are created via application code)"
+  value = var.create_sql_filter_rules ? {
     for rule_key, rule in azurerm_servicebus_subscription_rule.sql_filter : rule_key => {
       id          = rule.id
       name        = rule.name
       sql_filter  = rule.sql_filter
     }
-  }
+  } : {}
+}
+
+output "sql_filter_rules_enabled" {
+  description = "Whether SQL filter rules are managed by Terraform"
+  value       = var.create_sql_filter_rules
 }
 
 output "namespace_connection_string" {
   description = "The connection string for the Service Bus namespace."
   value       = azurerm_servicebus_namespace.this.default_primary_connection_string
   sensitive   = true
+}
+
+output "namespace_hostname" {
+  description = "The hostname of the Service Bus namespace for Managed Identity authentication."
+  value       = "${azurerm_servicebus_namespace.this.name}.servicebus.windows.net"
+}
+
+output "rbac_assignments" {
+  description = "Information about RBAC assignments created"
+  value = {
+    data_owner_assignments = length(azurerm_role_assignment.servicebus_data_owner)
+    role_definition       = "Azure Service Bus Data Owner"
+    permissions          = "Send + Listen + Manage (includes CreateQueue, CreateTopic)"
+  }
 }
 

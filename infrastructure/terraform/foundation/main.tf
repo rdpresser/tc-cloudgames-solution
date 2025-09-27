@@ -182,7 +182,7 @@ module "key_vault" {
 }
 
 # =============================================================================
-# Service Bus module
+# Service Bus module (sem RBAC inicial - será configurado depois)
 # =============================================================================
 module "servicebus" {
   source              = "../modules/service_bus"
@@ -190,6 +190,15 @@ module "servicebus" {
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
   tags                = local.common_tags
+
+  # ⚠️  Resources serão criados via código C# (Wolverine/MassTransit)
+  # Deixando tudo opcional para que a aplicação tenha controle total
+  topics                  = []
+  topic_subscriptions     = {}
+  create_sql_filter_rules = false
+
+  # RBAC será configurado separadamente para evitar ciclo de dependência
+  managed_identity_principal_ids = []
 
   depends_on = [
     module.resource_group
@@ -307,6 +316,41 @@ module "payments_api_container_app" {
   ]
 }
 
+# =============================================================================
+# Service Bus RBAC: Azure Service Bus Data Owner para Container Apps
+# =============================================================================
+resource "azurerm_role_assignment" "users_api_servicebus_owner" {
+  principal_id         = module.users_api_container_app.system_assigned_identity_principal_id
+  role_definition_name = "Azure Service Bus Data Owner"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    module.servicebus,
+    module.users_api_container_app
+  ]
+}
+
+resource "azurerm_role_assignment" "games_api_servicebus_owner" {
+  principal_id         = module.games_api_container_app.system_assigned_identity_principal_id
+  role_definition_name = "Azure Service Bus Data Owner"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    module.servicebus,
+    module.games_api_container_app
+  ]
+}
+
+resource "azurerm_role_assignment" "payments_api_servicebus_owner" {
+  principal_id         = module.payments_api_container_app.system_assigned_identity_principal_id
+  role_definition_name = "Azure Service Bus Data Owner"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    module.servicebus,
+    module.payments_api_container_app
+  ]
+}
 
 # =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation

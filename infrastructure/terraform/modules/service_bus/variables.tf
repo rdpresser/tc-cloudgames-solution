@@ -26,13 +26,13 @@ variable "sku" {
 }
 
 variable "topics" {
-  description = "List of Service Bus topics to create."
+  description = "List of Service Bus topics to create. Leave empty if topics will be created via application code."
   type        = list(string)
-  default     = ["user-events"]
+  default     = []
 }
 
 variable "topic_subscriptions" {
-  description = "Map of topic names to their subscription configurations. Each subscription can have a name and optional SQL filter rules."
+  description = "Map of topic names to their subscription configurations. Leave empty if subscriptions will be created via application code."
   type = map(object({
     subscription_name = string
     sql_filter_rules = optional(map(object({
@@ -40,12 +40,19 @@ variable "topic_subscriptions" {
       action            = optional(string, "")
     })), {})
   }))
-  default = {
-    "user-events" = {
-      subscription_name = "fanout-subscription"
-      sql_filter_rules  = {}
-    }
-  }
+  default = {}
+}
+
+variable "managed_identity_principal_ids" {
+  description = "List of Managed Identity Principal IDs that need Azure Service Bus Data Owner permissions"
+  type        = list(string)
+  default     = []
+}
+
+variable "create_sql_filter_rules" {
+  description = "Whether to create SQL filter rules via Terraform. Set to false if rules will be created via application code."
+  type        = bool
+  default     = false
 }
 
 variable "tags" {

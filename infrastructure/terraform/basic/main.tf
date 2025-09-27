@@ -62,24 +62,16 @@ module "servicebus" {
   resource_group_name = module.resource_group.name
   tags                = local.common_tags
 
-  # Configuração de tópicos e subscriptions
-  topics = [
-    "user.events-topic",
-    "game.events-topic",
-    "payment.events-topic"
-  ]
+  # ⚠️  Resources serão criados via código C# (Wolverine/MassTransit)
+  # Deixando tudo opcional para que a aplicação tenha controle total
+  topics                  = []
+  topic_subscriptions     = {}
+  create_sql_filter_rules = false
 
-  topic_subscriptions = {
-    "user.events-topic" = {
-      subscription_name = "games.user.events-subscription"
-      sql_filter_rules = {
-        "UsersDomainAggregateFilter" = {
-          filter_expression = "DomainAggregate = 'UserAggregate'"
-          action            = ""
-        }
-      }
-    }
-  }
+  # 🔑 RBAC: Azure Service Bus Data Owner 
+  # Permite que as APIs com Managed Identity criem filas, tópicos, subscriptions e regras SQL
+  # Necessário para Wolverine criar automaticamente todos os recursos (wolverine.response.*, topics, filters, etc.)
+  managed_identity_principal_ids = []
 
   depends_on = [
     module.resource_group

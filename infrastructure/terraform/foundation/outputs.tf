@@ -112,10 +112,12 @@ output "key_vault_info" {
 output "servicebus_info" {
   description = "Azure Service Bus details"
   value = {
-    namespace    = module.servicebus.namespace_name
-    namespace_id = module.servicebus.namespace_id
-    topic        = module.servicebus.topic_name
-    subscription = module.servicebus.subscription_name
+    namespace          = module.servicebus.namespace_name
+    namespace_id       = module.servicebus.namespace_id
+    topic_names        = module.servicebus.topic_names
+    topic_ids          = module.servicebus.topic_ids
+    subscription_names = module.servicebus.subscription_names
+    subscription_ids   = module.servicebus.subscription_ids
   }
 }
 
@@ -199,7 +201,7 @@ output "all_resources" {
     redis_host                 = module.redis.redis_hostname
     log_analytics_name         = module.logs.log_analytics_name
     servicebus_ns              = module.servicebus.namespace_name
-    servicebus_topic           = module.servicebus.topic_name
+    servicebus_topics          = module.servicebus.topic_names
     users_api_container_app    = module.users_api_container_app.container_app_name
     games_api_container_app    = module.games_api_container_app.container_app_name
     payments_api_container_app = module.payments_api_container_app.container_app_name
@@ -222,7 +224,7 @@ output "connection_info" {
     redis_host           = module.redis.redis_hostname
     redis_port           = module.redis.redis_ssl_port
     servicebus_namespace = module.servicebus.namespace_name
-    servicebus_topic     = module.servicebus.topic_name
+    servicebus_topics    = module.servicebus.topic_names
   }
 }
 
