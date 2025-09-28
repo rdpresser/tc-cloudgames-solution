@@ -103,116 +103,116 @@ resource "azurerm_container_app" "main" {
   # as environment variables using `secretref` in the CI/CD pipeline.
   # -------------------------------------------------------------------
 
-  # Database secrets
-  secret {
-    name                = "db-host"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-host"
-    identity            = "System"
-  }
+  # # Database secrets
+  # secret {
+  #   name                = "db-host"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/db-host"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "db-port"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-port"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "db-port"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/db-port"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = var.db_name_secret_ref
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/${var.db_name_secret_ref}"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = var.db_name_secret_ref
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/${var.db_name_secret_ref}"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "db-admin-login"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-admin-login"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "db-admin-login"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/db-admin-login"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "db-password"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-password"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "db-password"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/db-password"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "db-name-maintenance"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-name-maintenance"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "db-name-maintenance"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/db-name-maintenance"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "db-schema"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-schema"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "db-schema"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/db-schema"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "db-connection-timeout"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/db-connection-timeout"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "db-connection-timeout"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/db-connection-timeout"
+  #   identity            = "System"
+  # }
 
-  # Cache secrets
-  secret {
-    name                = "cache-host"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-host"
-    identity            = "System"
-  }
+  # # Cache secrets
+  # secret {
+  #   name                = "cache-host"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-host"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "cache-port"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-port"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "cache-port"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-port"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "cache-password"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-password"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "cache-password"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-password"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "cache-secure"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-secure"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "cache-secure"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/cache-secure"
+  #   identity            = "System"
+  # }
 
-  # Service Bus secrets
-  secret {
-    name                = "servicebus-connection-string"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-connection-string"
-    identity            = "System"
-  }
+  # # Service Bus secrets
+  # secret {
+  #   name                = "servicebus-connection-string"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-connection-string"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "servicebus-auto-provision"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-provision"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "servicebus-auto-provision"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-provision"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "servicebus-max-delivery-count"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-max-delivery-count"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "servicebus-max-delivery-count"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-max-delivery-count"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "servicebus-enable-dead-lettering"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-enable-dead-lettering"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "servicebus-enable-dead-lettering"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-enable-dead-lettering"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "servicebus-auto-purge-on-startup"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-purge-on-startup"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "servicebus-auto-purge-on-startup"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-auto-purge-on-startup"
+  #   identity            = "System"
+  # }
 
-  secret {
-    name                = "servicebus-use-control-queues"
-    key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-use-control-queues"
-    identity            = "System"
-  }
+  # secret {
+  #   name                = "servicebus-use-control-queues"
+  #   key_vault_secret_id = "${var.key_vault_uri}/secrets/servicebus-use-control-queues"
+  #   identity            = "System"
+  # }
 
   timeouts {
     create = var.timeouts_create
