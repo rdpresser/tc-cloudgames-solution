@@ -82,5 +82,5 @@ variable "github_actions_object_id" {
 variable "use_hello_world_images" {
   type        = bool
   description = "Use Microsoft hello-world images for Container Apps. Set to true for initial deployment before pushing custom images to ACR, then false to use latest images from ACR."
-  default     = true
+  default     = false
 }
