@@ -106,6 +106,12 @@ variable "use_hello_world_images" {
   default     = true
 }
 
+variable "enable_secrets_gradually" {
+  description = "Deploy secrets gradually to avoid RBAC propagation issues. When false: no secrets. When true: all secrets."
+  type        = bool
+  default     = false
+}
+
 # Note: Environment variables are now configured via GitHub Actions pipeline
 # using azure/container-apps-deploy-action@v2. This module creates the secret 
 # bindings via System Managed Identity for Key Vault access.

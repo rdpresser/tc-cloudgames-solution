@@ -38,14 +38,19 @@ locals {
   proposed_name     = "${local.clean_prefix}-${local.clean_service}"
   containerapp_name = length(local.proposed_name) > 32 ? substr(local.proposed_name, 0, 32) : local.proposed_name
 
-  # Estratégia única: use_hello_world_images controla Container Apps
-  # true  = Hello World (sem ACR pull, sem Key Vault) - primeira execução
-  # false = Produção (com ACR pull, com Key Vault) - execuções posteriores
+  # Estratégia de deploy em 2 fases independentes:
   # 
+  # FASE 1: Imagem + ACR (sem secrets)
+  # use_hello_world_images = false + enable_secrets_gradually = false
+  # → Usa imagem ACR mas SEM secrets Key Vault
+  #
+  # FASE 2: Adicionar secrets após propagação RBAC  
+  # use_hello_world_images = false + enable_secrets_gradually = true
+  # → Usa imagem ACR COM todos os secrets Key Vault
+  #
   # IMPORTANTE: GitHub Actions ACR push permissions são sempre ativas
-  # para permitir que pipeline funcione mesmo na primeira execução
   enable_acr_pull   = !var.use_hello_world_images
-  enable_key_vault  = !var.use_hello_world_images
+  enable_key_vault  = var.enable_secrets_gradually  # Independente da imagem
 }
 
 # =============================================================================

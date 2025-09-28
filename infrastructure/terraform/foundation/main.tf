@@ -229,6 +229,7 @@ module "users_api_container_app" {
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
   use_hello_world_images    = var.use_hello_world_images
+  enable_secrets_gradually  = var.enable_secrets_gradually
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -267,6 +268,7 @@ module "games_api_container_app" {
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
   use_hello_world_images    = var.use_hello_world_images
+  enable_secrets_gradually  = var.enable_secrets_gradually
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -303,6 +305,7 @@ module "payments_api_container_app" {
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
   use_hello_world_images    = var.use_hello_world_images
+  enable_secrets_gradually  = var.enable_secrets_gradually
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
