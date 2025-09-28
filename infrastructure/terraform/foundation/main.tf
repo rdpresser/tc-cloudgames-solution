@@ -225,13 +225,9 @@ module "users_api_container_app" {
   key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
 
-  # Database name secret ref specific for users service
-  db_name_secret_ref = "db-name-users"
-
   tags = local.common_tags
 
   # Environment variables and secret refs are configured via GitHub Actions pipeline
-  # using azure/container-apps-deploy-action@v2 with secretref pattern
 
   rbac_propagation_wait_seconds = 120
 
@@ -262,13 +258,9 @@ module "games_api_container_app" {
   key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
 
-  # Database name secret ref specific for games service
-  db_name_secret_ref = "db-name-games"
-
   tags = local.common_tags
 
   # Environment variables and secret refs are configured via GitHub Actions pipeline
-  # using azure/container-apps-deploy-action@v2 with secretref pattern
 
   rbac_propagation_wait_seconds = 180
 
@@ -296,9 +288,6 @@ module "payments_api_container_app" {
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
-
-  # Database name secret ref specific for payments service
-  db_name_secret_ref = "db-name-payments"
 
   tags = local.common_tags
 

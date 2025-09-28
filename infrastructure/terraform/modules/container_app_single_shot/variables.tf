@@ -95,11 +95,6 @@ variable "tags" {
   default     = {}
 }
 
-variable "db_name_secret_ref" {
-  description = "Database name secret reference (e.g., 'db-name-users', 'db-name-games', 'db-name-payments')"
-  type        = string
-}
-
 # Note: Environment variables are now configured via GitHub Actions pipeline
 # using azure/container-apps-deploy-action@v2. This module creates the secret 
 # bindings via System Managed Identity for Key Vault access.
