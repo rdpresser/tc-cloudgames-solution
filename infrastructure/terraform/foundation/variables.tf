@@ -88,5 +88,5 @@ variable "use_hello_world_images" {
 variable "enable_secrets_gradually" {
   type        = bool
   description = "Enable Key Vault secrets gradually to avoid RBAC propagation issues. Deploy ACR first (false), then enable secrets (true) after RBAC propagates."
-  default     = true
+  default     = false
 }
