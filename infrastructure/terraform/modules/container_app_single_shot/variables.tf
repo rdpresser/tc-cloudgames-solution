@@ -103,7 +103,7 @@ variable "db_name_secret_ref" {
 variable "use_hello_world_images" {
   description = "Use hello-world public images (first deployment). When true: disables ACR and Key Vault. When false: enables full production setup."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "enable_secrets_gradually" {

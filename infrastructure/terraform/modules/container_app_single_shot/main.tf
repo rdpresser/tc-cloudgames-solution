@@ -50,7 +50,7 @@ locals {
   #
   # IMPORTANTE: GitHub Actions ACR push permissions são sempre ativas
   enable_acr_pull   = !var.use_hello_world_images
-  enable_key_vault  = var.enable_secrets_gradually  # Independente da imagem
+  enable_key_vault  = !var.use_hello_world_images && var.enable_secrets_gradually
 }
 
 # =============================================================================
