@@ -69,7 +69,8 @@ resource "azurerm_container_app" "main" {
   lifecycle {
     ignore_changes = [
       template[0].container[0].image,
-      template[0].container[0].env
+      template[0].container[0].env,
+      secret  # Pipeline manages secret references via env vars
     ]
   }
 
