@@ -30,7 +30,7 @@ output "role_assignment_key_vault_secrets_user_id" {
 
 output "role_assignment_acr_pull_id" {
   description = "ACR Pull role assignment ID"
-  value       = local.enable_acr ? azurerm_role_assignment.acr_pull[0].id : null
+  value       = local.enable_acr_pull ? azurerm_role_assignment.acr_pull[0].id : null
 }
 
 output "container_image_deployed" {

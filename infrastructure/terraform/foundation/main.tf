@@ -266,11 +266,12 @@ module "games_api_container_app" {
   container_image_acr       = local.container_images.games_api
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
+  use_hello_world_images    = var.use_hello_world_images
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
-
+  
   # Database name secret ref specific for games service
   db_name_secret_ref = "db-name-games"
 
@@ -301,6 +302,7 @@ module "payments_api_container_app" {
   container_image_acr       = local.container_images.payments_api
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
+  use_hello_world_images    = var.use_hello_world_images
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id

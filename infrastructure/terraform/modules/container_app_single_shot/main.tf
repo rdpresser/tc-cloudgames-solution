@@ -21,10 +21,13 @@ locals {
   proposed_name     = "${local.clean_prefix}-${local.clean_service}"
   containerapp_name = length(local.proposed_name) > 32 ? substr(local.proposed_name, 0, 32) : local.proposed_name
 
-  # Estratégia única: use_hello_world_images controla tudo
-  # true  = Hello World (sem ACR, sem Key Vault) - primeira execução
-  # false = Produção (com ACR, com Key Vault) - execuções posteriores
-  enable_acr        = !var.use_hello_world_images
+  # Estratégia única: use_hello_world_images controla Container Apps
+  # true  = Hello World (sem ACR pull, sem Key Vault) - primeira execução
+  # false = Produção (com ACR pull, com Key Vault) - execuções posteriores
+  # 
+  # IMPORTANTE: GitHub Actions ACR push permissions são sempre ativas
+  # para permitir que pipeline funcione mesmo na primeira execução
+  enable_acr_pull   = !var.use_hello_world_images
   enable_key_vault  = !var.use_hello_world_images
 }
 
@@ -61,7 +64,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = var.service_name
-      image  = var.container_image_placeholder
+      image  = var.use_hello_world_images ? var.container_image_placeholder : var.container_image_acr
       cpu    = var.cpu_requests
       memory = var.memory_requests
     }
@@ -84,7 +87,7 @@ resource "azurerm_container_app" "main" {
   # Só habilita ACR quando não estiver usando hello-world images
   # -------------------------------------------------------------------
   dynamic "registry" {
-    for_each = local.enable_acr ? [1] : []
+    for_each = local.enable_acr_pull ? [1] : []
     content {
       server   = var.container_registry_server
       identity = "System"
@@ -204,7 +207,7 @@ resource "azurerm_container_app" "main" {
 # Só cria quando não estiver usando hello-world images
 # -------------------------------------------------------------------
 resource "azurerm_role_assignment" "acr_pull" {
-  count                = local.enable_acr ? 1 : 0
+  count                = local.enable_acr_pull ? 1 : 0
   scope                = var.container_registry_id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
@@ -225,7 +228,7 @@ resource "azurerm_role_assignment" "kv_secrets_user" {
 # Espera de propagação RBAC (condicional)
 # -------------------------------------------------------------------
 resource "time_sleep" "wait_for_rbac" {
-  count           = local.enable_acr || local.enable_key_vault ? 1 : 0
+  count           = local.enable_acr_pull || local.enable_key_vault ? 1 : 0
   create_duration = "${var.rbac_propagation_wait_seconds}s"
   depends_on = [
     azurerm_role_assignment.acr_pull,
