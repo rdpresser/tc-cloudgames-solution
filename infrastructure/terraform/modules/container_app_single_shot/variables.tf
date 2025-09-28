@@ -109,7 +109,7 @@ variable "use_hello_world_images" {
 variable "enable_secrets_gradually" {
   description = "Deploy secrets gradually to avoid RBAC propagation issues. When false: no secrets. When true: all secrets."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Note: Environment variables are now configured via GitHub Actions pipeline
