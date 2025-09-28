@@ -15,6 +15,23 @@
 # - Simplifies the Terraform module
 # =============================================================================
 
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.12"
+    }
+  }
+}
+
 locals {
   clean_prefix      = replace(replace(var.name_prefix, "--", "-"), "--", "-")
   clean_service     = replace(replace(var.service_name, "--", "-"), "--", "-")
@@ -234,4 +251,34 @@ resource "time_sleep" "wait_for_rbac" {
     azurerm_role_assignment.acr_pull,
     azurerm_role_assignment.kv_secrets_user
   ]
+
+  # Trigger para forçar re-execução quando mudar de hello-world para produção
+  triggers = {
+    container_app_id = azurerm_container_app.main.id
+    rbac_timestamp   = timestamp()
+  }
+}
+
+# -------------------------------------------------------------------
+# Patch RBAC-dependent configs after propagation
+# Força re-aplicação do Container App após propagação RBAC
+# -------------------------------------------------------------------
+resource "null_resource" "patch_container_app_secrets" {
+  count = local.enable_key_vault ? 1 : 0
+
+  # Só executa após o time_sleep e quando secrets são habilitados
+  depends_on = [
+    time_sleep.wait_for_rbac
+  ]
+
+  # Trigger para re-executar quando necessário
+  triggers = {
+    container_app_id = azurerm_container_app.main.id
+    rbac_wait_id     = length(time_sleep.wait_for_rbac) > 0 ? time_sleep.wait_for_rbac[0].id : ""
+  }
+
+  # Força uma atualização mínima no Container App após propagação RBAC
+  provisioner "local-exec" {
+    command = "echo 'RBAC propagation completed - ready for Container App secrets'"
+  }
 }

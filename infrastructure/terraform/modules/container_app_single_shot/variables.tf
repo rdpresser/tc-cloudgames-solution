@@ -113,7 +113,7 @@ variable "use_hello_world_images" {
 variable "rbac_propagation_wait_seconds" {
   description = "Seconds to wait after RBAC assignment before patching secrets"
   type        = number
-  default     = 120
+  default     = 600  # 10 minutes - Azure RBAC propagation can be slow
 }
 
 variable "timeouts_create" {
