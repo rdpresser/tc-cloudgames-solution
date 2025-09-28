@@ -79,14 +79,8 @@ variable "github_actions_object_id" {
 # Container Apps Configuration Control
 # =============================================================================
 
-variable "use_keyvault_secrets" {
-  type        = bool
-  description = "Enable Key Vault secrets integration for Container Apps. Set to false for initial deployment with basic env vars, then true for managed identity integration."
-  default     = false
-}
-
 variable "use_hello_world_images" {
   type        = bool
   description = "Use Microsoft hello-world images for Container Apps. Set to true for initial deployment before pushing custom images to ACR, then false to use latest images from ACR."
-  default     = true
+  default     = false
 }

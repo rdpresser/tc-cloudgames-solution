@@ -271,7 +271,7 @@ module "games_api_container_app" {
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
   key_vault_uri  = module.key_vault.key_vault_uri
-  
+
   # Database name secret ref specific for games service
   db_name_secret_ref = "db-name-games"
 
