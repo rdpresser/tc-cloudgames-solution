@@ -100,18 +100,6 @@ variable "db_name_secret_ref" {
   type        = string
 }
 
-variable "use_hello_world_images" {
-  description = "Use hello-world public images (first deployment). When true: disables ACR and Key Vault. When false: enables full production setup."
-  type        = bool
-  default     = false
-}
-
-variable "enable_secrets_gradually" {
-  description = "Deploy secrets gradually to avoid RBAC propagation issues. When false: no secrets. When true: all secrets."
-  type        = bool
-  default     = false
-}
-
 # Note: Environment variables are now configured via GitHub Actions pipeline
 # using azure/container-apps-deploy-action@v2. This module creates the secret 
 # bindings via System Managed Identity for Key Vault access.
@@ -119,7 +107,7 @@ variable "enable_secrets_gradually" {
 variable "rbac_propagation_wait_seconds" {
   description = "Seconds to wait after RBAC assignment before patching secrets"
   type        = number
-  default     = 600  # 10 minutes - Azure RBAC propagation can be slow
+  default     = 120
 }
 
 variable "timeouts_create" {

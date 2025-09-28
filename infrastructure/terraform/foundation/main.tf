@@ -31,14 +31,6 @@ locals {
 
   kv_name = "tccloudgames${local.environment}kv${random_string.unique_suffix.result}"
 
-  # Container Images Strategy: Hello World para primeira execução, Latest quando disponível
-  # Esta abordagem resolve o problema "chicken and egg" entre ACR e Container Apps
-  container_images = {
-    users_api    = var.use_hello_world_images ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${module.acr.acr_login_server}/users-api:latest"
-    games_api    = var.use_hello_world_images ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${module.acr.acr_login_server}/games-api:latest"
-    payments_api = var.use_hello_world_images ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${module.acr.acr_login_server}/payments-api:latest"
-  }
-
   common_tags = {
     Environment = local.environment
     Project     = "TC Cloud Games"
@@ -199,7 +191,7 @@ module "servicebus" {
   resource_group_name = module.resource_group.name
   tags                = local.common_tags
 
-  # ⚠️  Resources serão criados via código C# (Wolverine/MassTransit)
+  # Resources serão criados via código C# (Wolverine/MassTransit)
   # Deixando tudo opcional para que a aplicação tenha controle total
   topics                  = []
   topic_subscriptions     = {}
@@ -225,11 +217,9 @@ module "users_api_container_app" {
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   location                     = module.resource_group.location
 
-  container_image_acr       = local.container_images.users_api
+  container_image_acr       = "${module.acr.acr_login_server}/users-api:latest"
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
-  use_hello_world_images    = var.use_hello_world_images
-  enable_secrets_gradually  = var.enable_secrets_gradually
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -243,7 +233,7 @@ module "users_api_container_app" {
   # Environment variables and secret refs are configured via GitHub Actions pipeline
   # using azure/container-apps-deploy-action@v2 with secretref pattern
 
-  rbac_propagation_wait_seconds = 300
+  rbac_propagation_wait_seconds = 120
 
   depends_on = [
     module.container_app_environment,
@@ -264,11 +254,9 @@ module "games_api_container_app" {
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   location                     = module.resource_group.location
 
-  container_image_acr       = local.container_images.games_api
+  container_image_acr       = "${module.acr.acr_login_server}/games-api:latest"
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
-  use_hello_world_images    = var.use_hello_world_images
-  enable_secrets_gradually  = var.enable_secrets_gradually
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -282,7 +270,7 @@ module "games_api_container_app" {
   # Environment variables and secret refs are configured via GitHub Actions pipeline
   # using azure/container-apps-deploy-action@v2 with secretref pattern
 
-  rbac_propagation_wait_seconds = 300
+  rbac_propagation_wait_seconds = 180
 
   depends_on = [
     module.container_app_environment,
@@ -301,11 +289,9 @@ module "payments_api_container_app" {
   container_app_environment_id = module.container_app_environment.container_app_environment_id
   location                     = module.resource_group.location
 
-  container_image_acr       = local.container_images.payments_api
+  container_image_acr       = "${module.acr.acr_login_server}/payments-api:latest"
   container_registry_server = module.acr.acr_login_server
   container_registry_id     = module.acr.acr_id
-  use_hello_world_images    = var.use_hello_world_images
-  enable_secrets_gradually  = var.enable_secrets_gradually
 
   key_vault_name = module.key_vault.key_vault_name
   key_vault_id   = module.key_vault.key_vault_id
@@ -319,7 +305,7 @@ module "payments_api_container_app" {
   # Environment variables and secret refs are configured via GitHub Actions pipeline
   # using azure/container-apps-deploy-action@v2 with secretref pattern
 
-  rbac_propagation_wait_seconds = 300
+  rbac_propagation_wait_seconds = 180
 
   depends_on = [
     module.container_app_environment,

@@ -76,16 +76,10 @@ variable "github_actions_object_id" {
 }
 
 # =============================================================================
-# Container Apps Configuration Control
+# Container Apps Key Vault Integration Control
 # =============================================================================
 
-variable "use_hello_world_images" {
-  type        = bool
-  description = "Use Microsoft hello-world images for Container Apps. Set to true for initial deployment before pushing custom images to ACR, then false to use latest images from ACR."
-  default     = false
-}
-
-variable "enable_secrets_gradually" {
+variable "use_keyvault_secrets" {
   type        = bool
   description = "Enable Key Vault secrets gradually to avoid RBAC propagation issues. Deploy ACR first (false), then enable secrets (true) after RBAC propagates."
   default     = false
