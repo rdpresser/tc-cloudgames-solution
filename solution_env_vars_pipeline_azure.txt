@@ -1,0 +1,29 @@
+#=======================================================#
+# DATABASE ENVIRONMENT VARIABLES #
+#-------------------------------------------------------#
+DB_HOST
+DB_PORT
+DB_NAME
+DB_MAINTENANCE_NAME
+DB_SCHEMA
+DB_CONNECTION_TIMEOUT
+DB_USER
+DB_PASSWORD
+#=======================================================#
+# AZURE SERVICEBUS ENVIRONMENT VARIABLES                #
+#-------------------------------------------------------#
+AZURE_SERVICEBUS_TOPIC_NAME
+AZURE_SERVICEBUS_AUTO_PROVISION
+AZURE_SERVICEBUS_MAX_DELIVERY_COUNT
+AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING
+AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP
+AZURE_SERVICEBUS_USE_CONTROL_QUEUES
+AZURE_SERVICEBUS_CONNECTIONSTRING
+#=======================================================#
+# CACHE ENVIRONMENT VARIABLES
+#-------------------------------------------------------#
+CACHE_HOST
+CACHE_PORT
+CACHE_INSTANCE_NAME
+CACHE_SECURE
+CACHE_PASSWORD

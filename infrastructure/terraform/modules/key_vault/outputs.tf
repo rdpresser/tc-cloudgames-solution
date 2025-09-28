@@ -38,6 +38,9 @@ output "secrets" {
     cache_port                         = azurerm_key_vault_secret.cache_port.id
     cache_password                     = azurerm_key_vault_secret.cache_password.id
     cache_secure                       = azurerm_key_vault_secret.cache_secure.id
+    cache_users_instance_name          = azurerm_key_vault_secret.cache_users_instance_name.id
+    cache_games_instance_name          = azurerm_key_vault_secret.cache_games_instance_name.id
+    cache_payments_instance_name       = azurerm_key_vault_secret.cache_payments_instance_name.id
     servicebus_namespace               = azurerm_key_vault_secret.servicebus_namespace.id
     servicebus_connection_string       = azurerm_key_vault_secret.servicebus_connection_string.id
     servicebus_auto_provision          = azurerm_key_vault_secret.servicebus_auto_provision.id
@@ -45,5 +48,8 @@ output "secrets" {
     servicebus_enable_dead_lettering   = azurerm_key_vault_secret.servicebus_enable_dead_lettering.id
     servicebus_auto_purge_on_startup   = azurerm_key_vault_secret.servicebus_auto_purge_on_startup.id
     servicebus_use_control_queues      = azurerm_key_vault_secret.servicebus_use_control_queues.id
+    servicebus_users_topic_name        = azurerm_key_vault_secret.servicebus_users_topic_name.id    
+    servicebus_payments_topic_name     = azurerm_key_vault_secret.servicebus_payments_topic_name.id
+    servicebus_games_topic_name        = azurerm_key_vault_secret.servicebus_games_topic_name.id
   }
 }

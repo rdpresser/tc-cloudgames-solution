@@ -250,6 +250,36 @@ resource "azurerm_key_vault_secret" "cache_secure" {
   ]
 }
 
+resource "azurerm_key_vault_secret" "cache_users_instance_name" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "cache-users-instance-name"
+  value        = var.cache_users_instance_name
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "cache_games_instance_name" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "cache-games-instance-name"
+  value        = var.cache_games_instance_name
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "cache_payments_instance_name" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "cache-payments-instance-name"
+  value        = var.cache_payments_instance_name
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
 # Service Bus Secrets
 resource "azurerm_key_vault_secret" "servicebus_namespace" {
   key_vault_id = azurerm_key_vault.key_vault.id
@@ -315,6 +345,36 @@ resource "azurerm_key_vault_secret" "servicebus_use_control_queues" {
   key_vault_id = azurerm_key_vault.key_vault.id
   name         = "servicebus-use-control-queues"
   value        = tostring(var.servicebus_use_control_queues)
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "servicebus_users_topic_name" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "servicebus-users-topic-name"
+  value        = var.servicebus_users_topic_name
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "servicebus_games_topic_name" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "servicebus-games-topic-name"
+  value        = var.servicebus_games_topic_name
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "servicebus_payments_topic_name" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "servicebus-payments-topic-name"
+  value        = var.servicebus_payments_topic_name
 
   depends_on = [
     azurerm_role_assignment.service_principal_kv_admin

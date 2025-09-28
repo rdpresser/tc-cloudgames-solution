@@ -208,6 +208,24 @@ variable "cache_secure" {
   default     = true
 }
 
+variable "cache_users_instance_name" {
+  description = "Redis cache instance name for users"
+  type        = string
+  default     = "tc-cloudgames-users-cache"
+}
+
+variable "cache_games_instance_name" {
+  description = "Redis cache instance name for games"
+  type        = string
+  default     = "tc-cloudgames-games-cache"
+}
+
+variable "cache_payments_instance_name" {
+  description = "Redis cache instance name for payments"
+  type        = string
+  default     = "tc-cloudgames-payments-cache"
+}
+
 # =============================================================================
 # Service Bus Connection Variables  
 # =============================================================================
@@ -246,6 +264,24 @@ variable "servicebus_use_control_queues" {
   description = "Service Bus use control queues"
   type        = bool
   default     = true
+}
+
+variable "servicebus_users_topic_name" {
+  description = "Service Bus users topic name"
+  type        = string
+  default     = "user.events"
+}
+
+variable "servicebus_games_topic_name" {
+  description = "Service Bus games topic name"
+  type        = string
+  default     = "game.events"
+}
+
+variable "servicebus_payments_topic_name" {
+  description = "Service Bus payments topic name"
+  type        = string
+  default     = "payment.events"
 }
 
 # =============================================================================
