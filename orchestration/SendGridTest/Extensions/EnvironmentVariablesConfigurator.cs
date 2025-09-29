@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-
 namespace SendGridTest.Extensions;
 
 /// <summary>
@@ -26,13 +23,6 @@ public static class EnvironmentVariablesConfigurator
 
     private static void LoadEnvironmentFiles(string projectRoot, string environment)
     {
-        var baseEnvFile = Path.Combine(projectRoot, ".env");
-        if (File.Exists(baseEnvFile))
-        {
-            DotNetEnv.Env.Load(baseEnvFile);
-            Console.WriteLine($"[env] Loaded base .env: {baseEnvFile}");
-        }
-
         var envFile = Path.Combine(projectRoot, $".env.{environment}");
         if (File.Exists(envFile))
         {
@@ -41,7 +31,16 @@ public static class EnvironmentVariablesConfigurator
         }
         else
         {
-            Console.WriteLine($"[env] Environment file not found: {envFile}");
+            var baseEnvFile = Path.Combine(projectRoot, ".env");
+            if (File.Exists(baseEnvFile))
+            {
+                DotNetEnv.Env.Load(baseEnvFile);
+                Console.WriteLine($"[env] Loaded base .env: {baseEnvFile}");
+            }
+            else
+            {
+                Console.WriteLine($"[env] Environment file not found: {envFile}");
+            }
         }
     }
 
