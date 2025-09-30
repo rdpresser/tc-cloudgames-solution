@@ -285,6 +285,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 IndexName = ServiceConfigResolver.GetResolvedValue("Elasticsearch:IndexPrefix", "ELASTICSEARCH_INDEXPREFIX", configuration, "games", logger),
 
                 // Aspire Parameters
+                UsernameParameter = Contains("elastic-username") ? this["elastic-username"] : null,
                 PasswordParameter = Contains("elastic-password") ? this["elastic-password"] : null
             };
         }

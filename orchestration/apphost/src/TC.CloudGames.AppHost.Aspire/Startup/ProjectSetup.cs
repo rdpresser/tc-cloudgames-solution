@@ -281,11 +281,11 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 .WithEnvironment("ELASTICSEARCH_INDEXPREFIX", elasticConfig.IndexName);
 
             // Add parameters for secrets
-            if (!string.IsNullOrEmpty(elasticConfig.Username))
-                project.WithEnvironment("ELASTICSEARCH_USERNAME", elasticConfig.Username);
+            if (elasticConfig.UsernameParameter != null)
+                project.WithEnvironment("ELASTICSEARCH_USERNAME", elasticConfig.UsernameParameter);
 
-            if (!string.IsNullOrEmpty(elasticConfig.Password))
-                project.WithEnvironment("ELASTICSEARCH_PASSWORD", elasticConfig.Password);
+            if (elasticConfig.PasswordParameter != null)
+                project.WithEnvironment("ELASTICSEARCH_PASSWORD", elasticConfig.PasswordParameter);
         }
     }
 }

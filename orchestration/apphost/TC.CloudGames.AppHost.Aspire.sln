@@ -49,8 +49,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Api"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Infrastructure", "..\..\services\payments\src\Adapters\Outbound\TC.CloudGames.Payments.Infrastructure\TC.CloudGames.Payments.Infrastructure.csproj", "{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Games.Search", "..\..\services\games\src\Adapters\Outbound\TC.CloudGames.Games.Search\TC.CloudGames.Games.Search.csproj", "{D845DDE7-7C2D-1AB5-55F0-7CAC72B8311E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,10 +123,6 @@ Global
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D845DDE7-7C2D-1AB5-55F0-7CAC72B8311E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D845DDE7-7C2D-1AB5-55F0-7CAC72B8311E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D845DDE7-7C2D-1AB5-55F0-7CAC72B8311E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D845DDE7-7C2D-1AB5-55F0-7CAC72B8311E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -154,7 +148,6 @@ Global
 		{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
 		{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
-		{D845DDE7-7C2D-1AB5-55F0-7CAC72B8311E} = {9998130E-67FA-45B2-8E4E-A6C44363DD54}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F1278D4F-DD5E-4308-B75D-11D57F7520A7}
