@@ -37,7 +37,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             return ConfigureProject(gamesProject, projectDependency, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, elastic, messageBroker);
         }
 
-        public static void ConfigurePaymentsApi(
+        public static IResourceBuilder<ProjectResource> ConfigurePaymentsApi(
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
             IResourceBuilder<ProjectResource>? projectDependency,
@@ -51,7 +51,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             var paymentsProject = builder.AddProject<Projects.TC_CloudGames_Payments_Api>("payments-api")
                 .WithHealthChecks();
 
-            ConfigureProject(paymentsProject, projectDependency, ProjectType.Payments, builder, registry, postgres, paymentsDb, maintenanceDb, redis, elastic, messageBroker);
+            return ConfigureProject(paymentsProject, projectDependency, ProjectType.Payments, builder, registry, postgres, paymentsDb, maintenanceDb, redis, elastic, messageBroker);
         }
 
         private static IResourceBuilder<ProjectResource> ConfigureProject(
@@ -91,6 +91,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ConfigureDatabaseEnvironment(project, projectType, builder, registry);
             ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type, projectType);
             ConfigureCacheEnvironment(project, projectType, builder, registry);
+            ConfigureElasticsearchEnvironment(project, projectType, builder, registry);
 
             return project;
         }
@@ -262,6 +263,27 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             // Add parameters for secrets
             if (cacheConfig.PasswordParameter != null)
                 project.WithParameterEnv("CACHE_PASSWORD", cacheConfig.PasswordParameter);
+        }
+
+        private static void ConfigureElasticsearchEnvironment(
+            IResourceBuilder<ProjectResource> project,
+            ProjectType projectType,
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry)
+        {
+            var elasticConfig = registry.GetElasticConfig(builder.Configuration);
+
+            project
+                .WithEnvironment("ELASTICSEARCH_HOST", elasticConfig.Host)
+                .WithEnvironment("ELASTICSEARCH_PORT", elasticConfig.Port)
+                .WithEnvironment("ELASTICSEARCH_INDEXPREFIX", elasticConfig.IndexName);
+
+            // Add parameters for secrets
+            if (!string.IsNullOrEmpty(elasticConfig.Username))
+                project.WithEnvironment("ELASTICSEARCH_USERNAME", elasticConfig.Username);
+            
+            if (!string.IsNullOrEmpty(elasticConfig.Password))
+                project.WithEnvironment("ELASTICSEARCH_PASSWORD", elasticConfig.Password);
         }
     }
 }
