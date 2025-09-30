@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Aspire.Hosting;
+using Microsoft.Extensions.Logging;
 using TC.CloudGames.AppHost.Aspire.Extensions;
 
 namespace TC.CloudGames.AppHost.Aspire.Startup
@@ -70,6 +71,33 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 _ => throw new InvalidOperationException($"Message broker type '{messageBrokerType}' não suportado")
             };
         }
+
+
+        public static IResourceBuilder<ElasticsearchResource>? ConfigureElasticSearch(
+            IDistributedApplicationBuilder builder, 
+            ServiceParameterRegistry registry,
+            ILogger? logger = null)
+        {
+            var elasticConfig = registry.GetElasticConfig(builder.Configuration, logger);
+
+            if (elasticConfig.UseExternalService)
+            {
+                logger?.LogInformation("🌐 Configurando Elasticsearch externo: {Url}", elasticConfig.Host);
+                return null;
+            }
+            else
+            {
+                logger?.LogInformation("🐳 Configurando Elasticsearch local (Container)");
+
+                var elastic = builder.AddElasticsearch("elasticsearch", elasticConfig.PasswordParameter, elasticConfig.Port)
+                    .WithImage("elasticsearch:8.19.4")
+                    .WithContainerName("TC-CloudGames-Elasticsearch")
+                    .WithVolume("tccloudgames_elasticsearch_data", "/usr/share/elasticsearch/data");
+
+                return elastic;
+            }
+        }
+
 
         private static MessageBrokerResources ConfigureRabbitMQBroker(
             IDistributedApplicationBuilder builder,
