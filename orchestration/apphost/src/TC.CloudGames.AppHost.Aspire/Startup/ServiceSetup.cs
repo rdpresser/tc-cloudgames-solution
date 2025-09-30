@@ -91,8 +91,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
                 var elastic = builder.AddElasticsearch("elasticsearch", elasticConfig.PasswordParameter, elasticConfig.Port)
                     .WithContainerName("TC-CloudGames-Elasticsearch")
-                    .WithVolume("tccloudgames_elasticsearch_data", "/usr/share/elasticsearch/data")
-                    .WithEnvironment("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
+                    .WithVolume("tccloudgames_elasticsearch_data", "/usr/share/elasticsearch/data");
 
                 return elastic;
             }
