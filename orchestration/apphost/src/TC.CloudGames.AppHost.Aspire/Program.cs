@@ -22,11 +22,12 @@ var registry = ParameterSetup.ConfigureParameters(builder, logger);
 var (postgres, userDb, gamesDb, paymentsDb, maintenanceDb) = ServiceSetup.ConfigurePostgres(builder, registry, logger);
 var redis = ServiceSetup.ConfigureRedis(builder, registry, logger);
 var messageBroker = ServiceSetup.ConfigureMessageBroker(builder, registry, logger);
+var elastic = ServiceSetup.ConfigureElasticSearch(builder, registry, logger);
 
 // Setup projects - cada projeto com seu banco específico
-var usersApi = ProjectSetup.ConfigureUsersApi(builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
-var gamesApi = ProjectSetup.ConfigureGamesApi(builder, registry, usersApi, postgres, gamesDb, maintenanceDb, redis, messageBroker);
-ProjectSetup.ConfigurePaymentsApi(builder, registry, gamesApi, postgres, paymentsDb, maintenanceDb, redis, messageBroker);
+var usersApi = ProjectSetup.ConfigureUsersApi(builder, registry, postgres, userDb, maintenanceDb, redis, elastic, messageBroker);
+var gamesApi = ProjectSetup.ConfigureGamesApi(builder, registry, usersApi, postgres, gamesDb, maintenanceDb, redis, elastic, messageBroker);
+ProjectSetup.ConfigurePaymentsApi(builder, registry, gamesApi, postgres, paymentsDb, maintenanceDb, redis, elastic, messageBroker);
 
 // Run
 await builder.Build().RunAsync();

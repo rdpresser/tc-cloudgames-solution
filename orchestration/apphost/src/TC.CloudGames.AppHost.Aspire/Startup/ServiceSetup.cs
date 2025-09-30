@@ -71,6 +71,31 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             };
         }
 
+        public static IResourceBuilder<ElasticsearchResource>? ConfigureElasticSearch(
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry,
+            ILogger? logger = null)
+        {
+            var elasticConfig = registry.GetElasticConfig(builder.Configuration, logger);
+
+            if (elasticConfig.UseExternalService)
+            {
+                logger?.LogInformation("🌐 Configurando Elasticsearch externo: {Url}", elasticConfig.Host);
+                return null;
+            }
+            else
+            {
+                logger?.LogInformation("🐳 Configurando Elasticsearch local (Container)");
+
+                var elastic = builder.AddElasticsearch("elasticsearch")
+                    .WithImage("elasticsearch:latest")
+                    .WithContainerName("TC-CloudGames-Elasticsearch")
+                    .WithHttpEndpoint(name: "elastic-http", port: 9200, targetPort: 9200);
+
+                return elastic;
+            }
+        }
+
         private static MessageBrokerResources ConfigureRabbitMQBroker(
             IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,

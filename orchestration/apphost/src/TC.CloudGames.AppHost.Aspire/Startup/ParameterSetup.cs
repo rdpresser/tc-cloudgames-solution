@@ -16,6 +16,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ConfigurePostgresParameters(builder, registry, logger);
             ConfigureRedisParameters(builder, registry, logger);
             ConfigureApplicationParameters(builder, registry, logger);
+            ConfigureElasticParameters(builder, registry, logger);
 
             // Configurar message broker baseado no tipo
             ConfigureMessageBrokerParameters(builder, registry, logger);
@@ -99,6 +100,15 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             registry.AddParameter(builder, "aspnetcore-environment", "ASPNETCORE_ENVIRONMENT", "ASPNETCORE_ENVIRONMENT", environment);
             registry.AddParameter(builder, "message-broker-type", "MessageBroker:Type", "MESSAGE_BROKER_TYPE",
                 environment == "development" ? "RabbitMQ" : "AzureServiceBus");
+        }
+
+        private static void ConfigureElasticParameters(IDistributedApplicationBuilder builder, ServiceParameterRegistry registry, ILogger logger)
+        {
+            logger.LogDebug("🔎 Configurando parâmetros do Elasticsearch...");
+
+            registry.AddParameter(builder, "elastic-username", "Elasticsearch:Username", "ELASTICSEARCH_USERNAME", "elastic");
+            registry.AddParameter(builder, "elastic-password", "Elasticsearch:Password", "ELASTICSEARCH_PASSWORD", "changeme", secret: true);
+            registry.AddParameter(builder, "elastic-index", "Elasticsearch:IndexPrefix", "ELASTICSEARCH_INDEXPREFIX", "games");
         }
     }
 
@@ -250,6 +260,27 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
                 // Aspire Parameters
                 ConnectionStringParameter = Contains("servicebus-connection") ? this["servicebus-connection"] : null
+            };
+        }
+
+        /// <summary>
+        /// Obtem configuração completa do Elasticsearch
+        /// </summary>
+        /// <param name="configuration"></param>
+        /// <param name="logger"></param>
+        /// <returns></returns>
+        public ElasticServiceConfig GetElasticConfig(ConfigurationManager configuration, ILogger? logger = null)
+        {
+            var useExternal = ServiceConfigResolver.ShouldUseExternalService(configuration, "Elasticsearch", logger);
+
+            return new ElasticServiceConfig
+            {
+                UseExternalService = useExternal,
+                Host = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Host", "ELASTICSEARCH_URL", configuration, useExternal ? "" : "localhost", logger),
+                Port = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Port", "ELASTICSEARCH_PORT", configuration, "9200", logger),
+                Username = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Username", "ELASTICSEARCH_USERNAME", configuration, "elastic", logger),
+                Password = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Password", "ELASTICSEARCH_PASSWORD", configuration, "changeme", logger),
+                IndexName = ServiceConfigResolver.GetResolvedValue("Elasticsearch:IndexPrefix", "ELASTICSEARCH_INDEXPREFIX", configuration, "games", logger)
             };
         }
 

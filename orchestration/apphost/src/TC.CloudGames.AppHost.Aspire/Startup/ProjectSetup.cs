@@ -11,12 +11,13 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             IResourceBuilder<PostgresDatabaseResource>? userDb,
             IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
             IResourceBuilder<RedisResource>? redis,
+            IResourceBuilder<ElasticsearchResource>? elastic,
             MessageBrokerResources messageBroker)
         {
             var usersProject = builder.AddProject<Projects.TC_CloudGames_Users_Api>("users-api")
                 .WithHealthChecks();
 
-            return ConfigureProject(usersProject, null, ProjectType.Users, builder, registry, postgres, userDb, maintenanceDb, redis, messageBroker);
+            return ConfigureProject(usersProject, null, ProjectType.Users, builder, registry, postgres, userDb, maintenanceDb, redis, elastic, messageBroker);
         }
 
         public static IResourceBuilder<ProjectResource> ConfigureGamesApi(
@@ -27,12 +28,13 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             IResourceBuilder<PostgresDatabaseResource>? gamesDb,
             IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
             IResourceBuilder<RedisResource>? redis,
+            IResourceBuilder<ElasticsearchResource>? elastic,
             MessageBrokerResources messageBroker)
         {
             var gamesProject = builder.AddProject<Projects.TC_CloudGames_Games_Api>("games-api")
                 .WithHealthChecks();
 
-            return ConfigureProject(gamesProject, projectDependency, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, messageBroker);
+            return ConfigureProject(gamesProject, projectDependency, ProjectType.Games, builder, registry, postgres, gamesDb, maintenanceDb, redis, elastic, messageBroker);
         }
 
         public static void ConfigurePaymentsApi(
@@ -43,12 +45,13 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             IResourceBuilder<PostgresDatabaseResource>? paymentsDb,
             IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
             IResourceBuilder<RedisResource>? redis,
+            IResourceBuilder<ElasticsearchResource>? elastic,
             MessageBrokerResources messageBroker)
         {
             var paymentsProject = builder.AddProject<Projects.TC_CloudGames_Payments_Api>("payments-api")
                 .WithHealthChecks();
 
-            ConfigureProject(paymentsProject, projectDependency, ProjectType.Payments, builder, registry, postgres, paymentsDb, maintenanceDb, redis, messageBroker);
+            ConfigureProject(paymentsProject, projectDependency, ProjectType.Payments, builder, registry, postgres, paymentsDb, maintenanceDb, redis, elastic, messageBroker);
         }
 
         private static IResourceBuilder<ProjectResource> ConfigureProject(
@@ -61,6 +64,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             IResourceBuilder<PostgresDatabaseResource>? projectDb,
             IResourceBuilder<PostgresDatabaseResource>? maintenanceDb,
             IResourceBuilder<RedisResource>? redis,
+            IResourceBuilder<ElasticsearchResource>? elastic,
             MessageBrokerResources messageBroker)
         {
             // Add references only for local services (containers)
@@ -68,6 +72,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (projectDb != null) project = project.WithReference(projectDb);
             if (maintenanceDb != null) project = project.WithReference(maintenanceDb);
             if (redis != null) project = project.WithReference(redis);
+            if (elastic != null) project = project.WithReference(elastic);
 
             // Add message broker references baseado no tipo
             AddMessageBrokerReferences(project, messageBroker);
