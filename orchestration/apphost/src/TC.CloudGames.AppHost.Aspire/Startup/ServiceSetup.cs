@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Aspire.Hosting;
+using Microsoft.Extensions.Logging;
 using TC.CloudGames.AppHost.Aspire.Extensions;
 
 namespace TC.CloudGames.AppHost.Aspire.Startup
@@ -88,14 +89,8 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             {
                 logger?.LogInformation("🐳 Configurando Elasticsearch local (Container)");
 
-                var elastic = builder.AddElasticsearch("elasticsearch")
-                    .WithImage("elasticsearch:7.17.9")
-                    .WithEnvironment("discovery.type", "single-node")
-                    .WithEnvironment("xpack.security.enabled", "false")
-                    .WithEnvironment("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
-                    .WithEnvironment("cluster.name", "tc-cloudgames-cluster")
-                    .WithEnvironment("node.name", "tc-cloudgames-node")
-                    .WithHttpEndpoint(name: "http-fixed", port: 9200, targetPort: 9200);
+                var elastic = builder.AddElasticsearch("elasticsearch", elasticConfig.PasswordParameter, elasticConfig.Port)
+                    .WithContainerName("TC-CloudGames-Elasticsearch");
 
                 return elastic;
             }

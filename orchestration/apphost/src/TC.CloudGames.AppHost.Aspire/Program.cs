@@ -25,10 +25,9 @@ var messageBroker = ServiceSetup.ConfigureMessageBroker(builder, registry, logge
 var elastic = ServiceSetup.ConfigureElasticSearch(builder, registry, logger);
 
 // Setup projects - cada projeto com seu banco específico
-var usersApi = ProjectSetup.ConfigureUsersApi(builder, registry, postgres, userDb, maintenanceDb, redis, elastic, messageBroker);
+var usersApi = ProjectSetup.ConfigureUsersApi(builder, registry, postgres, userDb, maintenanceDb, redis, null, messageBroker);
 var gamesApi = ProjectSetup.ConfigureGamesApi(builder, registry, usersApi, postgres, gamesDb, maintenanceDb, redis, elastic, messageBroker);
-var paymentsApi = ProjectSetup.ConfigurePaymentsApi(builder, registry, gamesApi, postgres, paymentsDb, maintenanceDb, redis, elastic, messageBroker);
-
+ProjectSetup.ConfigurePaymentsApi(builder, registry, gamesApi, postgres, paymentsDb, maintenanceDb, redis, null, messageBroker);
 
 // Run
 await builder.Build().RunAsync();

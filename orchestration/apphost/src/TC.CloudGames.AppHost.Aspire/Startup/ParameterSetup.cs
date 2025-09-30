@@ -106,6 +106,8 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         {
             logger.LogDebug("🔎 Configurando parâmetros do Elasticsearch...");
 
+            registry.AddParameter(builder, "elastic-host", "Elasticsearch:Host", "ELASTICSEARCH_HOST", "localhost");
+            registry.AddParameter(builder, "elastic-port", "Elasticsearch:Port", "ELASTICSEARCH_PORT", "9200");
             registry.AddParameter(builder, "elastic-username", "Elasticsearch:Username", "ELASTICSEARCH_USERNAME", "elastic");
             registry.AddParameter(builder, "elastic-password", "Elasticsearch:Password", "ELASTICSEARCH_PASSWORD", "changeme", secret: true);
             registry.AddParameter(builder, "elastic-index", "Elasticsearch:IndexPrefix", "ELASTICSEARCH_INDEXPREFIX", "games");
@@ -276,11 +278,14 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             return new ElasticServiceConfig
             {
                 UseExternalService = useExternal,
-                Host = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Host", "ELASTICSEARCH_URL", configuration, useExternal ? "" : "localhost", logger),
-                Port = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Port", "ELASTICSEARCH_PORT", configuration, "9200", logger),
+                Host = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Host", "ELASTICSEARCH_HOST", configuration, useExternal ? "" : "localhost", logger),
+                Port = int.Parse(ServiceConfigResolver.GetResolvedValue("Elasticsearch:Port", "ELASTICSEARCH_PORT", configuration, "9200", logger)),
                 Username = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Username", "ELASTICSEARCH_USERNAME", configuration, "elastic", logger),
                 Password = ServiceConfigResolver.GetResolvedValue("Elasticsearch:Password", "ELASTICSEARCH_PASSWORD", configuration, "changeme", logger),
-                IndexName = ServiceConfigResolver.GetResolvedValue("Elasticsearch:IndexPrefix", "ELASTICSEARCH_INDEXPREFIX", configuration, "games", logger)
+                IndexName = ServiceConfigResolver.GetResolvedValue("Elasticsearch:IndexPrefix", "ELASTICSEARCH_INDEXPREFIX", configuration, "games", logger),
+
+                // Aspire Parameters
+                PasswordParameter = Contains("elastic-password") ? this["elastic-password"] : null
             };
         }
 

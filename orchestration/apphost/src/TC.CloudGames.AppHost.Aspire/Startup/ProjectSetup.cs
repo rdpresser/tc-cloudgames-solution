@@ -82,6 +82,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             if (projectDb != null) project = project.WaitFor(projectDb);
             if (maintenanceDb != null) project = project.WaitFor(maintenanceDb);
             if (redis != null) project = project.WaitFor(redis);
+            if (elastic != null) project = project.WaitFor(elastic);
             if (projectDependency != null) project = project.WaitFor(projectDependency);
 
             // Wait for message broker only if it has local resources
@@ -92,6 +93,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type, projectType);
             ConfigureCacheEnvironment(project, projectType, builder, registry);
             ConfigureElasticsearchEnvironment(project, projectType, builder, registry);
+
 
             return project;
         }
@@ -275,13 +277,13 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             project
                 .WithEnvironment("ELASTICSEARCH_HOST", elasticConfig.Host)
-                .WithEnvironment("ELASTICSEARCH_PORT", elasticConfig.Port)
+                .WithEnvironment("ELASTICSEARCH_PORT", elasticConfig.Port.ToString())
                 .WithEnvironment("ELASTICSEARCH_INDEXPREFIX", elasticConfig.IndexName);
 
             // Add parameters for secrets
             if (!string.IsNullOrEmpty(elasticConfig.Username))
                 project.WithEnvironment("ELASTICSEARCH_USERNAME", elasticConfig.Username);
-            
+
             if (!string.IsNullOrEmpty(elasticConfig.Password))
                 project.WithEnvironment("ELASTICSEARCH_PASSWORD", elasticConfig.Password);
         }
