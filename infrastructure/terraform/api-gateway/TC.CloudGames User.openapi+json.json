@@ -1,0 +1,654 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "TC.CloudGames User",
+        "description": "API for TC.CloudGames",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "https://fiap-apigtw-tc-cloud-games.azure-api.net/api/user"
+        }
+    ],
+    "paths": {
+        "/by-email/{email}": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Retrieve user details by their email.",
+                "description": "This endpoint retrieves detailed information about a user by their Email. Access is restricted to users with the appropriate role.",
+                "operationId": "GetUserByEmailEndpoint",
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "John.smith@gmail.com"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returned when user information is successfully retrieved.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TCCloudGamesUsersApplicationUseCasesGetUserByEmailUserByEmailResponse"
+                                },
+                                "example": {
+                                    "id": "019b3aff-e8a7-447d-a511-334847d768cb",
+                                    "name": "John Smith",
+                                    "username": "johnsmith",
+                                    "email": "John.smith@gmail.com",
+                                    "role": "Admin"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Returned when the request is invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FastEndpointsProblemDetails"
+                                },
+                                "example": {
+                                    "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+                                    "title": "One or more validation errors occurred.",
+                                    "status": 400,
+                                    "instance": "/api/route",
+                                    "traceId": "0HMPNHL0JHL76:00000001",
+                                    "detail": "string",
+                                    "errors": [
+                                        {
+                                            "name": "Error or field name",
+                                            "reason": "Error reason",
+                                            "code": "string",
+                                            "severity": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Returned when the request is made without a valid user token."
+                    },
+                    "403": {
+                        "description": "Returned when the caller lacks the required role to access this endpoint."
+                    },
+                    "404": {
+                        "description": "Returned when no user is found with the provided Id."
+                    }
+                }
+            }
+        },
+        "/": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Retrieves a paginated list of users based on the provided filters.",
+                "description": "Retrieves a paginated list of users based on the provided filters.",
+                "operationId": "GetUserListEndpoint",
+                "parameters": [
+                    {
+                        "name": "pageNumber",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 10
+                        },
+                        "example": 10
+                    },
+                    {
+                        "name": "sortBy",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "id"
+                        },
+                        "example": "id"
+                    },
+                    {
+                        "name": "sortDirection",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "asc"
+                        },
+                        "example": "asc"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "<any value/field>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returned when the user list is successfully retrieved using the specified filters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TCCloudGamesUsersApplicationUseCasesGetUserListUserListResponse"
+                                },
+                                "example": [
+                                    {
+                                        "id": "1d74a6de-a829-4177-9216-5439daf79c54",
+                                        "name": "Aiden Volkman",
+                                        "username": "Christine82",
+                                        "email": "Everett.Daugherty@yahoo.com",
+                                        "role": "User"
+                                    },
+                                    {
+                                        "id": "50ed518c-363c-43c5-8b37-5c301d5b6f63",
+                                        "name": "Zachariah Renner",
+                                        "username": "Christine82",
+                                        "email": "Dusty.Lakin13@hotmail.com",
+                                        "role": "Admin"
+                                    },
+                                    {
+                                        "id": "87d93be5-3ede-4f8c-8ed5-f45bc2e53943",
+                                        "name": "Katheryn Champlin",
+                                        "username": "Christine82",
+                                        "email": "Jarrett23@yahoo.com",
+                                        "role": "User"
+                                    },
+                                    {
+                                        "id": "cf4dc890-376c-40a5-9681-2391139de3a2",
+                                        "name": "Jakayla Jenkins",
+                                        "username": "Christine82",
+                                        "email": "Nellie.Gulgowski77@yahoo.com",
+                                        "role": "Admin"
+                                    },
+                                    {
+                                        "id": "3e9704f3-39e1-4aa6-af9d-245cc0870c79",
+                                        "name": "Eladio O'Connell",
+                                        "username": "Christine82",
+                                        "email": "Ivy.Balistreri@hotmail.com",
+                                        "role": "User"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Returned when the request contains invalid parameters.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FastEndpointsProblemDetails"
+                                },
+                                "example": {
+                                    "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+                                    "title": "One or more validation errors occurred.",
+                                    "status": 400,
+                                    "instance": "/api/route",
+                                    "traceId": "0HMPNHL0JHL76:00000001",
+                                    "detail": "string",
+                                    "errors": [
+                                        {
+                                            "name": "Error or field name",
+                                            "reason": "Error reason",
+                                            "code": "string",
+                                            "severity": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Returned when the request is made without a valid user token."
+                    },
+                    "403": {
+                        "description": "Returned when the logged-in user lacks the required role to access this endpoint."
+                    }
+                }
+            }
+        },
+        "/{id}": {
+            "put": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update an existing user.",
+                "description": "Updates an existing user by Id with the provided name, email and username. Accessible only to authorized roles.",
+                "operationId": "UpdateUserEndpoint",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "guid"
+                        },
+                        "example": "143c16bf-6665-4b31-a4c0-dc6f0f0b0a42"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TCCloudGamesUsersApplicationUseCasesUpdateUserUpdateUserCommand"
+                            },
+                            "example": {
+                                "name": "John Smith",
+                                "email": "john.smith@gmail.com",
+                                "username": "john.smith"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Returned when the user is successfully updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TCCloudGamesUsersApplicationUseCasesUpdateUserUpdateUserResponse"
+                                },
+                                "example": {
+                                    "id": "958a38b5-2c99-44f4-8eb8-07945a8bea78",
+                                    "name": "John Smith",
+                                    "email": "john.smith@gmail.com",
+                                    "username": "john.smith",
+                                    "role": "Admin"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Returned when the request is invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FastEndpointsProblemDetails"
+                                },
+                                "example": {
+                                    "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+                                    "title": "One or more validation errors occurred.",
+                                    "status": 400,
+                                    "instance": "/api/route",
+                                    "traceId": "0HMPNHL0JHL76:00000001",
+                                    "detail": "string",
+                                    "errors": [
+                                        {
+                                            "name": "Error or field name",
+                                            "reason": "Error reason",
+                                            "code": "string",
+                                            "severity": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Returned when authentication is missing or invalid."
+                    },
+                    "403": {
+                        "description": "Returned when the caller lacks the required role."
+                    },
+                    "404": {
+                        "description": "Returned when no user is found with the provided Id."
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "TCCloudGamesUsersApplicationUseCasesGetUserByEmailUserByEmailResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "username",
+                    "email",
+                    "role"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesUsersApplicationUseCasesGetUserListUserListResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "username",
+                    "email",
+                    "role"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "FastEndpointsProblemDetails": {
+                "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "instance",
+                    "traceId",
+                    "errors"
+                ],
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "default": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1"
+                    },
+                    "title": {
+                        "type": "string",
+                        "default": "One or more validation errors occurred."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 400
+                    },
+                    "instance": {
+                        "type": "string",
+                        "default": "/api/route"
+                    },
+                    "traceId": {
+                        "type": "string",
+                        "default": "0HMPNHL0JHL76:00000001"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FastEndpointsProblemDetails_Error"
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "FastEndpointsProblemDetails_Error": {
+                "required": [
+                    "name",
+                    "reason"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "default": "Error or field name"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "default": "Error reason"
+                    },
+                    "code": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "severity": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesUsersApplicationUseCasesUpdateUserUpdateUserResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "username",
+                    "role"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesUsersApplicationUseCasesUpdateUserUpdateUserCommand": {
+                "required": [
+                    "name",
+                    "email",
+                    "username"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "John Smith"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "john.smith@gmail.com"
+                    },
+                    "username": {
+                        "type": "string",
+                        "example": "john.smith"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "name": "John Smith",
+                    "email": "john.smith@gmail.com",
+                    "username": "john.smith"
+                }
+            },
+            "TCCloudGamesUsersApplicationUseCasesCreateUserCreateUserResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "username",
+                    "role"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesUsersApplicationUseCasesCreateUserCreateUserCommand": {
+                "required": [
+                    "name",
+                    "email",
+                    "username",
+                    "password",
+                    "role"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "maxLength": 100,
+                        "minLength": 3,
+                        "pattern": "^[a-zA-Z ]+$",
+                        "type": "string",
+                        "example": "John Smith"
+                    },
+                    "email": {
+                        "minLength": 1,
+                        "pattern": "^[^@]+@[^@]+$",
+                        "type": "string",
+                        "format": "email",
+                        "example": "john.smith@gmail.com"
+                    },
+                    "username": {
+                        "maxLength": 100,
+                        "minLength": 3,
+                        "pattern": "^[a-zA-Z][a-zA-Z0-9]*$",
+                        "type": "string",
+                        "example": "john.smith"
+                    },
+                    "password": {
+                        "minLength": 8,
+                        "pattern": "[\\W_]",
+                        "type": "string",
+                        "example": "******"
+                    },
+                    "role": {
+                        "minLength": 1,
+                        "type": "string",
+                        "example": "Admin"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "name": "John Smith",
+                    "email": "john.smith@gmail.com",
+                    "username": "john.smith",
+                    "password": "******",
+                    "role": "Admin"
+                }
+            },
+            "TCCloudGamesUsersApplicationUseCasesLoginUserLoginUserResponse": {
+                "required": [
+                    "jwtToken",
+                    "email"
+                ],
+                "type": "object",
+                "properties": {
+                    "jwtToken": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesUsersApplicationUseCasesLoginUserLoginUserCommand": {
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "minLength": 1,
+                        "pattern": "^[^@]+@[^@]+$",
+                        "type": "string",
+                        "format": "email",
+                        "example": "John.smith@gmail.com"
+                    },
+                    "password": {
+                        "minLength": 8,
+                        "pattern": "[\\W_]",
+                        "type": "string",
+                        "example": "********"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "email": "John.smith@gmail.com",
+                    "password": "********"
+                }
+            }
+        },
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "Ocp-Apim-Subscription-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "subscription-key",
+                "in": "query"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "apiKeyQuery": []
+        }
+    ]
+}

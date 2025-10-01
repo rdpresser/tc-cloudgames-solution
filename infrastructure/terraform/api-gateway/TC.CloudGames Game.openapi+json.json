@@ -1,0 +1,1399 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "TC.CloudGames Game",
+        "description": "API for TC.CloudGames",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "https://fiap-apigtw-tc-cloud-games.azure-api.net/api/game"
+        }
+    ],
+    "paths": {
+        "/": {
+            "post": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Endpoint for creating a new game.",
+                "description": "This endpoint allows for the creation of a new game by providing its name, description, and other relevant details. Upon successful creation, a new game is added to the system.",
+                "operationId": "CreateGameEndpoint",
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameCreateGameCommand"
+                            },
+                            "example": {
+                                "name": "Game Name",
+                                "releaseDate": "2025-09-29",
+                                "ageRating": "Choose one of valid age rate: 'E', 'M', 'A', 'RP', 'E10+', 'T'",
+                                "description": "Game Description",
+                                "developerInfo": {
+                                    "developer": "Developer Name",
+                                    "publisher": "Publisher Name"
+                                },
+                                "diskSize": 50,
+                                "price": 59.99,
+                                "playtime": {
+                                    "hours": 10,
+                                    "playerCount": 1
+                                },
+                                "gameDetails": {
+                                    "genre": "Genre",
+                                    "platforms": [
+                                        "PlayStation 5",
+                                        "iOS",
+                                        "Xbox One",
+                                        "PlayStation 4",
+                                        "Linux",
+                                        "macOS",
+                                        "VR (PlayStation VR)",
+                                        "PC",
+                                        "Steam Deck",
+                                        "Browser",
+                                        "Android",
+                                        "VR (Oculus Quest)",
+                                        "Xbox Series X|S",
+                                        "Nintendo 3DS",
+                                        "VR (HTC Vive)",
+                                        "PlayStation Vita",
+                                        "Wii U",
+                                        "Nintendo Switch",
+                                        "Stadia"
+                                    ],
+                                    "tags": "Tags",
+                                    "gameMode": "Choose one of valid game modes: 'Battle Royale', 'Multiplayer', 'PvE', 'Singleplayer', 'Casual', 'Sandbox', 'PvP', 'Co-op', 'Survival'",
+                                    "distributionFormat": "Choose one of valid distribution format: 'Digital', 'Physical'",
+                                    "availableLanguages": "Available Languages",
+                                    "supportsDlcs": true
+                                },
+                                "systemRequirements": {
+                                    "minimum": "Minimum Requirements",
+                                    "recommended": "Recommended Requirements"
+                                },
+                                "rating": 4.5,
+                                "officialLink": "https://example.com",
+                                "gameStatus": "Choose one of valid game status: 'Released', 'Available', 'Early Access', 'Soon', 'Discontinued', 'In Development'"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Returned when a new game is successfully created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameCreateGameResponse"
+                                },
+                                "example": {
+                                    "id": "898949dc-7db3-4429-93e2-697707aed4a3",
+                                    "name": "Game Name",
+                                    "releaseDate": "2025-09-29",
+                                    "ageRating": "E",
+                                    "description": "Game Description",
+                                    "developerInfo": {
+                                        "developer": "Developer Name",
+                                        "publisher": "Publisher Name"
+                                    },
+                                    "diskSize": 50,
+                                    "price": 59.99,
+                                    "playtime": {
+                                        "hours": 10,
+                                        "playerCount": 1
+                                    },
+                                    "gameDetails": {
+                                        "genre": "Genre",
+                                        "platforms": [
+                                            "PlayStation 5",
+                                            "iOS",
+                                            "Xbox One",
+                                            "PlayStation 4",
+                                            "Linux",
+                                            "macOS",
+                                            "VR (PlayStation VR)",
+                                            "PC",
+                                            "Steam Deck",
+                                            "Browser",
+                                            "Android",
+                                            "VR (Oculus Quest)",
+                                            "Xbox Series X|S",
+                                            "Nintendo 3DS",
+                                            "VR (HTC Vive)",
+                                            "PlayStation Vita",
+                                            "Wii U",
+                                            "Nintendo Switch",
+                                            "Stadia"
+                                        ],
+                                        "tags": "Tags",
+                                        "gameMode": "Battle Royale",
+                                        "distributionFormat": "Digital",
+                                        "availableLanguages": "Available Languages",
+                                        "supportsDlcs": true
+                                    },
+                                    "systemRequirements": {
+                                        "minimum": "Minimum Requirements",
+                                        "recommended": "Recommended Requirements"
+                                    },
+                                    "rating": 4.5,
+                                    "officialLink": "https://example.com",
+                                    "gameStatus": "Released"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Returned when a bad request occurs.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FastEndpointsProblemDetails"
+                                },
+                                "example": {
+                                    "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+                                    "title": "One or more validation errors occurred.",
+                                    "status": 400,
+                                    "instance": "/api/route",
+                                    "traceId": "0HMPNHL0JHL76:00000001",
+                                    "detail": "string",
+                                    "errors": [
+                                        {
+                                            "name": "Error or field name",
+                                            "reason": "Error reason",
+                                            "code": "string",
+                                            "severity": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Returned when the request is made without a valid user token."
+                    },
+                    "403": {
+                        "description": "Returned when the caller lacks the required role to access this endpoint."
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Retrieves a paginated list of games based on the provided filters.",
+                "description": "Retrieves a paginated list of games based on the provided filters.",
+                "operationId": "GetGameListEndpoint",
+                "parameters": [
+                    {
+                        "name": "pageNumber",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 10
+                        },
+                        "example": 10
+                    },
+                    {
+                        "name": "sortBy",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "id"
+                        },
+                        "example": "id"
+                    },
+                    {
+                        "name": "sortDirection",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "asc"
+                        },
+                        "example": "asc"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "<any value/field>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returned when the game list is successfully retrieved using the specified filters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameListGameListResponse"
+                                },
+                                "example": [
+                                    {
+                                        "id": "42f1db8c-6a6d-401a-985b-14902919f98e",
+                                        "name": "Handmade Metal Salad",
+                                        "releaseDate": "2025-04-23",
+                                        "ageRating": "A",
+                                        "description": "Mollitia numquam voluptatem animi ex quis exercitationem ut deleniti. Ut non doloribus ullam quos. Sint cum dolorem sunt voluptas vel voluptate ea delectus. Occaecati est rerum. Tempora et sed ut alias vel est atque ut qui. Et unde magnam et.",
+                                        "developerInfo": {
+                                            "developer": "Howe - Kassulke",
+                                            "publisher": "Larkin, Huels and Kunde"
+                                        },
+                                        "diskSize": 110,
+                                        "price": 2.01,
+                                        "playtime": {
+                                            "hours": 5,
+                                            "playerCount": 188
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Health",
+                                            "tags": "blanditiis, excepturi, nemo, et, odit",
+                                            "gameMode": "PvE",
+                                            "distributionFormat": "Digital",
+                                            "availableLanguages": "English, French",
+                                            "supportsDlcs": true,
+                                            "platforms": [
+                                                "VR (Oculus Quest)",
+                                                "VR (PlayStation VR)",
+                                                "iOS",
+                                                "Wii U",
+                                                "Nintendo 3DS",
+                                                "PlayStation 4",
+                                                "Stadia",
+                                                "Xbox One",
+                                                "Linux",
+                                                "macOS",
+                                                "Android",
+                                                "PlayStation 5",
+                                                "PlayStation Vita"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Vel sed ipsum officia reiciendis perferendis occaecati rem est.",
+                                            "recommended": "Voluptatem inventore enim officiis placeat et dolorum ad commodi labore."
+                                        },
+                                        "rating": 4.25,
+                                        "officialLink": "https://rolando.net",
+                                        "gameStatus": "Early Access"
+                                    },
+                                    {
+                                        "id": "d69e3e41-2380-422f-8cee-7fa8c127babf",
+                                        "name": "Handmade Fresh Soap",
+                                        "releaseDate": "2024-12-09",
+                                        "ageRating": "RP",
+                                        "description": "Assumenda laboriosam sapiente deleniti. Perferendis aut quos. Cupiditate ducimus corporis quia iste facere.",
+                                        "developerInfo": {
+                                            "developer": "Auer Inc",
+                                            "publisher": "Collins, Tremblay and Hane"
+                                        },
+                                        "diskSize": 52,
+                                        "price": 44.78,
+                                        "playtime": {
+                                            "hours": 71,
+                                            "playerCount": 770
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Tools",
+                                            "tags": "sapiente, alias, sint, veritatis, provident",
+                                            "gameMode": "PvE",
+                                            "distributionFormat": "Physical",
+                                            "availableLanguages": "French, Spanish, English, Japanese, German",
+                                            "supportsDlcs": false,
+                                            "platforms": [
+                                                "PlayStation Vita",
+                                                "Xbox One",
+                                                "Android"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Nihil laboriosam nemo.",
+                                            "recommended": "Doloribus aliquam dicta vitae aspernatur deleniti asperiores incidunt soluta aut."
+                                        },
+                                        "rating": 2.32,
+                                        "officialLink": "https://dora.biz",
+                                        "gameStatus": "In Development"
+                                    },
+                                    {
+                                        "id": "572f898f-24e8-44ca-a29b-a19dd2f7e8d3",
+                                        "name": "Ergonomic Plastic Fish",
+                                        "releaseDate": "2025-05-24",
+                                        "ageRating": "M",
+                                        "description": "Dolorem ad cumque ipsam excepturi eius doloribus voluptates beatae natus. Adipisci est ex enim aperiam voluptas eaque consequatur minus. Dolores necessitatibus voluptas exercitationem voluptas blanditiis rerum reprehenderit corrupti. Quasi optio omnis.",
+                                        "developerInfo": {
+                                            "developer": "Ritchie and Sons",
+                                            "publisher": "Romaguera Inc"
+                                        },
+                                        "diskSize": 100,
+                                        "price": 75.99,
+                                        "playtime": {
+                                            "hours": 84,
+                                            "playerCount": 684
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Sports",
+                                            "tags": "nihil, sed, odio, impedit, ut",
+                                            "gameMode": "Survival",
+                                            "distributionFormat": "Physical",
+                                            "availableLanguages": "English, Spanish, French, German",
+                                            "supportsDlcs": false,
+                                            "platforms": [
+                                                "Xbox Series X|S",
+                                                "VR (HTC Vive)",
+                                                "iOS"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Dolores numquam eius commodi impedit voluptatem nobis dolor consequatur.",
+                                            "recommended": "Nemo labore voluptatem."
+                                        },
+                                        "rating": 7.08,
+                                        "officialLink": "https://savanah.org",
+                                        "gameStatus": "In Development"
+                                    },
+                                    {
+                                        "id": "ae5964ec-b696-4735-889e-6bc26730bad6",
+                                        "name": "Sleek Steel Cheese",
+                                        "releaseDate": "2025-09-25",
+                                        "ageRating": "E",
+                                        "description": "Excepturi et porro facere. Harum nobis numquam qui consequatur fuga ducimus. Voluptatem in hic ullam odio sit praesentium. Sit neque aperiam voluptatem soluta in ipsam sint facilis exercitationem. Consequuntur qui ut deleniti vitae et similique.",
+                                        "developerInfo": {
+                                            "developer": "Marquardt, White and Dietrich",
+                                            "publisher": "Sanford, Kuphal and Fisher"
+                                        },
+                                        "diskSize": 107,
+                                        "price": 26.11,
+                                        "playtime": {
+                                            "hours": 92,
+                                            "playerCount": 701
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Garden",
+                                            "tags": "voluptatibus, aut, nobis, id, numquam",
+                                            "gameMode": "Casual",
+                                            "distributionFormat": "Physical",
+                                            "availableLanguages": "French, Spanish, Japanese, German, English",
+                                            "supportsDlcs": true,
+                                            "platforms": [
+                                                "Xbox One",
+                                                "iOS",
+                                                "Linux",
+                                                "PC",
+                                                "PlayStation 5",
+                                                "PlayStation 4",
+                                                "Xbox Series X|S",
+                                                "Nintendo 3DS"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Eaque quam at non inventore.",
+                                            "recommended": "Ad repellat tempore dolorem magnam et ut illo."
+                                        },
+                                        "rating": 6.8,
+                                        "officialLink": "https://stephany.info",
+                                        "gameStatus": "Released"
+                                    },
+                                    {
+                                        "id": "7756ffcc-e4c3-4f49-b515-a0188b7bf827",
+                                        "name": "Refined Rubber Pants",
+                                        "releaseDate": "2024-12-30",
+                                        "ageRating": "A",
+                                        "description": "Exercitationem minima quasi est sequi laborum sed. Aspernatur temporibus ut sequi dolore et explicabo voluptas doloremque debitis. Voluptatibus aperiam fugit. Minima laborum autem esse. Facilis excepturi quo laborum sint. Aut qui et magnam cum delectus.",
+                                        "developerInfo": {
+                                            "developer": "Schmitt LLC",
+                                            "publisher": "Parker - Lesch"
+                                        },
+                                        "diskSize": 145,
+                                        "price": 29.05,
+                                        "playtime": {
+                                            "hours": 44,
+                                            "playerCount": 1220
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Movies",
+                                            "tags": "voluptatibus, sed, eaque, cum, totam",
+                                            "gameMode": "Multiplayer",
+                                            "distributionFormat": "Physical",
+                                            "availableLanguages": "Japanese, German, Spanish, French, English",
+                                            "supportsDlcs": true,
+                                            "platforms": [
+                                                "macOS",
+                                                "Xbox Series X|S",
+                                                "Steam Deck",
+                                                "Android"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Est ut mollitia fugiat.",
+                                            "recommended": "Est natus aperiam inventore et placeat vel expedita."
+                                        },
+                                        "rating": 7.29,
+                                        "officialLink": "http://orville.biz",
+                                        "gameStatus": "Available"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Returned when the request contains invalid parameters.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FastEndpointsProblemDetails"
+                                },
+                                "example": {
+                                    "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+                                    "title": "One or more validation errors occurred.",
+                                    "status": 400,
+                                    "instance": "/api/route",
+                                    "traceId": "0HMPNHL0JHL76:00000001",
+                                    "detail": "string",
+                                    "errors": [
+                                        {
+                                            "name": "Error or field name",
+                                            "reason": "Error reason",
+                                            "code": "string",
+                                            "severity": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Returned when the request is made without a valid game token."
+                    },
+                    "403": {
+                        "description": "Returned when the logged-in game lacks the required role to access this endpoint."
+                    }
+                }
+            }
+        },
+        "/{id}": {
+            "get": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Retrieve game details by its unique identifier.",
+                "description": "This endpoint retrieves detailed information about a game by its unique Id. Access is restricted to users with the appropriate roles.",
+                "operationId": "GetGameByIdEndpoint",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "guid"
+                        },
+                        "example": "b123d92c-cab7-49a5-be74-3843e0d10202"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returned when game information is successfully retrieved.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdGameByIdResponse"
+                                },
+                                "example": {
+                                    "id": "448dca26-49f0-4091-afc6-a16d350ff31c",
+                                    "name": "Game Name",
+                                    "releaseDate": "2025-09-29",
+                                    "ageRating": "E",
+                                    "description": "Game Description",
+                                    "developerInfo": {
+                                        "developer": "Developer Name",
+                                        "publisher": "Publisher Name"
+                                    },
+                                    "diskSize": 50,
+                                    "price": 59.99,
+                                    "playtime": {
+                                        "hours": 10,
+                                        "playerCount": 1
+                                    },
+                                    "gameDetails": {
+                                        "genre": "Genre",
+                                        "tags": "Tags",
+                                        "gameMode": "Battle Royale",
+                                        "distributionFormat": "Digital",
+                                        "availableLanguages": "Available Languages",
+                                        "supportsDlcs": true,
+                                        "platforms": [
+                                            "PlayStation 5",
+                                            "iOS",
+                                            "Xbox One",
+                                            "PlayStation 4",
+                                            "Linux",
+                                            "macOS",
+                                            "VR (PlayStation VR)",
+                                            "PC",
+                                            "Steam Deck",
+                                            "Browser",
+                                            "Android",
+                                            "VR (Oculus Quest)",
+                                            "Xbox Series X|S",
+                                            "Nintendo 3DS",
+                                            "VR (HTC Vive)",
+                                            "PlayStation Vita",
+                                            "Wii U",
+                                            "Nintendo Switch",
+                                            "Stadia"
+                                        ]
+                                    },
+                                    "systemRequirements": {
+                                        "minimum": "Minimum Requirements",
+                                        "recommended": "Recommended Requirements"
+                                    },
+                                    "rating": 4.5,
+                                    "officialLink": "https://example.com",
+                                    "gameStatus": "Released"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Returned when the request is invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FastEndpointsProblemDetails"
+                                },
+                                "example": {
+                                    "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+                                    "title": "One or more validation errors occurred.",
+                                    "status": 400,
+                                    "instance": "/api/route",
+                                    "traceId": "0HMPNHL0JHL76:00000001",
+                                    "detail": "string",
+                                    "errors": [
+                                        {
+                                            "name": "Error or field name",
+                                            "reason": "Error reason",
+                                            "code": "string",
+                                            "severity": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Returned when the request is made without a valid user token."
+                    },
+                    "403": {
+                        "description": "Returned when the caller lacks the required role to access this endpoint."
+                    },
+                    "404": {
+                        "description": "Returned when no game is found with the provided Id."
+                    }
+                }
+            }
+        },
+        "/purchase": {
+            "post": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Endpoint for purchasing a game.",
+                "description": "This endpoint allows a user to purchase a game by providing the game ID and user ID. Upon successful purchase, a confirmation response is returned.",
+                "operationId": "PurchaseGameEndpoint",
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesPurchaseGamePurchaseGameCommand"
+                            },
+                            "example": {
+                                "gameId": "72fe3d60-72cf-4e6b-aeab-9eaf91c5df68",
+                                "paymentMethod": {
+                                    "method": "credit_card",
+                                    "cardLast4Digits": "9246"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Returned when a game is successfully purchased.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesPurchaseGamePurchaseGameResponse"
+                                },
+                                "example": {
+                                    "userId": "3f99d6a2-476d-4ad8-b8ba-ec8e465e694d",
+                                    "gameId": "629060b2-af63-4a05-8fd2-de0f2abcc918",
+                                    "paymentId": "61685ecf-20f4-4fb9-8906-cd8c8309a23a",
+                                    "amount": 59.99,
+                                    "isApproved": false,
+                                    "purchaseDate": "2025-09-29T03:47:21.0000000+00:00"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Returned when a bad request occurs.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FastEndpointsProblemDetails"
+                                },
+                                "example": {
+                                    "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+                                    "title": "One or more validation errors occurred.",
+                                    "status": 400,
+                                    "instance": "/api/route",
+                                    "traceId": "0HMPNHL0JHL76:00000001",
+                                    "detail": "string",
+                                    "errors": [
+                                        {
+                                            "name": "Error or field name",
+                                            "reason": "Error reason",
+                                            "code": "string",
+                                            "severity": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Returned when the request is made without a valid user token."
+                    },
+                    "403": {
+                        "description": "Returned when the caller lacks the required role to access this endpoint."
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "TCCloudGamesGamesApplicationUseCasesCreateGameCreateGameResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "releaseDate",
+                    "ageRating",
+                    "developerInfo",
+                    "diskSize",
+                    "price",
+                    "gameDetails",
+                    "systemRequirements"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "releaseDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "ageRating": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "developerInfo": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameDeveloperInfo"
+                    },
+                    "diskSize": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "playtime": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGamePlaytime"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "gameDetails": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameGameDetails"
+                    },
+                    "systemRequirements": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameSystemRequirements"
+                    },
+                    "rating": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true
+                    },
+                    "officialLink": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gameStatus": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesCreateGameDeveloperInfo": {
+                "required": [
+                    "developer"
+                ],
+                "type": "object",
+                "properties": {
+                    "developer": {
+                        "type": "string"
+                    },
+                    "publisher": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesCreateGamePlaytime": {
+                "type": "object",
+                "properties": {
+                    "hours": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "playerCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesCreateGameGameDetails": {
+                "required": [
+                    "platforms",
+                    "gameMode",
+                    "distributionFormat",
+                    "supportsDlcs"
+                ],
+                "type": "object",
+                "properties": {
+                    "genre": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "tags": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gameMode": {
+                        "type": "string"
+                    },
+                    "distributionFormat": {
+                        "type": "string"
+                    },
+                    "availableLanguages": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "supportsDlcs": {
+                        "type": "boolean"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesCreateGameSystemRequirements": {
+                "required": [
+                    "minimum"
+                ],
+                "type": "object",
+                "properties": {
+                    "minimum": {
+                        "type": "string"
+                    },
+                    "recommended": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesCreateGameCreateGameCommand": {
+                "required": [
+                    "name",
+                    "releaseDate",
+                    "ageRating",
+                    "developerInfo",
+                    "diskSize",
+                    "price",
+                    "gameDetails",
+                    "systemRequirements"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "minLength": 1,
+                        "type": "string",
+                        "example": "Game Name"
+                    },
+                    "releaseDate": {
+                        "minLength": 1,
+                        "type": "string",
+                        "format": "date",
+                        "example": "2025-09-29"
+                    },
+                    "ageRating": {
+                        "minLength": 1,
+                        "type": "string",
+                        "example": "Choose one of valid age rate: 'E', 'M', 'A', 'RP', 'E10+', 'T'"
+                    },
+                    "description": {
+                        "maxLength": 2000,
+                        "minLength": 0,
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Game Description"
+                    },
+                    "developerInfo": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameDeveloperInfo"
+                    },
+                    "diskSize": {
+                        "type": "number",
+                        "format": "decimal",
+                        "example": 50
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "decimal",
+                        "example": 59.99
+                    },
+                    "playtime": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGamePlaytime"
+                            }
+                        ],
+                        "nullable": true,
+                        "example": {
+                            "hours": 10,
+                            "playerCount": 1
+                        }
+                    },
+                    "gameDetails": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameGameDetails"
+                    },
+                    "systemRequirements": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameSystemRequirements"
+                    },
+                    "rating": {
+                        "maximum": 10,
+                        "minimum": 0,
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true,
+                        "example": 4.5
+                    },
+                    "officialLink": {
+                        "maxLength": 200,
+                        "minLength": 0,
+                        "type": "string",
+                        "nullable": true,
+                        "example": "https://example.com"
+                    },
+                    "gameStatus": {
+                        "maxLength": 200,
+                        "minLength": 0,
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Choose one of valid game status: 'Released', 'Available', 'Early Access', 'Soon', 'Discontinued', 'In Development'"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "name": "Game Name",
+                    "releaseDate": "2025-09-29",
+                    "ageRating": "Choose one of valid age rate: 'E', 'M', 'A', 'RP', 'E10+', 'T'",
+                    "description": "Game Description",
+                    "developerInfo": {
+                        "developer": "Developer Name",
+                        "publisher": "Publisher Name"
+                    },
+                    "diskSize": 50,
+                    "price": 59.99,
+                    "playtime": {
+                        "hours": 10,
+                        "playerCount": 1
+                    },
+                    "gameDetails": {
+                        "genre": "Genre",
+                        "platforms": [
+                            "PlayStation 5",
+                            "iOS",
+                            "Xbox One",
+                            "PlayStation 4",
+                            "Linux",
+                            "macOS",
+                            "VR (PlayStation VR)",
+                            "PC",
+                            "Steam Deck",
+                            "Browser",
+                            "Android",
+                            "VR (Oculus Quest)",
+                            "Xbox Series X|S",
+                            "Nintendo 3DS",
+                            "VR (HTC Vive)",
+                            "PlayStation Vita",
+                            "Wii U",
+                            "Nintendo Switch",
+                            "Stadia"
+                        ],
+                        "tags": "Tags",
+                        "gameMode": "Choose one of valid game modes: 'Battle Royale', 'Multiplayer', 'PvE', 'Singleplayer', 'Casual', 'Sandbox', 'PvP', 'Co-op', 'Survival'",
+                        "distributionFormat": "Choose one of valid distribution format: 'Digital', 'Physical'",
+                        "availableLanguages": "Available Languages",
+                        "supportsDlcs": true
+                    },
+                    "systemRequirements": {
+                        "minimum": "Minimum Requirements",
+                        "recommended": "Recommended Requirements"
+                    },
+                    "rating": 4.5,
+                    "officialLink": "https://example.com",
+                    "gameStatus": "Choose one of valid game status: 'Released', 'Available', 'Early Access', 'Soon', 'Discontinued', 'In Development'"
+                }
+            },
+            "FastEndpointsProblemDetails": {
+                "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "instance",
+                    "traceId",
+                    "errors"
+                ],
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "default": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1"
+                    },
+                    "title": {
+                        "type": "string",
+                        "default": "One or more validation errors occurred."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 400
+                    },
+                    "instance": {
+                        "type": "string",
+                        "default": "/api/route"
+                    },
+                    "traceId": {
+                        "type": "string",
+                        "default": "0HMPNHL0JHL76:00000001"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FastEndpointsProblemDetails_Error"
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "FastEndpointsProblemDetails_Error": {
+                "required": [
+                    "name",
+                    "reason"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "default": "Error or field name"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "default": "Error reason"
+                    },
+                    "code": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "severity": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesGetGameByIdGameByIdResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "releaseDate",
+                    "ageRating",
+                    "developerInfo",
+                    "diskSize",
+                    "price",
+                    "gameDetails",
+                    "systemRequirements"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "releaseDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "ageRating": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "developerInfo": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdDeveloperInfo"
+                    },
+                    "diskSize": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "playtime": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdPlaytime"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "gameDetails": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdGameDetails"
+                    },
+                    "systemRequirements": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdSystemRequirements"
+                    },
+                    "rating": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true
+                    },
+                    "officialLink": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gameStatus": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesGetGameByIdDeveloperInfo": {
+                "required": [
+                    "developer"
+                ],
+                "type": "object",
+                "properties": {
+                    "developer": {
+                        "type": "string"
+                    },
+                    "publisher": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesGetGameByIdPlaytime": {
+                "type": "object",
+                "properties": {
+                    "hours": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "playerCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesGetGameByIdGameDetails": {
+                "required": [
+                    "gameMode",
+                    "distributionFormat",
+                    "supportsDlcs",
+                    "platforms"
+                ],
+                "type": "object",
+                "properties": {
+                    "genre": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "tags": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gameMode": {
+                        "type": "string"
+                    },
+                    "distributionFormat": {
+                        "type": "string"
+                    },
+                    "availableLanguages": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "supportsDlcs": {
+                        "type": "boolean"
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesGetGameByIdSystemRequirements": {
+                "required": [
+                    "minimum"
+                ],
+                "type": "object",
+                "properties": {
+                    "minimum": {
+                        "type": "string"
+                    },
+                    "recommended": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesGetGameListGameListResponse": {
+                "required": [
+                    "id",
+                    "name",
+                    "releaseDate",
+                    "ageRating",
+                    "developerInfo",
+                    "diskSize",
+                    "price",
+                    "gameDetails",
+                    "systemRequirements"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "releaseDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "ageRating": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "developerInfo": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdDeveloperInfo"
+                    },
+                    "diskSize": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "playtime": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdPlaytime"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "gameDetails": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdGameDetails"
+                    },
+                    "systemRequirements": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdSystemRequirements"
+                    },
+                    "rating": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true
+                    },
+                    "officialLink": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gameStatus": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesPurchaseGamePurchaseGameResponse": {
+                "required": [
+                    "userId",
+                    "gameId",
+                    "paymentId",
+                    "amount",
+                    "isApproved",
+                    "purchaseDate"
+                ],
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "gameId": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "paymentId": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "isApproved": {
+                        "type": "boolean"
+                    },
+                    "purchaseDate": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TCCloudGamesGamesApplicationUseCasesPurchaseGamePurchaseGameCommand": {
+                "required": [
+                    "gameId",
+                    "paymentMethod"
+                ],
+                "type": "object",
+                "properties": {
+                    "gameId": {
+                        "minLength": 1,
+                        "type": "string",
+                        "format": "guid",
+                        "example": "72fe3d60-72cf-4e6b-aeab-9eaf91c5df68"
+                    },
+                    "paymentMethod": {
+                        "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesPurchaseGamePaymentMethod"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "gameId": "72fe3d60-72cf-4e6b-aeab-9eaf91c5df68",
+                    "paymentMethod": {
+                        "method": "credit_card",
+                        "cardLast4Digits": "9246"
+                    }
+                }
+            },
+            "TCCloudGamesGamesApplicationUseCasesPurchaseGamePaymentMethod": {
+                "required": [
+                    "method"
+                ],
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string"
+                    },
+                    "cardLast4Digits": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "Ocp-Apim-Subscription-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "subscription-key",
+                "in": "query"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "apiKeyQuery": []
+        }
+    ]
+}
