@@ -84,3 +84,27 @@ variable "use_keyvault_secrets" {
   description = "Enable Key Vault secrets gradually to avoid RBAC propagation issues. Deploy ACR first (false), then enable secrets (true) after RBAC propagates."
   default     = false
 }
+
+# =============================================================================
+# ELASTICSEARCH Variables
+# =============================================================================
+variable "elasticsearch_game_endpoint" {
+  type        = string
+  description = "Elasticsearch endpoint URL"
+}
+
+variable "elasticsearch_game_apikey" {
+  type        = string
+  description = "Elasticsearch API key"
+  sensitive   = true
+}
+
+variable "elasticsearch_game_projectid" {
+  type        = string
+  description = "Elasticsearch project ID"
+}
+
+variable "elasticsearch_game_indexprefix" {
+  type        = string
+  description = "Elasticsearch index name prefix"
+}

@@ -292,3 +292,27 @@ variable "subscription_id" {
   description = "Azure subscription ID for role assignments"
   type        = string
 }
+
+# =============================================================================
+# ELASTICSEARCH Variables
+# =============================================================================
+variable "elasticsearch_game_endpoint" {
+  type        = string
+  description = "Elasticsearch endpoint URL"
+}
+
+variable "elasticsearch_game_apikey" {
+  type        = string
+  description = "Elasticsearch API key"
+  sensitive   = true
+}
+
+variable "elasticsearch_game_projectid" {
+  type        = string
+  description = "Elasticsearch project ID"
+}
+
+variable "elasticsearch_game_indexprefix" {
+  type        = string
+  description = "Elasticsearch index name prefix"
+}

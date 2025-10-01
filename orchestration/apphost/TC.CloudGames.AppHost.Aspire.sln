@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11012.119
+VisualStudioVersion = 18.0.11018.127
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Users.Api", "..\..\services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\TC.CloudGames.Users.Api.csproj", "{0487F409-946B-8964-7BA6-D4B7971032F0}"
 EndProject

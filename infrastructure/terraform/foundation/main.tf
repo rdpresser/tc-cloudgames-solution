@@ -172,6 +172,11 @@ module "key_vault" {
   github_actions_object_id    = var.github_actions_object_id
   subscription_id             = data.azurerm_client_config.current.subscription_id
 
+  elasticsearch_game_endpoint    = var.elasticsearch_game_endpoint
+  elasticsearch_game_apikey      = var.elasticsearch_game_apikey
+  elasticsearch_game_projectid   = var.elasticsearch_game_projectid
+  elasticsearch_game_indexprefix = var.elasticsearch_game_indexprefix
+
   depends_on = [
     module.resource_group,
     module.acr,

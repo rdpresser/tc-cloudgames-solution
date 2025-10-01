@@ -380,3 +380,44 @@ resource "azurerm_key_vault_secret" "servicebus_payments_topic_name" {
     azurerm_role_assignment.service_principal_kv_admin
   ]
 }
+
+# Elasticsearch Secrets
+resource "azurerm_key_vault_secret" "elasticsearch_game_endpoint" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "elasticsearch-game-endpoint"
+  value        = var.elasticsearch_game_endpoint
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "elasticsearch_game_apikey" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "elasticsearch-game-apikey"
+  value        = var.elasticsearch_game_apikey
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "elasticsearch_game_projectid" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "elasticsearch-game-projectid"
+  value        = var.elasticsearch_game_projectid
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "elasticsearch_game_indexprefix" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "elasticsearch-game-indexprefix"
+  value        = var.elasticsearch_game_indexprefix
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
