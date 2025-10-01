@@ -118,6 +118,79 @@ resource "azurerm_api_management_api" "user_api" {
 }
 
 # =============================================================================
+# Rate Limiting Policies
+# =============================================================================
+
+# Auth API - 5 calls per minute
+resource "azurerm_api_management_api_policy" "auth_api_rate_limit" {
+  api_name            = azurerm_api_management_api.auth_api.name
+  api_management_name = azurerm_api_management.apim.name
+  resource_group_name = azurerm_api_management.apim.resource_group_name
+
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <rate-limit-by-key calls="5" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
+        <base />
+    </inbound>
+    <backend>
+        <forward-request />
+    </backend>
+    <outbound />
+    <on-error />
+</policies>
+XML
+
+  depends_on = [azurerm_api_management_api.auth_api]
+}
+
+# User API - 100 calls per minute
+resource "azurerm_api_management_api_policy" "user_api_rate_limit" {
+  api_name            = azurerm_api_management_api.user_api.name
+  api_management_name = azurerm_api_management.apim.name
+  resource_group_name = azurerm_api_management.apim.resource_group_name
+
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <rate-limit-by-key calls="100" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
+        <base />
+    </inbound>
+    <backend>
+        <forward-request />
+    </backend>
+    <outbound />
+    <on-error />
+</policies>
+XML
+
+  depends_on = [azurerm_api_management_api.user_api]
+}
+
+# Game API - 1000 calls per minute
+resource "azurerm_api_management_api_policy" "game_api_rate_limit" {
+  api_name            = azurerm_api_management_api.game_api.name
+  api_management_name = azurerm_api_management.apim.name
+  resource_group_name = azurerm_api_management.apim.resource_group_name
+
+  xml_content = <<XML
+<policies>
+    <inbound>
+        <rate-limit-by-key calls="1000" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
+        <base />
+    </inbound>
+    <backend>
+        <forward-request />
+    </backend>
+    <outbound />
+    <on-error />
+</policies>
+XML
+
+  depends_on = [azurerm_api_management_api.game_api]
+}
+
+# =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation
 # =============================================================================
 locals {
