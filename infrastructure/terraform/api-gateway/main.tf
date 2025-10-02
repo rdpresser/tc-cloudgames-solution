@@ -209,15 +209,13 @@ locals {
 locals {
   openapi_files = [
     "TC.CloudGames Auth.openapi+json.json",
-    "TC.CloudGames Game.openapi+json.json", 
+    "TC.CloudGames Game.openapi+json.json",
     "TC.CloudGames User.openapi+json.json"
   ]
 }
 
 resource "null_resource" "validate_openapi_files" {
-  count = var.validate_openapi_files ? 1 : 0
-
-  for_each = toset(local.openapi_files)
+  for_each = var.validate_openapi_files ? toset(local.openapi_files) : toset([])
 
   provisioner "local-exec" {
     command = "test -f '${path.module}/${each.value}' || (echo 'OpenAPI file ${each.value} not found' && exit 1)"

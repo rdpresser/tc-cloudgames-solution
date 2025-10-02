@@ -5,11 +5,11 @@
 output "apim_info" {
   description = "API Management details"
   value = {
-    name         = azurerm_api_management.apim.name
-    id           = azurerm_api_management.apim.id
-    gateway_url  = azurerm_api_management.apim.gateway_url
-    sku_name     = azurerm_api_management.apim.sku_name
-    location     = azurerm_api_management.apim.location
+    name        = azurerm_api_management.apim.name
+    id          = azurerm_api_management.apim.id
+    gateway_url = azurerm_api_management.apim.gateway_url
+    sku_name    = azurerm_api_management.apim.sku_name
+    location    = azurerm_api_management.apim.location
   }
 }
 
@@ -51,10 +51,10 @@ output "user_api_info" {
 output "api_gateway_urls" {
   description = "API Gateway endpoint URLs"
   value = {
-    base_url     = azurerm_api_management.apim.gateway_url
-    auth_api     = "${azurerm_api_management.apim.gateway_url}/auth"
-    game_api     = "${azurerm_api_management.apim.gateway_url}/game"
-    user_api     = "${azurerm_api_management.apim.gateway_url}/user"
+    base_url = azurerm_api_management.apim.gateway_url
+    auth_api = "${azurerm_api_management.apim.gateway_url}/auth"
+    game_api = "${azurerm_api_management.apim.gateway_url}/game"
+    user_api = "${azurerm_api_management.apim.gateway_url}/user"
   }
 }
 
