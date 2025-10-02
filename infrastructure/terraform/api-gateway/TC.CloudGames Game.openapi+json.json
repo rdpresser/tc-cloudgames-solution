@@ -11,6 +11,49 @@
         }
     ],
     "paths": {
+        "/search/advanced": {
+            "post": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Advanced game search with filters",
+                "description": "This endpoint provides advanced search capabilities with support for filtering by genre, platform, price range, rating, release date, and sorting options.",
+                "operationId": "AdvancedSearchGamesEndpoint",
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApiEndpointsAdvancedSearchRequest"
+                            },
+                            "example": {
+                                "query": "string",
+                                "genres": [
+                                    "string"
+                                ],
+                                "platforms": [
+                                    "string"
+                                ],
+                                "minPrice": 0,
+                                "maxPrice": 0,
+                                "minRating": 0,
+                                "releaseDateFrom": "string",
+                                "releaseDateTo": "string",
+                                "size": 0,
+                                "from": 0,
+                                "sortBy": "string",
+                                "sortDirection": "string"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/": {
             "post": {
                 "tags": [
@@ -28,8 +71,8 @@
                             },
                             "example": {
                                 "name": "Game Name",
-                                "releaseDate": "2025-09-29",
-                                "ageRating": "Choose one of valid age rate: 'E', 'M', 'A', 'RP', 'E10+', 'T'",
+                                "releaseDate": "2025-10-02",
+                                "ageRating": "Choose one of valid age rate: 'M', 'E10+', 'E', 'T', 'A', 'RP'",
                                 "description": "Game Description",
                                 "developerInfo": {
                                     "developer": "Developer Name",
@@ -44,28 +87,28 @@
                                 "gameDetails": {
                                     "genre": "Genre",
                                     "platforms": [
-                                        "PlayStation 5",
-                                        "iOS",
-                                        "Xbox One",
-                                        "PlayStation 4",
-                                        "Linux",
-                                        "macOS",
-                                        "VR (PlayStation VR)",
-                                        "PC",
-                                        "Steam Deck",
-                                        "Browser",
-                                        "Android",
                                         "VR (Oculus Quest)",
-                                        "Xbox Series X|S",
-                                        "Nintendo 3DS",
-                                        "VR (HTC Vive)",
                                         "PlayStation Vita",
-                                        "Wii U",
+                                        "macOS",
                                         "Nintendo Switch",
-                                        "Stadia"
+                                        "Stadia",
+                                        "PC",
+                                        "PlayStation 4",
+                                        "iOS",
+                                        "Steam Deck",
+                                        "PlayStation 5",
+                                        "Wii U",
+                                        "Linux",
+                                        "VR (PlayStation VR)",
+                                        "Nintendo 3DS",
+                                        "Android",
+                                        "VR (HTC Vive)",
+                                        "Xbox Series X|S",
+                                        "Xbox One",
+                                        "Browser"
                                     ],
                                     "tags": "Tags",
-                                    "gameMode": "Choose one of valid game modes: 'Battle Royale', 'Multiplayer', 'PvE', 'Singleplayer', 'Casual', 'Sandbox', 'PvP', 'Co-op', 'Survival'",
+                                    "gameMode": "Choose one of valid game modes: 'Sandbox', 'Casual', 'Multiplayer', 'PvP', 'PvE', 'Survival', 'Battle Royale', 'Co-op', 'Singleplayer'",
                                     "distributionFormat": "Choose one of valid distribution format: 'Digital', 'Physical'",
                                     "availableLanguages": "Available Languages",
                                     "supportsDlcs": true
@@ -76,7 +119,7 @@
                                 },
                                 "rating": 4.5,
                                 "officialLink": "https://example.com",
-                                "gameStatus": "Choose one of valid game status: 'Released', 'Available', 'Early Access', 'Soon', 'Discontinued', 'In Development'"
+                                "gameStatus": "Choose one of valid game status: 'Discontinued', 'Available', 'In Development', 'Released', 'Early Access', 'Soon'"
                             }
                         }
                     }
@@ -90,10 +133,10 @@
                                     "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesCreateGameCreateGameResponse"
                                 },
                                 "example": {
-                                    "id": "898949dc-7db3-4429-93e2-697707aed4a3",
+                                    "id": "2402f614-7387-4717-b15a-1c68c828c459",
                                     "name": "Game Name",
-                                    "releaseDate": "2025-09-29",
-                                    "ageRating": "E",
+                                    "releaseDate": "2025-10-02",
+                                    "ageRating": "M",
                                     "description": "Game Description",
                                     "developerInfo": {
                                         "developer": "Developer Name",
@@ -108,28 +151,28 @@
                                     "gameDetails": {
                                         "genre": "Genre",
                                         "platforms": [
-                                            "PlayStation 5",
-                                            "iOS",
-                                            "Xbox One",
-                                            "PlayStation 4",
-                                            "Linux",
-                                            "macOS",
-                                            "VR (PlayStation VR)",
-                                            "PC",
-                                            "Steam Deck",
-                                            "Browser",
-                                            "Android",
                                             "VR (Oculus Quest)",
-                                            "Xbox Series X|S",
-                                            "Nintendo 3DS",
-                                            "VR (HTC Vive)",
                                             "PlayStation Vita",
-                                            "Wii U",
+                                            "macOS",
                                             "Nintendo Switch",
-                                            "Stadia"
+                                            "Stadia",
+                                            "PC",
+                                            "PlayStation 4",
+                                            "iOS",
+                                            "Steam Deck",
+                                            "PlayStation 5",
+                                            "Wii U",
+                                            "Linux",
+                                            "VR (PlayStation VR)",
+                                            "Nintendo 3DS",
+                                            "Android",
+                                            "VR (HTC Vive)",
+                                            "Xbox Series X|S",
+                                            "Xbox One",
+                                            "Browser"
                                         ],
                                         "tags": "Tags",
-                                        "gameMode": "Battle Royale",
+                                        "gameMode": "Sandbox",
                                         "distributionFormat": "Digital",
                                         "availableLanguages": "Available Languages",
                                         "supportsDlcs": true
@@ -140,7 +183,7 @@
                                     },
                                     "rating": 4.5,
                                     "officialLink": "https://example.com",
-                                    "gameStatus": "Released"
+                                    "gameStatus": "Discontinued"
                                 }
                             }
                         }
@@ -244,205 +287,237 @@
                                 },
                                 "example": [
                                     {
-                                        "id": "42f1db8c-6a6d-401a-985b-14902919f98e",
-                                        "name": "Handmade Metal Salad",
-                                        "releaseDate": "2025-04-23",
-                                        "ageRating": "A",
-                                        "description": "Mollitia numquam voluptatem animi ex quis exercitationem ut deleniti. Ut non doloribus ullam quos. Sint cum dolorem sunt voluptas vel voluptate ea delectus. Occaecati est rerum. Tempora et sed ut alias vel est atque ut qui. Et unde magnam et.",
+                                        "id": "5cfa14a5-c8d4-4f74-a587-167124fe6d9c",
+                                        "name": "Handcrafted Frozen Bacon",
+                                        "releaseDate": "2025-03-20",
+                                        "ageRating": "RP",
+                                        "description": "Accusantium quae voluptates modi alias architecto. Unde laudantium ipsum iure occaecati quidem quaerat voluptas aut. Esse illum et sit quis nobis.",
                                         "developerInfo": {
-                                            "developer": "Howe - Kassulke",
-                                            "publisher": "Larkin, Huels and Kunde"
+                                            "developer": "Ratke Group",
+                                            "publisher": "Crist Group"
                                         },
-                                        "diskSize": 110,
-                                        "price": 2.01,
+                                        "diskSize": 19,
+                                        "price": 87.2,
                                         "playtime": {
-                                            "hours": 5,
-                                            "playerCount": 188
+                                            "hours": 3,
+                                            "playerCount": 1456
                                         },
                                         "gameDetails": {
-                                            "genre": "Health",
-                                            "tags": "blanditiis, excepturi, nemo, et, odit",
-                                            "gameMode": "PvE",
+                                            "genre": "Clothing",
+                                            "tags": "ea, asperiores, blanditiis, nobis, et",
+                                            "gameMode": "Battle Royale",
+                                            "distributionFormat": "Physical",
+                                            "availableLanguages": "French, Japanese",
+                                            "supportsDlcs": false,
+                                            "platforms": [
+                                                "VR (Oculus Quest)",
+                                                "Linux",
+                                                "iOS",
+                                                "PC",
+                                                "Xbox Series X|S",
+                                                "PlayStation Vita",
+                                                "Android",
+                                                "Nintendo Switch",
+                                                "Nintendo 3DS",
+                                                "VR (PlayStation VR)",
+                                                "PlayStation 4",
+                                                "Steam Deck",
+                                                "Browser",
+                                                "Stadia"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Et ad et.",
+                                            "recommended": "Ullam quibusdam ut reprehenderit aut recusandae voluptate."
+                                        },
+                                        "rating": 6.57,
+                                        "officialLink": "http://naomi.info",
+                                        "gameStatus": "Released"
+                                    },
+                                    {
+                                        "id": "4e223d01-d7ca-4534-9fe9-a216b99d8025",
+                                        "name": "Intelligent Granite Bacon",
+                                        "releaseDate": "2025-05-21",
+                                        "ageRating": "A",
+                                        "description": "Est delectus molestiae. Repellat ut aut ut. Laudantium hic aut omnis quia et et non. Eligendi optio quis eum incidunt quibusdam soluta.",
+                                        "developerInfo": {
+                                            "developer": "Mayer, Cremin and Okuneva",
+                                            "publisher": "Feil LLC"
+                                        },
+                                        "diskSize": 114,
+                                        "price": 95.82,
+                                        "playtime": {
+                                            "hours": 89,
+                                            "playerCount": 540
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Computers",
+                                            "tags": "sint, rerum, minus, minima, minima",
+                                            "gameMode": "Casual",
+                                            "distributionFormat": "Digital",
+                                            "availableLanguages": "Spanish, English, French, Japanese",
+                                            "supportsDlcs": false,
+                                            "platforms": [
+                                                "Xbox Series X|S",
+                                                "PlayStation Vita",
+                                                "PlayStation 4",
+                                                "Xbox One",
+                                                "VR (Oculus Quest)",
+                                                "PC",
+                                                "Nintendo 3DS",
+                                                "Stadia",
+                                                "Wii U",
+                                                "Nintendo Switch",
+                                                "PlayStation 5",
+                                                "VR (PlayStation VR)",
+                                                "Android",
+                                                "Browser",
+                                                "iOS",
+                                                "macOS",
+                                                "Linux",
+                                                "Steam Deck",
+                                                "VR (HTC Vive)"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Aspernatur perferendis provident.",
+                                            "recommended": "Cumque qui non."
+                                        },
+                                        "rating": 6.59,
+                                        "officialLink": "https://selmer.info",
+                                        "gameStatus": "Released"
+                                    },
+                                    {
+                                        "id": "2ba59664-cc61-4204-be67-060e168c5219",
+                                        "name": "Tasty Metal Table",
+                                        "releaseDate": "2025-07-10",
+                                        "ageRating": "RP",
+                                        "description": "Sed quod sit in incidunt fugit est. Odio ea quia laborum vitae. Distinctio possimus quos in totam est in enim. Itaque inventore sint vero sint cum quod quis sequi. Ut ducimus temporibus molestiae voluptatibus quaerat nulla.",
+                                        "developerInfo": {
+                                            "developer": "Breitenberg, Mayert and Parker",
+                                            "publisher": "Hermann - Auer"
+                                        },
+                                        "diskSize": 120,
+                                        "price": 46.42,
+                                        "playtime": {
+                                            "hours": 17,
+                                            "playerCount": 1635
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Tools",
+                                            "tags": "sunt, dolores, expedita, iste, ut",
+                                            "gameMode": "Multiplayer",
                                             "distributionFormat": "Digital",
                                             "availableLanguages": "English, French",
                                             "supportsDlcs": true,
                                             "platforms": [
-                                                "VR (Oculus Quest)",
-                                                "VR (PlayStation VR)",
-                                                "iOS",
-                                                "Wii U",
-                                                "Nintendo 3DS",
+                                                "Steam Deck",
                                                 "PlayStation 4",
-                                                "Stadia",
                                                 "Xbox One",
-                                                "Linux",
                                                 "macOS",
+                                                "VR (PlayStation VR)",
                                                 "Android",
-                                                "PlayStation 5",
-                                                "PlayStation Vita"
-                                            ]
-                                        },
-                                        "systemRequirements": {
-                                            "minimum": "Vel sed ipsum officia reiciendis perferendis occaecati rem est.",
-                                            "recommended": "Voluptatem inventore enim officiis placeat et dolorum ad commodi labore."
-                                        },
-                                        "rating": 4.25,
-                                        "officialLink": "https://rolando.net",
-                                        "gameStatus": "Early Access"
-                                    },
-                                    {
-                                        "id": "d69e3e41-2380-422f-8cee-7fa8c127babf",
-                                        "name": "Handmade Fresh Soap",
-                                        "releaseDate": "2024-12-09",
-                                        "ageRating": "RP",
-                                        "description": "Assumenda laboriosam sapiente deleniti. Perferendis aut quos. Cupiditate ducimus corporis quia iste facere.",
-                                        "developerInfo": {
-                                            "developer": "Auer Inc",
-                                            "publisher": "Collins, Tremblay and Hane"
-                                        },
-                                        "diskSize": 52,
-                                        "price": 44.78,
-                                        "playtime": {
-                                            "hours": 71,
-                                            "playerCount": 770
-                                        },
-                                        "gameDetails": {
-                                            "genre": "Tools",
-                                            "tags": "sapiente, alias, sint, veritatis, provident",
-                                            "gameMode": "PvE",
-                                            "distributionFormat": "Physical",
-                                            "availableLanguages": "French, Spanish, English, Japanese, German",
-                                            "supportsDlcs": false,
-                                            "platforms": [
-                                                "PlayStation Vita",
-                                                "Xbox One",
-                                                "Android"
-                                            ]
-                                        },
-                                        "systemRequirements": {
-                                            "minimum": "Nihil laboriosam nemo.",
-                                            "recommended": "Doloribus aliquam dicta vitae aspernatur deleniti asperiores incidunt soluta aut."
-                                        },
-                                        "rating": 2.32,
-                                        "officialLink": "https://dora.biz",
-                                        "gameStatus": "In Development"
-                                    },
-                                    {
-                                        "id": "572f898f-24e8-44ca-a29b-a19dd2f7e8d3",
-                                        "name": "Ergonomic Plastic Fish",
-                                        "releaseDate": "2025-05-24",
-                                        "ageRating": "M",
-                                        "description": "Dolorem ad cumque ipsam excepturi eius doloribus voluptates beatae natus. Adipisci est ex enim aperiam voluptas eaque consequatur minus. Dolores necessitatibus voluptas exercitationem voluptas blanditiis rerum reprehenderit corrupti. Quasi optio omnis.",
-                                        "developerInfo": {
-                                            "developer": "Ritchie and Sons",
-                                            "publisher": "Romaguera Inc"
-                                        },
-                                        "diskSize": 100,
-                                        "price": 75.99,
-                                        "playtime": {
-                                            "hours": 84,
-                                            "playerCount": 684
-                                        },
-                                        "gameDetails": {
-                                            "genre": "Sports",
-                                            "tags": "nihil, sed, odio, impedit, ut",
-                                            "gameMode": "Survival",
-                                            "distributionFormat": "Physical",
-                                            "availableLanguages": "English, Spanish, French, German",
-                                            "supportsDlcs": false,
-                                            "platforms": [
-                                                "Xbox Series X|S",
                                                 "VR (HTC Vive)",
+                                                "Browser",
+                                                "PC",
                                                 "iOS"
                                             ]
                                         },
                                         "systemRequirements": {
-                                            "minimum": "Dolores numquam eius commodi impedit voluptatem nobis dolor consequatur.",
-                                            "recommended": "Nemo labore voluptatem."
+                                            "minimum": "Odit qui amet et.",
+                                            "recommended": "Dolore dignissimos placeat nostrum et."
                                         },
-                                        "rating": 7.08,
-                                        "officialLink": "https://savanah.org",
-                                        "gameStatus": "In Development"
+                                        "rating": 7.1,
+                                        "officialLink": "http://deshawn.org",
+                                        "gameStatus": "Early Access"
                                     },
                                     {
-                                        "id": "ae5964ec-b696-4735-889e-6bc26730bad6",
-                                        "name": "Sleek Steel Cheese",
-                                        "releaseDate": "2025-09-25",
-                                        "ageRating": "E",
-                                        "description": "Excepturi et porro facere. Harum nobis numquam qui consequatur fuga ducimus. Voluptatem in hic ullam odio sit praesentium. Sit neque aperiam voluptatem soluta in ipsam sint facilis exercitationem. Consequuntur qui ut deleniti vitae et similique.",
+                                        "id": "49c6f87f-1db3-4517-ad1b-1ddb05bed855",
+                                        "name": "Intelligent Frozen Soap",
+                                        "releaseDate": "2025-02-03",
+                                        "ageRating": "RP",
+                                        "description": "Quis odio delectus voluptatem dolorem et. Totam occaecati qui labore. Nihil nostrum sit praesentium labore. Harum aut ut quo.",
                                         "developerInfo": {
-                                            "developer": "Marquardt, White and Dietrich",
-                                            "publisher": "Sanford, Kuphal and Fisher"
+                                            "developer": "Sanford and Sons",
+                                            "publisher": "Kunze - Cronin"
                                         },
-                                        "diskSize": 107,
-                                        "price": 26.11,
+                                        "diskSize": 22,
+                                        "price": 58.77,
                                         "playtime": {
-                                            "hours": 92,
-                                            "playerCount": 701
-                                        },
-                                        "gameDetails": {
-                                            "genre": "Garden",
-                                            "tags": "voluptatibus, aut, nobis, id, numquam",
-                                            "gameMode": "Casual",
-                                            "distributionFormat": "Physical",
-                                            "availableLanguages": "French, Spanish, Japanese, German, English",
-                                            "supportsDlcs": true,
-                                            "platforms": [
-                                                "Xbox One",
-                                                "iOS",
-                                                "Linux",
-                                                "PC",
-                                                "PlayStation 5",
-                                                "PlayStation 4",
-                                                "Xbox Series X|S",
-                                                "Nintendo 3DS"
-                                            ]
-                                        },
-                                        "systemRequirements": {
-                                            "minimum": "Eaque quam at non inventore.",
-                                            "recommended": "Ad repellat tempore dolorem magnam et ut illo."
-                                        },
-                                        "rating": 6.8,
-                                        "officialLink": "https://stephany.info",
-                                        "gameStatus": "Released"
-                                    },
-                                    {
-                                        "id": "7756ffcc-e4c3-4f49-b515-a0188b7bf827",
-                                        "name": "Refined Rubber Pants",
-                                        "releaseDate": "2024-12-30",
-                                        "ageRating": "A",
-                                        "description": "Exercitationem minima quasi est sequi laborum sed. Aspernatur temporibus ut sequi dolore et explicabo voluptas doloremque debitis. Voluptatibus aperiam fugit. Minima laborum autem esse. Facilis excepturi quo laborum sint. Aut qui et magnam cum delectus.",
-                                        "developerInfo": {
-                                            "developer": "Schmitt LLC",
-                                            "publisher": "Parker - Lesch"
-                                        },
-                                        "diskSize": 145,
-                                        "price": 29.05,
-                                        "playtime": {
-                                            "hours": 44,
-                                            "playerCount": 1220
+                                            "hours": 36,
+                                            "playerCount": 1874
                                         },
                                         "gameDetails": {
                                             "genre": "Movies",
-                                            "tags": "voluptatibus, sed, eaque, cum, totam",
-                                            "gameMode": "Multiplayer",
-                                            "distributionFormat": "Physical",
-                                            "availableLanguages": "Japanese, German, Spanish, French, English",
+                                            "tags": "corporis, sapiente, sapiente, consectetur, voluptatum",
+                                            "gameMode": "Co-op",
+                                            "distributionFormat": "Digital",
+                                            "availableLanguages": "Spanish, English, German",
                                             "supportsDlcs": true,
                                             "platforms": [
                                                 "macOS",
+                                                "Linux",
                                                 "Xbox Series X|S",
+                                                "VR (Oculus Quest)",
+                                                "Nintendo 3DS",
+                                                "PC",
+                                                "Wii U",
+                                                "Stadia",
+                                                "Nintendo Switch",
                                                 "Steam Deck",
-                                                "Android"
+                                                "Android",
+                                                "PlayStation 5",
+                                                "VR (PlayStation VR)",
+                                                "Browser",
+                                                "Xbox One",
+                                                "PlayStation Vita",
+                                                "VR (HTC Vive)",
+                                                "PlayStation 4",
+                                                "iOS"
                                             ]
                                         },
                                         "systemRequirements": {
-                                            "minimum": "Est ut mollitia fugiat.",
-                                            "recommended": "Est natus aperiam inventore et placeat vel expedita."
+                                            "minimum": "Molestiae et alias.",
+                                            "recommended": "Est et sint placeat amet vel tempora amet."
                                         },
-                                        "rating": 7.29,
-                                        "officialLink": "http://orville.biz",
-                                        "gameStatus": "Available"
+                                        "rating": 2.49,
+                                        "officialLink": "http://chaim.com",
+                                        "gameStatus": "Early Access"
+                                    },
+                                    {
+                                        "id": "2622b893-52b4-4767-85be-e66a9acfe655",
+                                        "name": "Sleek Frozen Keyboard",
+                                        "releaseDate": "2025-01-06",
+                                        "ageRating": "RP",
+                                        "description": "Dolores porro asperiores quia tempore aut non id quidem. Quia dolore dolorum. Nostrum velit voluptas quisquam voluptatem. Sapiente quibusdam adipisci et iusto voluptate. Amet blanditiis molestiae consequatur et et et inventore cumque velit. Ut quo ex itaque dolore.",
+                                        "developerInfo": {
+                                            "developer": "Shields - Wisozk",
+                                            "publisher": "Nitzsche Inc"
+                                        },
+                                        "diskSize": 131,
+                                        "price": 18.65,
+                                        "playtime": {
+                                            "hours": 17,
+                                            "playerCount": 316
+                                        },
+                                        "gameDetails": {
+                                            "genre": "Electronics",
+                                            "tags": "tempore, aliquam, numquam, labore, qui",
+                                            "gameMode": "Casual",
+                                            "distributionFormat": "Physical",
+                                            "availableLanguages": "German, French, English, Japanese",
+                                            "supportsDlcs": true,
+                                            "platforms": [
+                                                "Linux"
+                                            ]
+                                        },
+                                        "systemRequirements": {
+                                            "minimum": "Deleniti suscipit iste iusto.",
+                                            "recommended": "Dolore perspiciatis placeat adipisci saepe neque."
+                                        },
+                                        "rating": 8.08,
+                                        "officialLink": "https://reyna.info",
+                                        "gameStatus": "Released"
                                     }
                                 ]
                             }
@@ -500,7 +575,7 @@
                             "type": "string",
                             "format": "guid"
                         },
-                        "example": "b123d92c-cab7-49a5-be74-3843e0d10202"
+                        "example": "6a5c5527-1c2a-4344-b5f7-c771c137c8e4"
                     }
                 ],
                 "responses": {
@@ -512,10 +587,10 @@
                                     "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesGetGameByIdGameByIdResponse"
                                 },
                                 "example": {
-                                    "id": "448dca26-49f0-4091-afc6-a16d350ff31c",
+                                    "id": "774f8853-048a-456b-835f-ef9310219b32",
                                     "name": "Game Name",
-                                    "releaseDate": "2025-09-29",
-                                    "ageRating": "E",
+                                    "releaseDate": "2025-10-02",
+                                    "ageRating": "M",
                                     "description": "Game Description",
                                     "developerInfo": {
                                         "developer": "Developer Name",
@@ -530,30 +605,30 @@
                                     "gameDetails": {
                                         "genre": "Genre",
                                         "tags": "Tags",
-                                        "gameMode": "Battle Royale",
+                                        "gameMode": "Sandbox",
                                         "distributionFormat": "Digital",
                                         "availableLanguages": "Available Languages",
                                         "supportsDlcs": true,
                                         "platforms": [
-                                            "PlayStation 5",
-                                            "iOS",
-                                            "Xbox One",
-                                            "PlayStation 4",
-                                            "Linux",
-                                            "macOS",
-                                            "VR (PlayStation VR)",
-                                            "PC",
-                                            "Steam Deck",
-                                            "Browser",
-                                            "Android",
                                             "VR (Oculus Quest)",
-                                            "Xbox Series X|S",
-                                            "Nintendo 3DS",
-                                            "VR (HTC Vive)",
                                             "PlayStation Vita",
-                                            "Wii U",
+                                            "macOS",
                                             "Nintendo Switch",
-                                            "Stadia"
+                                            "Stadia",
+                                            "PC",
+                                            "PlayStation 4",
+                                            "iOS",
+                                            "Steam Deck",
+                                            "PlayStation 5",
+                                            "Wii U",
+                                            "Linux",
+                                            "VR (PlayStation VR)",
+                                            "Nintendo 3DS",
+                                            "Android",
+                                            "VR (HTC Vive)",
+                                            "Xbox Series X|S",
+                                            "Xbox One",
+                                            "Browser"
                                         ]
                                     },
                                     "systemRequirements": {
@@ -562,7 +637,7 @@
                                     },
                                     "rating": 4.5,
                                     "officialLink": "https://example.com",
-                                    "gameStatus": "Released"
+                                    "gameStatus": "Discontinued"
                                 }
                             }
                         }
@@ -605,6 +680,82 @@
                 }
             }
         },
+        "/index": {
+            "post": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Index a single game to Elasticsearch",
+                "description": "This endpoint allows for manual indexing of a single game document to the search index. Typically used for testing or troubleshooting purposes.",
+                "operationId": "IndexGameEndpoint",
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TCCloudGamesGamesApplicationAbstractionsProjectionsGameProjection"
+                            },
+                            "example": {
+                                "id": "string",
+                                "name": "string",
+                                "releaseDate": "string",
+                                "ageRating": "string",
+                                "description": "string",
+                                "developer": "string",
+                                "publisher": "string",
+                                "diskSizeInGb": 0,
+                                "priceAmount": 0,
+                                "genre": "string",
+                                "platforms": [
+                                    "string"
+                                ],
+                                "tags": "string",
+                                "gameMode": "string",
+                                "distributionFormat": "string",
+                                "availableLanguages": "string",
+                                "supportsDlcs": true,
+                                "minimumSystemRequirements": "string",
+                                "recommendedSystemRequirements": "string",
+                                "playtimeHours": 0,
+                                "playerCount": 0,
+                                "ratingAverage": 0,
+                                "officialLink": "string",
+                                "gameStatus": "string",
+                                "createdAt": "string",
+                                "updatedAt": "string",
+                                "isActive": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized - valid token required"
+                    },
+                    "403": {
+                        "description": "Access denied - admin role required"
+                    }
+                }
+            }
+        },
+        "/popular": {
+            "get": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Get popular games aggregation by genre",
+                "description": "This endpoint returns aggregated data showing the most popular game genres with their respective game counts.",
+                "operationId": "PopularGamesEndpoint",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/purchase": {
             "post": {
                 "tags": [
@@ -621,7 +772,7 @@
                                 "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesPurchaseGamePurchaseGameCommand"
                             },
                             "example": {
-                                "gameId": "72fe3d60-72cf-4e6b-aeab-9eaf91c5df68",
+                                "gameId": "1772e2cc-d5bd-4c41-9953-df20438a7823",
                                 "paymentMethod": {
                                     "method": "credit_card",
                                     "cardLast4Digits": "9246"
@@ -639,12 +790,12 @@
                                     "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesPurchaseGamePurchaseGameResponse"
                                 },
                                 "example": {
-                                    "userId": "3f99d6a2-476d-4ad8-b8ba-ec8e465e694d",
-                                    "gameId": "629060b2-af63-4a05-8fd2-de0f2abcc918",
-                                    "paymentId": "61685ecf-20f4-4fb9-8906-cd8c8309a23a",
+                                    "userId": "75a12490-0fea-40c5-9f70-0388544f57f4",
+                                    "gameId": "fd7499d8-fcba-4fc5-a309-3c946bd633e5",
+                                    "paymentId": "778e9190-000d-4c41-88e7-19f52e3c219c",
                                     "amount": 59.99,
                                     "isApproved": false,
-                                    "purchaseDate": "2025-09-29T03:47:21.0000000+00:00"
+                                    "purchaseDate": "2025-10-02T01:17:07.0000000+00:00"
                                 }
                             }
                         }
@@ -683,10 +834,133 @@
                     }
                 }
             }
+        },
+        "/reindex": {
+            "post": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Reindex games from database to Elasticsearch",
+                "description": "This endpoint reindexes all games from the database to the Elasticsearch index for search functionality. In Elasticsearch Cloud, indices are created automatically on first document.",
+                "operationId": "ReindexGamesEndpoint",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Access denied"
+                    }
+                }
+            }
+        },
+        "/search": {
+            "get": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Search games using full-text search",
+                "description": "This endpoint provides full-text search capabilities across game names, descriptions, genres, developers, and tags with fuzzy matching support.",
+                "operationId": "SearchGamesEndpoint",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
+            "TCCloudGamesGamesApiEndpointsAdvancedSearchRequest": {
+                "required": [
+                    "size",
+                    "from",
+                    "sortDirection"
+                ],
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "genres": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "nullable": true
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "nullable": true
+                    },
+                    "minPrice": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true
+                    },
+                    "maxPrice": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true
+                    },
+                    "minRating": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true
+                    },
+                    "releaseDateFrom": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "releaseDateTo": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "from": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sortBy": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sortDirection": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
             "TCCloudGamesGamesApplicationUseCasesCreateGameCreateGameResponse": {
                 "required": [
                     "id",
@@ -869,12 +1143,12 @@
                         "minLength": 1,
                         "type": "string",
                         "format": "date",
-                        "example": "2025-09-29"
+                        "example": "2025-10-02"
                     },
                     "ageRating": {
                         "minLength": 1,
                         "type": "string",
-                        "example": "Choose one of valid age rate: 'E', 'M', 'A', 'RP', 'E10+', 'T'"
+                        "example": "Choose one of valid age rate: 'M', 'E10+', 'E', 'T', 'A', 'RP'"
                     },
                     "description": {
                         "maxLength": 2000,
@@ -934,14 +1208,14 @@
                         "minLength": 0,
                         "type": "string",
                         "nullable": true,
-                        "example": "Choose one of valid game status: 'Released', 'Available', 'Early Access', 'Soon', 'Discontinued', 'In Development'"
+                        "example": "Choose one of valid game status: 'Discontinued', 'Available', 'In Development', 'Released', 'Early Access', 'Soon'"
                     }
                 },
                 "additionalProperties": false,
                 "example": {
                     "name": "Game Name",
-                    "releaseDate": "2025-09-29",
-                    "ageRating": "Choose one of valid age rate: 'E', 'M', 'A', 'RP', 'E10+', 'T'",
+                    "releaseDate": "2025-10-02",
+                    "ageRating": "Choose one of valid age rate: 'M', 'E10+', 'E', 'T', 'A', 'RP'",
                     "description": "Game Description",
                     "developerInfo": {
                         "developer": "Developer Name",
@@ -956,28 +1230,28 @@
                     "gameDetails": {
                         "genre": "Genre",
                         "platforms": [
-                            "PlayStation 5",
-                            "iOS",
-                            "Xbox One",
-                            "PlayStation 4",
-                            "Linux",
-                            "macOS",
-                            "VR (PlayStation VR)",
-                            "PC",
-                            "Steam Deck",
-                            "Browser",
-                            "Android",
                             "VR (Oculus Quest)",
-                            "Xbox Series X|S",
-                            "Nintendo 3DS",
-                            "VR (HTC Vive)",
                             "PlayStation Vita",
-                            "Wii U",
+                            "macOS",
                             "Nintendo Switch",
-                            "Stadia"
+                            "Stadia",
+                            "PC",
+                            "PlayStation 4",
+                            "iOS",
+                            "Steam Deck",
+                            "PlayStation 5",
+                            "Wii U",
+                            "Linux",
+                            "VR (PlayStation VR)",
+                            "Nintendo 3DS",
+                            "Android",
+                            "VR (HTC Vive)",
+                            "Xbox Series X|S",
+                            "Xbox One",
+                            "Browser"
                         ],
                         "tags": "Tags",
-                        "gameMode": "Choose one of valid game modes: 'Battle Royale', 'Multiplayer', 'PvE', 'Singleplayer', 'Casual', 'Sandbox', 'PvP', 'Co-op', 'Survival'",
+                        "gameMode": "Choose one of valid game modes: 'Sandbox', 'Casual', 'Multiplayer', 'PvP', 'PvE', 'Survival', 'Battle Royale', 'Co-op', 'Singleplayer'",
                         "distributionFormat": "Choose one of valid distribution format: 'Digital', 'Physical'",
                         "availableLanguages": "Available Languages",
                         "supportsDlcs": true
@@ -988,7 +1262,7 @@
                     },
                     "rating": 4.5,
                     "officialLink": "https://example.com",
-                    "gameStatus": "Choose one of valid game status: 'Released', 'Available', 'Early Access', 'Soon', 'Discontinued', 'In Development'"
+                    "gameStatus": "Choose one of valid game status: 'Discontinued', 'Available', 'In Development', 'Released', 'Early Access', 'Soon'"
                 }
             },
             "FastEndpointsProblemDetails": {
@@ -1295,6 +1569,130 @@
                 },
                 "additionalProperties": false
             },
+            "TCCloudGamesGamesApplicationAbstractionsProjectionsGameProjection": {
+                "required": [
+                    "id",
+                    "name",
+                    "releaseDate",
+                    "ageRating",
+                    "developer",
+                    "diskSizeInGb",
+                    "priceAmount",
+                    "platforms",
+                    "gameMode",
+                    "distributionFormat",
+                    "supportsDlcs",
+                    "minimumSystemRequirements",
+                    "createdAt",
+                    "isActive"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "guid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "releaseDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "ageRating": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "developer": {
+                        "type": "string"
+                    },
+                    "publisher": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "diskSizeInGb": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "priceAmount": {
+                        "type": "number",
+                        "format": "decimal"
+                    },
+                    "genre": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "tags": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gameMode": {
+                        "type": "string"
+                    },
+                    "distributionFormat": {
+                        "type": "string"
+                    },
+                    "availableLanguages": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "supportsDlcs": {
+                        "type": "boolean"
+                    },
+                    "minimumSystemRequirements": {
+                        "type": "string"
+                    },
+                    "recommendedSystemRequirements": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "playtimeHours": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "playerCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "ratingAverage": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true
+                    },
+                    "officialLink": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gameStatus": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    }
+                },
+                "additionalProperties": false
+            },
             "TCCloudGamesGamesApplicationUseCasesPurchaseGamePurchaseGameResponse": {
                 "required": [
                     "userId",
@@ -1343,7 +1741,7 @@
                         "minLength": 1,
                         "type": "string",
                         "format": "guid",
-                        "example": "72fe3d60-72cf-4e6b-aeab-9eaf91c5df68"
+                        "example": "1772e2cc-d5bd-4c41-9953-df20438a7823"
                     },
                     "paymentMethod": {
                         "$ref": "#/components/schemas/TCCloudGamesGamesApplicationUseCasesPurchaseGamePaymentMethod"
@@ -1351,7 +1749,7 @@
                 },
                 "additionalProperties": false,
                 "example": {
-                    "gameId": "72fe3d60-72cf-4e6b-aeab-9eaf91c5df68",
+                    "gameId": "1772e2cc-d5bd-4c41-9953-df20438a7823",
                     "paymentMethod": {
                         "method": "credit_card",
                         "cardLast4Digits": "9246"
