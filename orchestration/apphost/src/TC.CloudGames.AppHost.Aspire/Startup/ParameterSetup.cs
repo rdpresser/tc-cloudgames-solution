@@ -20,6 +20,9 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             // Configurar message broker baseado no tipo
             ConfigureMessageBrokerParameters(builder, registry, logger);
 
+            // Configurar Grafana Cloud parameters
+            ConfigureGrafanaCloudParameters(builder, registry, logger);
+
             logger.LogInformation("✅ Configuração de parâmetros concluída");
             registry.LogAll(builder.Configuration, logger);
 
@@ -87,6 +90,15 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             // Apenas connection string é usada como parâmetro secreto
             registry.AddParameter(builder, "servicebus-connection", "AzureServiceBus:ConnectionString", "AZURE_SERVICEBUS_CONNECTIONSTRING", "", secret: true);
+        }
+
+        private static void ConfigureGrafanaCloudParameters(IDistributedApplicationBuilder builder, ServiceParameterRegistry registry, ILogger logger)
+        {
+            logger.LogDebug("📊 Configurando parâmetros do Grafana Cloud...");
+
+            registry.AddParameter(builder, "grafana-logs-token", "GrafanaCloud:GrafanaLogsApiToken", "GRAFANA_LOGS_API_TOKEN", "<placeholder for GRAFANA_LOGS_API_TOKEN>", secret: true);
+            registry.AddParameter(builder, "grafana-prometheus-token", "GrafanaCloud:GrafanaOtelPrometheusApiToken", "GRAFANA_OTEL_PROMETHEUS_API_TOKEN", "<placeholder for GRAFANA_OTEL_PROMETHEUS_API_TOKEN>", secret: true);
+            registry.AddParameter(builder, "otel-exporter-headers", "GrafanaCloud:OtelExporterOtlpHeaders", "OTEL_EXPORTER_OTLP_HEADERS", "<placeholder for OTEL_EXPORTER_OTLP_HEADERS>", secret: true);
         }
 
         private static void ConfigureApplicationParameters(IDistributedApplicationBuilder builder, ServiceParameterRegistry registry, ILogger logger)
@@ -251,6 +263,18 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 // Aspire Parameters
                 ConnectionStringParameter = Contains("servicebus-connection") ? this["servicebus-connection"] : null
             };
+        }
+
+        /// <summary>
+        /// Obtém configuração completa do Grafana Cloud
+        /// </summary>
+        public GrafanaCloudServiceConfig GetGrafanaCloudConfig(ConfigurationManager configuration, ILogger? logger = null)
+        {
+            var grafanaLogsTokenParameter = Contains("grafana-logs-token") ? this["grafana-logs-token"] : null;
+            var grafanaPrometheusTokenParameter = Contains("grafana-prometheus-token") ? this["grafana-prometheus-token"] : null;
+            var otelExporterHeadersParameter = Contains("otel-exporter-headers") ? this["otel-exporter-headers"] : null;
+
+            return GrafanaCloudServiceConfig.CreateFromConfiguration(configuration, grafanaLogsTokenParameter, grafanaPrometheusTokenParameter, otelExporterHeadersParameter, logger);
         }
 
         public void LogAll(ConfigurationManager config, ILogger logger)
