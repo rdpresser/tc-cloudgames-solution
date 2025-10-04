@@ -9,7 +9,7 @@ This solution follows a well-organized microservices architecture with clear sep
 ```
 tc-cloudgames-solution/
 ├── 🛠️ infrastructure/     # Infrastructure as Code
-│   └── infra/             # Terraform files (Azure Container Apps, Key Vault, etc.)
+│   └── terraform/         # Terraform files (Azure Container Apps, Key Vault, etc.)
 ├── 🚀 orchestration/      # Development environment orchestration  
 │   └── apphost/           # .NET Aspire AppHost for local development
 ├── 🎯 services/           # Business microservices
@@ -18,8 +18,8 @@ tc-cloudgames-solution/
 │   └── payments/          # Payments, transactions & credits
 ├── 🧱 shared/             # Shared components
 │   └── common/            # Shared Kernel (contracts, events, utilities)
-├── 🔄 automation/         # CI/CD automation
-│   └── pipelines/         # GitHub Actions workflows orchestrator
+├── 🔄 .github/         # CI/CD automation
+│   └── workflows/         # GitHub Actions workflows orchestrator
 └── 📜 scripts/            # Solution automation scripts
     └── clone-repos.ps1    # Repository cloning script
 ```
@@ -28,20 +28,18 @@ tc-cloudgames-solution/
 
 | Repository | Alias | Category | Description |
 |------------|-------|----------|-------------|
-| `tc-cloudgames-infra` | `infra` | 🛠️ Infrastructure | Terraform IaC for Azure Container Apps, Key Vault, Managed Identity, DNS, ACR |
+| `tc-cloudgames-solution` | `solution` | 🛠️ Infrastructure | Terraform IaC for Azure Container Apps, Key Vault, Managed Identity, ASB, ACR & GitHub Actions |
 | `tc-cloudgames-apphost` | `apphost` | 🚀 Orchestration | .NET Aspire AppHost for local development environment orchestration |
 | `tc-cloudgames-users` | `users` | 🎯 Services | User management microservice with authentication, access control & Event Sourcing |
 | `tc-cloudgames-games` | `games` | 🎯 Services | Game management microservice for sessions, scoring & game flow logic |
 | `tc-cloudgames-payments` | `payments` | 🎯 Services | Payment microservice for transactions, credits & financial provider integration |
-| `tc-cloudgames-common` | `common` | 🧱 Shared | Shared Kernel with contracts, integration events, utilities & validators |
-| `tc-cloudgames-pipelines` | `pipelines` | 🔄 Automation | GitHub Actions workflows orchestrator for centralized CI/CD |
+| `tc-cloudgames-common` | `common` | 🧱 Shared | Shared Kernel with contracts, integration events & utilities  |
+
 
 ## 🧩 Component Matrix
 
 | Repository | 🌐 Infra | ⚙️ AppHost | 👤 Users | 🎮 Games | 💳 Payments | ♻️ Shared | 🔁 CI/CD |
 |------------|:--------:|:----------:|:--------:|:--------:|:-----------:|:--------:|:--------:|
-| `tc-cloudgames-infra` | ✅ | | | | | | ✅ |
-| `tc-cloudgames-apphost` | | ✅ | ✅ | ✅ | ✅ | ✅ | |
 | `tc-cloudgames-users` | | | ✅ | | | ✅ | ✅ |
 | `tc-cloudgames-games` | | | | ✅ | | ✅ | ✅ |
 | `tc-cloudgames-payments` | | | | | ✅ | ✅ | ✅ |
@@ -50,7 +48,7 @@ tc-cloudgames-solution/
 | `tc-cloudgames-solution` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ### 🧩 Legend
-- 🌐 **Infra** – Resource provisioning, networking, Key Vault, identity management
+- 🌐 **Solution** – Resource provisioning, networking, Key Vault, identity management
 - ⚙️ **AppHost** – Local orchestration with .NET Aspire
 - 👤 **Users** – Authentication and identity microservice
 - 🎮 **Games** – Game logic and session microservice
@@ -172,14 +170,14 @@ cd tc-cloudgames-solution
 The script will create the following organized structure:
 ```
 tc-cloudgames-solution/
-├── infrastructure/infra/
+├── infrastructure/terraform/
 ├── orchestration/apphost/
 ├── services/
 │   ├── users/
 │   ├── games/
 │   └── payments/
 ├── shared/common/
-└── automation/pipelines/
+
 ```
 
 ### 2. Local Development with Aspire
@@ -201,16 +199,12 @@ This will start the Aspire dashboard and all configured microservices for local 
 
 ```powershell
 # Navigate to infrastructure
-cd infrastructure/infra
+cd infrastructure/terraform
 
 # Initialize and deploy infrastructure
-terraform init
+terraform init -upgrade
 terraform plan
-terraform apply
-
-# Deploy applications using Azure Developer CLI
-cd ../../
-azd up
+terraform apply -auto-approve
 ```
 
 ## 🛠️ Development Workflow
