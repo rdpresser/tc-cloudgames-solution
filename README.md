@@ -58,6 +58,88 @@ tc-cloudgames-solution/
 - ♻️ **Shared** – Reusable code and contracts between microservices
 - 🔁 **CI/CD** – Automation and deployment workflows
 
+## 🏛️ Architecture Patterns
+
+### Hexagonal Architecture (Ports & Adapters)
+Each microservice follows hexagonal architecture:
+- **Domain Layer**: Core business logic and aggregates
+- **Application Layer**: Use cases, commands, queries, and orchestration
+- **Infrastructure Layer**: External concerns (database, messaging, APIs)
+- **API Layer**: HTTP endpoints and controllers
+
+### CQRS + Event Sourcing
+- **Commands**: Write operations that modify state
+- **Queries**: Read operations optimized for specific use cases
+- **Events**: Domain events for audit trail and projections
+- **Projections**: Materialized views for read models
+
+### Database per Service
+- Each microservice has its own dedicated database
+- Complete data isolation between services
+- Independent scalability and evolution
+
+## 🎯 Microservices Overview
+
+### 👤 Users Service
+- **Responsibility**: User management, authentication, and access control
+- **Database**: PostgreSQL (`users_db`)
+- **Key Features**:
+  - User registration and authentication
+  - Role-based access control (RBAC)
+  - Event Sourcing for audit trail
+  - JWT token management
+
+### 🎮 Games Service
+- **Responsibility**: Game management, sessions, and scoring
+- **Database**: PostgreSQL (`games_db`)
+- **Key Features**:
+  - Game catalog management
+  - Advanced search with Elasticsearch
+  - Game purchase workflow
+  - User game library projections
+  - Game session tracking
+
+### 💳 Payments Service
+- **Responsibility**: Financial transactions and payment processing
+- **Database**: PostgreSQL (`payments_db`)
+- **Key Features**:
+  - Payment processing
+  - Transaction management
+  - Credit system
+  - Integration with payment gateways
+  - Financial reporting
+
+## 🔧 Technology Stack
+
+### Backend Framework
+- **.NET 9**: Modern, high-performance framework
+- **FastEndpoints**: Minimalist API endpoints with high performance
+- **FluentValidation**: Comprehensive input validation
+
+### Data & Storage
+- **Marten**: Event Store and Document Database for PostgreSQL
+- **PostgreSQL**: Primary database with dedicated schemas per service
+- **Redis**: Distributed caching and session storage
+- **Elasticsearch**: Advanced search and analytics
+
+### Messaging & Communication
+- **Wolverine**: Message broker with built-in CQRS support
+- **Azure Service Bus**: Cloud messaging for production
+- **RabbitMQ**: Local development messaging
+
+### Infrastructure & DevOps
+- **Azure**: Cloud platform and services
+- **Terraform**: Infrastructure as Code
+- **Docker**: Containerization
+- **.NET Aspire**: Local development orchestration
+
+### Observability & Monitoring
+- **Serilog**: Structured logging framework
+- **Grafana Loki**: Log aggregation and querying
+- **Application Insights**: Application performance monitoring
+- **Health Checks**: Service health monitoring
+
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -165,11 +247,41 @@ Each repository contains detailed documentation:
 
 ## 🤝 Contributing
 
-1. Fork the relevant repository
+### Development Guidelines
+1. **Branch Strategy**: Feature branches from `main`
+2. **Commit Messages**: Follow conventional commit format
+3. **Code Review**: All changes require peer review
+4. **Testing**: Maintain test coverage above 80%
+
+### Pull Request Process
+1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+5. Open a Pull Request with detailed description
+
+### Code Standards
+- **C#**: Follow Microsoft coding conventions
+- **Architecture**: Maintain hexagonal architecture principles
+- **Documentation**: Update documentation with code changes
+- **Performance**: Consider performance implications
+
+## 📊 Monitoring & Observability
+
+### Application Insights
+- **Performance Metrics**: Response times, throughput
+- **Error Tracking**: Exception monitoring and alerting
+- **Dependency Tracking**: External service calls
+
+### Logging
+- **Structured Logging**: JSON format with correlation IDs
+- **Log Levels**: Appropriate logging levels per environment
+- **Centralized Aggregation**: All logs in Grafana Loki
+
+### Health Checks
+- **Service Health**: Database connectivity, external services
+- **Dependency Health**: Redis, Elasticsearch, message brokers
+- **Custom Health Checks**: Business logic validation
 
 ## 📄 License
 
