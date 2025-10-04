@@ -10,7 +10,10 @@ locals {
   clean_service     = replace(replace(var.service_name, "--", "-"), "--", "-")
   proposed_name     = "${local.clean_prefix}-${local.clean_service}"
   functionapp_name  = length(local.proposed_name) > 60 ? substr(local.proposed_name, 0, 60) : local.proposed_name
-  storage_name      = replace("${local.functionapp_name}storage", "-", "")
+  
+  # Generate storage name (max 24 chars, lowercase, no hyphens)
+  base_name = replace(replace(var.name_prefix, "-", ""), "_", "")
+  storage_name = substr("${lower(local.base_name)}st", 0, 24)
 }
 
 # =============================================================================
@@ -68,6 +71,10 @@ resource "azurerm_linux_function_app" "main" {
     "AzureWebJobsStorage" = azurerm_storage_account.function_storage.primary_connection_string
     "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.function_insights.instrumentation_key
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.function_insights.connection_string
+    
+    # Key Vault references for sensitive data
+    "SENDGRID_API_KEY" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-api-key)"
+    "SERVICEBUS_CONNECTION" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-connection-string)"
   }
 
   identity {
@@ -80,38 +87,10 @@ resource "azurerm_linux_function_app" "main" {
 # =============================================================================
 # Key Vault Access Policy for Function App
 # =============================================================================
-resource "azurerm_key_vault_access_policy" "function_app" {
-  count        = var.key_vault_id != null ? 1 : 0
-  key_vault_id = var.key_vault_id
-  tenant_id     = var.tenant_id
-  object_id     = azurerm_linux_function_app.main.identity[0].principal_id
-
-  secret_permissions = [
-    "Get",
-    "List"
-  ]
-}
-
+# RBAC Role Assignment for Key Vault Access
 # =============================================================================
-# Service Bus Connection String Secret
-# =============================================================================
-resource "azurerm_key_vault_secret" "service_bus_connection" {
-  count        = var.key_vault_id != null && var.service_bus_connection_string != null ? 1 : 0
-  name         = "ServiceBusConnection"
-  value        = var.service_bus_connection_string
-  key_vault_id = var.key_vault_id
-
-  depends_on = [azurerm_key_vault_access_policy.function_app]
-}
-
-# =============================================================================
-# SendGrid API Key Secret
-# =============================================================================
-resource "azurerm_key_vault_secret" "sendgrid_api_key" {
-  count        = var.key_vault_id != null && var.sendgrid_api_key != null ? 1 : 0
-  name         = "SENDGRID-API-KEY"
-  value        = var.sendgrid_api_key
-  key_vault_id = var.key_vault_id
-
-  depends_on = [azurerm_key_vault_access_policy.function_app]
+resource "azurerm_role_assignment" "function_app_kv_secrets_user" {
+  scope                = var.key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
 }

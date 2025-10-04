@@ -54,36 +54,14 @@ variable "key_vault_id" {
   }
 }
 
-variable "tenant_id" {
-  description = "Azure AD Tenant ID"
-  type        = string
-
-  validation {
-    condition = can(regex("^[a-f0-9-]{36}$", var.tenant_id))
-    error_message = "Tenant ID must be a valid GUID format."
-  }
-}
-
-variable "service_bus_connection_string" {
-  description = "Service Bus connection string"
+variable "key_vault_uri" {
+  description = "URI of the Key Vault for secret references"
   type        = string
   default     = null
 
   validation {
-    condition = var.service_bus_connection_string == null || can(regex("^Endpoint=sb://[^;]+;SharedAccessKeyName=[^;]+;SharedAccessKey=[^;]+$", var.service_bus_connection_string))
-    error_message = "Service Bus connection string must be a valid Azure Service Bus connection string format."
-  }
-}
-
-variable "sendgrid_api_key" {
-  description = "SendGrid API key"
-  type        = string
-  default     = null
-  sensitive   = true
-
-  validation {
-    condition = var.sendgrid_api_key == null || can(regex("^SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}$", var.sendgrid_api_key))
-    error_message = "SendGrid API key must be a valid format starting with 'SG.' followed by 22 characters, a dot, and 43 characters."
+    condition = var.key_vault_uri == null || can(regex("^https://[a-zA-Z0-9-]+\\.vault\\.azure\\.net/?$", var.key_vault_uri))
+    error_message = "Key Vault URI must be a valid Azure Key Vault URI format."
   }
 }
 

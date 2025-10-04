@@ -502,3 +502,14 @@ resource "azurerm_key_vault_secret" "grafana_otel_auth_header" {
     azurerm_role_assignment.service_principal_kv_admin
   ]
 }
+
+# SendGrid Secret
+resource "azurerm_key_vault_secret" "sendgrid_api_key" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "sendgrid-api-key"
+  value        = var.sendgrid_api_key
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}

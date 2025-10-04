@@ -128,11 +128,20 @@ output "servicebus_info" {
 output "function_app_info" {
   description = "Azure Function App details"
   value = {
-    name               = module.function_app.function_app_name
-    id                 = module.function_app.function_app_id
-    identity           = module.function_app.function_app_identity
-    storage_account    = module.function_app.storage_account_name
+    name                    = module.function_app.function_app_name
+    id                      = module.function_app.function_app_id
+    default_hostname        = module.function_app.function_app_default_hostname
+    principal_id            = module.function_app.function_app_principal_id
+    storage_account         = module.function_app.storage_account_name
     application_insights_id = module.function_app.application_insights_id
+  }
+}
+
+output "function_app_service_plan_info" {
+  description = "Azure Function App Service Plan details"
+  value = {
+    name = module.function_app_service_plan.app_service_plan_name
+    id   = module.function_app_service_plan.app_service_plan_id
   }
 }
 

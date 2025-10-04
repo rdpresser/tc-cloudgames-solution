@@ -363,3 +363,8 @@ variable "grafana_otel_auth_header" {
   sensitive   = true
 }
 
+variable "sendgrid_api_key" {
+  description = "SendGrid API key"
+  type        = string
+  sensitive   = true
+}
