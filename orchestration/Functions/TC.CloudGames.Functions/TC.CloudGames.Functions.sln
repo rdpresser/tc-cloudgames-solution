@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11018.127 d18.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Functions", "TC.CloudGames.Functions.csproj", "{44AB250C-85D0-3E2F-852F-7FD28F872C12}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{44AB250C-85D0-3E2F-852F-7FD28F872C12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44AB250C-85D0-3E2F-852F-7FD28F872C12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44AB250C-85D0-3E2F-852F-7FD28F872C12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44AB250C-85D0-3E2F-852F-7FD28F872C12}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B85068AC-7B2A-46A1-8ED3-5050D74B359A}
+	EndGlobalSection
+EndGlobal

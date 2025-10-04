@@ -20,7 +20,7 @@ public class SendPurchaseEmailFunction
 
     [Function("SendPurchaseEmail")]
     public async Task RunAsync(
-        [ServiceBusTrigger("user.events-topic", "purchase-subscription", Connection = "ServiceBusConnection")] string messageBody)
+        [ServiceBusTrigger("payment.events-topic", "purchase-subscription", Connection = "ServiceBusConnection")] string messageBody)
     {
         _logger.LogInformation("Mensagem recebida no trigger: {Message}", messageBody);
 
