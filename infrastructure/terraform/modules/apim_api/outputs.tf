@@ -32,8 +32,8 @@ output "api_revision" {
   value       = azurerm_api_management_api.this.revision
 }
 
-# The operation policies configured for the API
+# The operation policies configured for the API (temporarily empty)
 output "operation_policies" {
-  description = "Operation policies configured for the API"
-  value       = var.operation_policies
+  description = "Operation policies configured for the API (temporarily disabled)"
+  value       = {}  # Empty since policies are disabled
 }

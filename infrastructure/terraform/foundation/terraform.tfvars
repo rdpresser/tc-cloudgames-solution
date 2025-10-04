@@ -10,19 +10,21 @@ apis = {
     display_name = "Users API"
     path         = "users"
     swagger_url  = "https://tc-cloudgames-dev-cr8n-users-api.salmonbeach-dbfa42fd.eastus2.azurecontainerapps.io/swagger/v1/swagger.json"
-    api_policy   = "<policies><inbound><rate-limit-by-key calls='5' renewal-period='60' counter-key='@(context.Request.IpAddress)' /><base /><cors><allowed-origins><origin>*</origin></allowed-origins></cors></inbound><backend><forward-request /><base /></backend><outbound><base /></outbound><on-error /></policies>"
-    operation_policies = {
-      "GET-users" = "<policies><inbound><base /><set-header name='x-cache' exists-action='override'><value>true</value></set-header></inbound><backend><base /></backend><outbound><base /></outbound></policies>"
-    }
+    # Temporarily disable policies
+    # api_policy   = "<policies><inbound><rate-limit-by-key calls='5' renewal-period='60' counter-key='@(context.Request.IpAddress)' /><base /><cors><allowed-origins><origin>*</origin></allowed-origins></cors></inbound><backend><forward-request /><base /></backend><outbound><base /></outbound><on-error /></policies>"
+    # operation_policies = {
+    #   "GET-users" = "<policies><inbound><base /><set-header name='x-cache' exists-action='override'><value>true</value></set-header></inbound><backend><base /></backend><outbound><base /></outbound></policies>"
+    # }
   }
   games = {
     name         = "games-api"
     display_name = "Games API"
     path         = "games"
     swagger_url  = "https://tc-cloudgames-dev-cr8n-games-api.salmonbeach-dbfa42fd.eastus2.azurecontainerapps.io/swagger/v1/swagger.json"
-    api_policy   = "<policies><inbound><rate-limit-by-key calls='5' renewal-period='60' counter-key='@(context.Request.IpAddress)' /><base /><cors><allowed-origins><origin>*</origin></allowed-origins></cors></inbound><backend><forward-request /><base /></backend><outbound><base /></outbound><on-error /></policies>"
-    operation_policies = {
-      "GET-games" = "<policies><inbound><base /><set-header name='x-cache' exists-action='override'><value>true</value></set-header></inbound><backend><base /></backend><outbound><base /></outbound></policies>"
-    }
+    # Temporarily disable policies
+    # api_policy   = "<policies><inbound><rate-limit-by-key calls='5' renewal-period='60' counter-key='@(context.Request.IpAddress)' /><base /><cors><allowed-origins><origin>*</origin></allowed-origins></cors></inbound><backend><forward-request /><base /></backend><outbound><base /></outbound><on-error /></policies>"
+    # operation_policies = {
+    #   "GET-games" = "<policies><inbound><base /><set-header name='x-cache' exists-action='override'><value>true</value></set-header></inbound><backend><base /></backend><outbound><base /></outbound></policies>"
+    # }
   }
 }

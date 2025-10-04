@@ -14,23 +14,26 @@ resource "azurerm_api_management_api" "this" {
   }
 }
 
-# Política geral da API (opcional)
-resource "azurerm_api_management_api_policy" "this" {
-  count = var.api_policy != null ? 1 : 0
+# Policies will be added later once we confirm the API structure
+# For now, we're focusing on creating the APIs and importing the Swagger definitions
 
-  api_name            = azurerm_api_management_api.this.name
-  api_management_name = var.api_management_name
-  resource_group_name = var.resource_group_name
-  xml_content         = var.api_policy
-}
+# Política geral da API (TEMPORARILY DISABLED)
+# resource "azurerm_api_management_api_policy" "this" {
+#   count = var.api_policy != null ? 1 : 0
+#
+#   api_name            = azurerm_api_management_api.this.name
+#   api_management_name = var.api_management_name
+#   resource_group_name = var.resource_group_name
+#   xml_content         = var.api_policy
+# }
 
-# Policies de operações específicas (opcional)
-resource "azurerm_api_management_api_operation_policy" "this" {
-  for_each = var.operation_policies
-
-  api_name            = azurerm_api_management_api.this.name
-  operation_id        = each.key
-  api_management_name = var.api_management_name
-  resource_group_name = var.resource_group_name
-  xml_content         = each.value
-}
+# Policies de operações específicas (TEMPORARILY DISABLED)
+# resource "azurerm_api_management_api_operation_policy" "this" {
+#   for_each = var.operation_policies
+#
+#   api_name            = azurerm_api_management_api.this.name
+#   operation_id        = each.key
+#   api_management_name = var.api_management_name
+#   resource_group_name = var.resource_group_name
+#   xml_content         = each.value
+# }

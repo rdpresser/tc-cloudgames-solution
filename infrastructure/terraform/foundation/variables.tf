@@ -156,8 +156,8 @@ variable "grafana_otel_auth_header" {
 }
 
 variable "apis" {
-    description = "Lista de APIs a serem importadas no API Management"
-    type = map(object({
+  description = "Lista de APIs a serem importadas no API Management"
+  type = map(object({
     name               = string
     display_name       = string
     path               = string
