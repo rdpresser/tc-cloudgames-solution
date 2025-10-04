@@ -355,6 +355,42 @@ resource "azurerm_role_assignment" "payments_api_servicebus_owner" {
 }
 
 # =============================================================================
+# API Management Module
+# =============================================================================
+
+module "apim" {
+  source              = "../modules/apim"
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+
+  tags = local.common_tags
+
+  depends_on = [
+    module.resource_group
+  ]
+}
+
+module "apim_api" {
+  source   = "../modules/apim_api"
+  for_each = var.apis
+
+  name_prefix        = each.value.name
+  display_name       = each.value.display_name
+  path               = each.value.path
+  swagger_url        = each.value.swagger_url
+  api_policy         = lookup(each.value, "api_policy", null)
+  operation_policies = lookup(each.value, "operation_policies", {})
+
+  api_management_name = module.apim.name
+  resource_group_name = module.apim.resource_group_name
+
+  depends_on = [
+    module.apim
+  ]
+}
+
+# =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation
 # =============================================================================
 locals {

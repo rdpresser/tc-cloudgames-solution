@@ -155,3 +155,19 @@ variable "grafana_otel_auth_header" {
   sensitive   = true
 }
 
+variable "apis" {
+    description = "Lista de APIs a serem importadas no API Management"
+    type = map(object({
+    name               = string
+    display_name       = string
+    path               = string
+    swagger_url        = string
+    api_policy         = optional(string)
+    operation_policies = optional(map(string))
+  }))
+
+  # Default vazio - valores serão fornecidos via terraform.tfvars ou terraform.tfvars.json
+  default = {}
+}
+
+

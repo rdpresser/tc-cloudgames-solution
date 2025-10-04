@@ -89,6 +89,8 @@ venv/
 # .terraform.lock.hcl
 *.tfvars
 !*.tfvars.example
+# Allow specific terraform.tfvars for APIM configuration
+!infrastructure/terraform/foundation/terraform.tfvars
 
 # Azure Developer CLI
 .azure/
