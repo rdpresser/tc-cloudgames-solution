@@ -28,7 +28,7 @@ variable "app_service_plan_id" {
   type        = string
 
   validation {
-    condition = can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.Web/serverfarms/[^/]+$", var.app_service_plan_id))
+    condition = can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft\\.Web/serverFarms/[^/]+$", var.app_service_plan_id))
     error_message = "App Service Plan ID must be a valid Azure resource ID format."
   }
 }
