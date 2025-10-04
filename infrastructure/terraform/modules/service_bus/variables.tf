@@ -41,6 +41,7 @@ variable "topic_subscriptions" {
     sql_filter_rules = optional(map(object({
       filter_expression = string
       action            = optional(string, "")
+      rule_name         = optional(string, "SqlFilter")
     })), {})
   }))
   default = {}

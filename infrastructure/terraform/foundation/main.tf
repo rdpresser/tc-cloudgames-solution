@@ -226,6 +226,7 @@ module "servicebus" {
         "UserAggregateFilter" = {
           filter_expression = "DomainAggregate = 'UserAggregate'"
           action            = ""
+          rule_name         = "UsersDomainAggregateFilter"
         }
       }
     }
@@ -235,6 +236,7 @@ module "servicebus" {
         "PaymentAggregateFilter" = {
           filter_expression = "DomainAggregate = 'PaymentAggregate'"
           action            = ""
+          rule_name         = "PaymentsDomainAggregateFilter"
         }
       }
     }
