@@ -14,15 +14,23 @@ output "namespace_id" {
 }
 
 output "topic_ids" {
-  description = "Map of topic names to their IDs"
-  value = {
-    for topic_name, topic in azurerm_servicebus_topic.this : topic_name => topic.id
-  }
+  description = "Map of topic names to their IDs (includes both created and existing topics)"
+  value = merge(
+    {
+      for topic_name, topic in azurerm_servicebus_topic.this : topic_name => topic.id
+    },
+    {
+      for topic_name, topic in data.azurerm_servicebus_topic.existing : topic_name => topic.id
+    }
+  )
 }
 
 output "topic_names" {
-  description = "List of created topic names"
-  value       = [for topic in azurerm_servicebus_topic.this : topic.name]
+  description = "List of all topic names (both created and existing)"
+  value = concat(
+    [for topic in azurerm_servicebus_topic.this : topic.name],
+    [for topic in data.azurerm_servicebus_topic.existing : topic.name]
+  )
 }
 
 output "subscription_ids" {

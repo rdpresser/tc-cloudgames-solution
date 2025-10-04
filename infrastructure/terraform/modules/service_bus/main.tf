@@ -26,11 +26,15 @@ resource "azurerm_role_assignment" "servicebus_data_owner" {
 }
 
 # =============================================================================
-# Topics (Opcionais - podem ser criados via código C#)
+# Topics (Condicionais - criados apenas quando create=true)
 # =============================================================================
 resource "azurerm_servicebus_topic" "this" {
-  for_each     = length(var.topics) > 0 ? toset(var.topics) : toset([])
-  name         = each.value
+  for_each = {
+    for topic in var.topics : topic.name => topic
+    if topic.create == true
+  }
+  
+  name         = each.value.name
   namespace_id = azurerm_servicebus_namespace.this.id
 
   # Correto nas versões novas
@@ -39,12 +43,25 @@ resource "azurerm_servicebus_topic" "this" {
 }
 
 # =============================================================================
-# Subscriptions (Opcionais - podem ser criadas via código C#)
+# Subscriptions (Para tópicos existentes ou criados pelo Terraform)
 # =============================================================================
+# Data source para obter informações de tópicos existentes (criados via C#)
+data "azurerm_servicebus_topic" "existing" {
+  for_each = {
+    for topic_name, subscription in var.topic_subscriptions : topic_name => topic_name
+    if !contains([for t in var.topics : t.name if t.create], topic_name)
+  }
+  
+  name         = each.value
+  namespace_id = azurerm_servicebus_namespace.this.id
+}
+
 resource "azurerm_servicebus_subscription" "this" {
   for_each = length(var.topic_subscriptions) > 0 ? var.topic_subscriptions : {}
   name     = each.value.subscription_name
-  topic_id = azurerm_servicebus_topic.this[each.key].id
+  
+  # Use o tópico criado pelo Terraform se existir, senão use o data source do tópico existente
+  topic_id = contains([for t in var.topics : t.name if t.create], each.key) ? azurerm_servicebus_topic.this[each.key].id : data.azurerm_servicebus_topic.existing[each.key].id
 
   max_delivery_count = 10
   lock_duration      = "PT1M"

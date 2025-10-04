@@ -26,9 +26,12 @@ variable "sku" {
 }
 
 variable "topics" {
-  description = "List of Service Bus topics to create. Leave empty if topics will be created via application code."
-  type        = list(string)
-  default     = []
+  description = "List of Service Bus topics with creation control. Each topic can specify whether it should be created by Terraform or not."
+  type = list(object({
+    name   = string
+    create = bool
+  }))
+  default = []
 }
 
 variable "topic_subscriptions" {

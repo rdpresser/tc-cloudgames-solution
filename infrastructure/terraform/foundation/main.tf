@@ -208,19 +208,38 @@ module "servicebus" {
   tags                = local.common_tags
 
   # Topics e subscriptions para Azure Functions
-  topics = []
+  topics = [
+    {
+      name   = "user.events-topic"
+      create = false  # Criado via código C#
+    },
+    {
+      name   = "payment.events-topic"
+      create = false  # Criado via código C#
+    }
+  ]
 
   topic_subscriptions = {
     "user.events-topic" = {
       subscription_name = "welcome-subscription"
-      sql_filter_rules = {}
+      sql_filter_rules = {
+        "UserAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'UserAggregate'"
+          action            = ""
+        }
+      }
     }
     "payment.events-topic" = {
       subscription_name = "purchase-subscription"
-      sql_filter_rules = {}
+      sql_filter_rules = {
+        "PaymentAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'PaymentAggregate'"
+          action            = ""
+        }
+      }
     }
   }
-  create_sql_filter_rules = false
+  create_sql_filter_rules = true
 
   # RBAC será configurado separadamente para evitar ciclo de dependência
   managed_identity_principal_ids = []
