@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.0.11018.127
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Users.Api", "..\..\services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\TC.CloudGames.Users.Api.csproj", "{0487F409-946B-8964-7BA6-D4B7971032F0}"
 EndProject
@@ -48,6 +48,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Api", "..\..\services\payments\src\Adapters\Inbound\TC.CloudGames.Payments.Api\TC.CloudGames.Payments.Api.csproj", "{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Payments.Infrastructure", "..\..\services\payments\src\Adapters\Outbound\TC.CloudGames.Payments.Infrastructure\TC.CloudGames.Payments.Infrastructure.csproj", "{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Functions", "Functions", "{818BBEA3-9FC2-4A6C-8A3F-938280F8296D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Functions", "..\Functions\TC.CloudGames.Functions\TC.CloudGames.Functions.csproj", "{6D057103-8A80-45AA-88D4-F7B22F037B37}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -123,6 +127,10 @@ Global
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D057103-8A80-45AA-88D4-F7B22F037B37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D057103-8A80-45AA-88D4-F7B22F037B37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D057103-8A80-45AA-88D4-F7B22F037B37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D057103-8A80-45AA-88D4-F7B22F037B37}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -148,6 +156,7 @@ Global
 		{1FBFC389-EA69-05D4-2032-DBC2EC3F7EEE} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
 		{7B3DC1F9-5ACE-5EED-84FC-F006A3A688D5} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
 		{9EBB14BC-D43A-F129-CC33-8C090B3CE27D} = {BE20752C-2FA4-4006-8EA3-15359AB6ED1B}
+		{6D057103-8A80-45AA-88D4-F7B22F037B37} = {818BBEA3-9FC2-4A6C-8A3F-938280F8296D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F1278D4F-DD5E-4308-B75D-11D57F7520A7}

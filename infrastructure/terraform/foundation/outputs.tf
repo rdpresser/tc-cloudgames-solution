@@ -122,6 +122,30 @@ output "servicebus_info" {
 }
 
 # =============================================================================
+# Azure Function App
+# =============================================================================
+
+output "function_app_info" {
+  description = "Azure Function App details"
+  value = {
+    name                    = module.function_app.function_app_name
+    id                      = module.function_app.function_app_id
+    default_hostname        = module.function_app.function_app_default_hostname
+    principal_id            = module.function_app.function_app_principal_id
+    storage_account         = module.function_app.storage_account_name
+    application_insights_id = module.function_app.application_insights_id
+  }
+}
+
+output "function_app_service_plan_info" {
+  description = "Azure Function App Service Plan details"
+  value = {
+    name = module.function_app_service_plan.app_service_plan_name
+    id   = module.function_app_service_plan.app_service_plan_id
+  }
+}
+
+# =============================================================================
 # Users API Container App
 # =============================================================================
 
@@ -202,6 +226,7 @@ output "all_resources" {
     log_analytics_name         = module.logs.log_analytics_name
     servicebus_ns              = module.servicebus.namespace_name
     servicebus_topics          = module.servicebus.topic_names
+    function_app               = module.function_app.function_app_name
     users_api_container_app    = module.users_api_container_app.container_app_name
     games_api_container_app    = module.games_api_container_app.container_app_name
     payments_api_container_app = module.payments_api_container_app.container_app_name
@@ -238,7 +263,7 @@ output "deployment_summary" {
     environment          = local.environment
     location             = module.resource_group.location
     resource_group       = module.resource_group.name
-    total_resources      = 11 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault + users_api + games_api + payments_api
+    total_resources      = 12 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + container_app_env + key_vault + users_api + games_api + payments_api
     deployment_timestamp = timestamp()
   }
 }
@@ -263,7 +288,7 @@ output "deployment_performance_summary" {
     # Basic deployment info
     environment         = var.environment
     terraform_workspace = terraform.workspace
-    resource_count      = 11 # rg + postgres + acr + redis + log_analytics + servicebus + container_app_env + key_vault + users_api + games_api + payments_api
+    resource_count      = 12 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + container_app_env + key_vault + users_api + games_api + payments_api
     deployment_method   = "Pure Terraform via Terraform Cloud"
 
     # Deployment metadata

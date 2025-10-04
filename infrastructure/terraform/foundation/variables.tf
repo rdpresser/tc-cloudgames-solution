@@ -155,6 +155,20 @@ variable "grafana_otel_auth_header" {
   sensitive   = true
 }
 
+# =============================================================================
+# SENDGRID Variables
+# =============================================================================
+variable "sendgrid_api_key" {
+  description = "SendGrid API key for email functionality"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition = can(regex("^SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}$", var.sendgrid_api_key))
+    error_message = "SendGrid API key must be a valid format starting with 'SG.' followed by 22 characters, a dot, and 43 characters."
+  }
+}
+
 variable "apis" {
   description = "Lista de APIs a serem importadas no API Management"
   type = map(object({

@@ -186,6 +186,8 @@ module "key_vault" {
   grafana_otel_exporter_protocol            = var.grafana_otel_exporter_protocol
   grafana_otel_auth_header                  = var.grafana_otel_auth_header
 
+  sendgrid_api_key = var.sendgrid_api_key
+
   depends_on = [
     module.resource_group,
     module.acr,
@@ -205,10 +207,19 @@ module "servicebus" {
   resource_group_name = module.resource_group.name
   tags                = local.common_tags
 
-  # Resources serão criados via código C# (Wolverine/MassTransit)
-  # Deixando tudo opcional para que a aplicação tenha controle total
-  topics                  = []
-  topic_subscriptions     = {}
+  # Topics e subscriptions para Azure Functions
+  topics = ["user.events-topic", "payment.events-topic"]
+
+  topic_subscriptions = {
+    "user.events-topic" = {
+      subscription_name = "welcome-subscription"
+      sql_filter_rules = {}
+    }
+    "payment.events-topic" = {
+      subscription_name = "purchase-subscription"
+      sql_filter_rules = {}
+    }
+  }
   create_sql_filter_rules = false
 
   # RBAC será configurado separadamente para evitar ciclo de dependência
@@ -216,6 +227,46 @@ module "servicebus" {
 
   depends_on = [
     module.resource_group
+  ]
+}
+
+# =============================================================================
+# App Service Plan for Azure Functions
+# =============================================================================
+module "function_app_service_plan" {
+  source              = "../modules/app_service_plan"
+  name_prefix         = local.full_name
+  service_name        = "functions-asp"
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  sku_name            = "Y1"  # Consumption plan for serverless functions
+  tags                = local.common_tags
+
+  depends_on = [
+    module.resource_group
+  ]
+}
+
+# =============================================================================
+# Azure Function App
+# =============================================================================
+module "function_app" {
+  source                         = "../modules/function_app"
+  name_prefix                    = local.full_name
+  service_name                   = "functions"
+  location                       = module.resource_group.location
+  resource_group_name            = module.resource_group.name
+  app_service_plan_id            = module.function_app_service_plan.app_service_plan_id
+  log_analytics_workspace_id     = module.logs.log_analytics_workspace_id
+  key_vault_id                   = module.key_vault.key_vault_id
+  key_vault_uri                  = module.key_vault.key_vault_uri
+  tags                           = local.common_tags
+
+  depends_on = [
+    module.resource_group,
+    module.function_app_service_plan,
+    module.logs,
+    module.key_vault
   ]
 }
 
