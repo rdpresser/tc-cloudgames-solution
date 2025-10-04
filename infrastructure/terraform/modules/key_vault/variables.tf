@@ -316,3 +316,50 @@ variable "elasticsearch_game_indexprefix" {
   type        = string
   description = "Elasticsearch index name prefix"
 }
+
+# =============================================================================
+# GRAFANA Variables
+# =============================================================================
+variable "grafana_logs_api_token" {
+  description = "Grafana logs API token"
+  type        = string
+  sensitive   = true
+}
+
+variable "grafana_otel_prometheus_api_token" {
+  description = "Grafana OpenTelemetry Prometheus API token"
+  type        = string
+  sensitive   = true
+}
+
+variable "grafana_otel_games_resource_attributes" {
+  description = "Grafana OpenTelemetry games resource attributes"
+  type        = string
+}
+
+variable "grafana_otel_users_resource_attributes" {
+  description = "Grafana OpenTelemetry users resource attributes"
+  type        = string
+}
+
+variable "grafana_otel_payments_resource_attributes" {
+  description = "Grafana OpenTelemetry payments resource attributes"
+  type        = string
+}
+
+variable "grafana_otel_exporter_endpoint" {
+  description = "Grafana OpenTelemetry exporter endpoint"
+  type        = string
+}
+
+variable "grafana_otel_exporter_protocol" {
+  description = "Grafana OpenTelemetry exporter protocol"
+  type        = string
+}
+
+variable "grafana_otel_auth_header" {
+  description = "Grafana OpenTelemetry auth header"
+  type        = string
+  sensitive   = true
+}
+

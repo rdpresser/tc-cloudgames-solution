@@ -177,6 +177,15 @@ module "key_vault" {
   elasticsearch_game_projectid   = var.elasticsearch_game_projectid
   elasticsearch_game_indexprefix = var.elasticsearch_game_indexprefix
 
+  grafana_logs_api_token                    = var.grafana_logs_api_token
+  grafana_otel_prometheus_api_token         = var.grafana_otel_prometheus_api_token
+  grafana_otel_games_resource_attributes    = var.grafana_otel_games_resource_attributes
+  grafana_otel_users_resource_attributes    = var.grafana_otel_users_resource_attributes
+  grafana_otel_payments_resource_attributes = var.grafana_otel_payments_resource_attributes
+  grafana_otel_exporter_endpoint            = var.grafana_otel_exporter_endpoint
+  grafana_otel_exporter_protocol            = var.grafana_otel_exporter_protocol
+  grafana_otel_auth_header                  = var.grafana_otel_auth_header
+
   depends_on = [
     module.resource_group,
     module.acr,

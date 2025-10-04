@@ -207,6 +207,69 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     }
 
     /// <summary>
+    /// Configuração unificada para Grafana Cloud
+    /// </summary>
+    public record GrafanaCloudServiceConfig : ServiceConfig
+    {
+        public required string GrafanaLogsApiToken { get; init; }
+        public required string GrafanaOtelPrometheusApiToken { get; init; }
+        public required string GrafanaOtelGamesResourceAttributes { get; init; }
+        public required string GrafanaOtelUsersResourceAttributes { get; init; }
+        public required string GrafanaOtelPaymentsResourceAttributes { get; init; }
+        public required string OtelExporterOtlpEndpoint { get; init; }
+        public required string OtelExporterOtlpProtocol { get; init; }
+        public required string OtelExporterOtlpHeaders { get; init; }
+
+        // Recursos Aspire para parâmetros secretos
+        public IResourceBuilder<ParameterResource>? GrafanaLogsApiTokenParameter { get; init; }
+        public IResourceBuilder<ParameterResource>? GrafanaOtelPrometheusApiTokenParameter { get; init; }
+        public IResourceBuilder<ParameterResource>? OtelExporterOtlpHeadersParameter { get; init; }
+
+        /// <summary>
+        /// Retorna os Resource Attributes corretos baseado no tipo de projeto
+        /// </summary>
+        public string GetOtelResourceAttributesForProject(ProjectType projectType) => projectType switch
+        {
+            ProjectType.Users => GrafanaOtelUsersResourceAttributes,
+            ProjectType.Games => GrafanaOtelGamesResourceAttributes,
+            ProjectType.Payments => GrafanaOtelPaymentsResourceAttributes,
+            _ => throw new ArgumentException($"Tipo de projeto não suportado: {projectType}")
+        };
+
+        /// <summary>
+        /// Cria configuração do Grafana Cloud a partir da configuração do sistema
+        /// </summary>
+        public static GrafanaCloudServiceConfig CreateFromConfiguration(
+            ConfigurationManager configuration,
+            IResourceBuilder<ParameterResource>? grafanaLogsApiTokenParameter = null,
+            IResourceBuilder<ParameterResource>? grafanaOtelPrometheusApiTokenParameter = null,
+            IResourceBuilder<ParameterResource>? otelExporterOtlpHeadersParameter = null,
+            ILogger? logger = null)
+        {
+            var useExternal = ServiceConfigResolver.ShouldUseExternalService(configuration, "GrafanaCloud", logger);
+
+            return new GrafanaCloudServiceConfig
+            {
+                UseExternalService = useExternal,
+                ContainerName = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:ContainerName", "GRAFANA_CLOUD_CONTAINER_NAME", configuration, "TC-CloudGames-GrafanaCloud", logger),
+                GrafanaLogsApiToken = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaLogsApiToken", "GRAFANA_LOGS_API_TOKEN", configuration, "<placeholder for GRAFANA_LOGS_API_TOKEN>", logger),
+                GrafanaOtelPrometheusApiToken = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelPrometheusApiToken", "GRAFANA_OTEL_PROMETHEUS_API_TOKEN", configuration, "<placeholder for GRAFANA_OTEL_PROMETHEUS_API_TOKEN>", logger),
+                GrafanaOtelGamesResourceAttributes = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelGamesResourceAttributes", "GRAFANA_OTEL_GAMES_RESOURCE_ATTRIBUTES", configuration, "service.name=tccloudgames-games,service.namespace=tccloudgames,deployment.environment=production", logger),
+                GrafanaOtelUsersResourceAttributes = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelUsersResourceAttributes", "GRAFANA_OTEL_USERS_RESOURCE_ATTRIBUTES", configuration, "service.name=tccloudgames-users,service.namespace=tccloudgames,deployment.environment=production", logger),
+                GrafanaOtelPaymentsResourceAttributes = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelPaymentsResourceAttributes", "GRAFANA_OTEL_PAYMENTS_RESOURCE_ATTRIBUTES", configuration, "service.name=tccloudgames-payments,service.namespace=tccloudgames,deployment.environment=production", logger),
+                OtelExporterOtlpEndpoint = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:OtelExporterOtlpEndpoint", "OTEL_EXPORTER_OTLP_ENDPOINT", configuration, "https://otlp-gateway-prod-sa-east-1.grafana.net/otlp", logger),
+                OtelExporterOtlpProtocol = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:OtelExporterOtlpProtocol", "OTEL_EXPORTER_OTLP_PROTOCOL", configuration, "http/protobuf", logger),
+                OtelExporterOtlpHeaders = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:OtelExporterOtlpHeaders", "OTEL_EXPORTER_OTLP_HEADERS", configuration, "<placeholder for OTEL_EXPORTER_OTLP_HEADERS>", logger),
+
+                // Aspire Parameters
+                GrafanaLogsApiTokenParameter = grafanaLogsApiTokenParameter,
+                GrafanaOtelPrometheusApiTokenParameter = grafanaOtelPrometheusApiTokenParameter,
+                OtelExporterOtlpHeadersParameter = otelExporterOtlpHeadersParameter
+            };
+        }
+    }
+
+    /// <summary>
     /// Helper para resolver configurações de serviços
     /// </summary>
     public static class ServiceConfigResolver

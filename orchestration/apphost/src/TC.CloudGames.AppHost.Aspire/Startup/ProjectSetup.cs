@@ -86,6 +86,7 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             ConfigureDatabaseEnvironment(project, projectType, builder, registry);
             ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type, projectType);
             ConfigureCacheEnvironment(project, projectType, builder, registry);
+            ConfigureGrafanaCloudEnvironment(project, projectType, builder, registry);
 
             return project;
         }
@@ -257,6 +258,39 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             // Add parameters for secrets
             if (cacheConfig.PasswordParameter != null)
                 project.WithParameterEnv("CACHE_PASSWORD", cacheConfig.PasswordParameter);
+        }
+
+        private static void ConfigureGrafanaCloudEnvironment(
+            IResourceBuilder<ProjectResource> project,
+            ProjectType projectType,
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry)
+        {
+            var grafanaConfig = registry.GetGrafanaCloudConfig(builder.Configuration);
+
+            // Configura variáveis de ambiente específicas do OpenTelemetry e Grafana Cloud
+            project
+                .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", grafanaConfig.OtelExporterOtlpEndpoint)
+                .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", grafanaConfig.OtelExporterOtlpProtocol)
+                .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", GetGrafanaOtelResourceAttributesForProject(projectType, grafanaConfig));
+
+            // Add parameters for secrets
+            if (grafanaConfig.GrafanaLogsApiTokenParameter != null)
+                project.WithParameterEnv("GRAFANA_LOGS_API_TOKEN", grafanaConfig.GrafanaLogsApiTokenParameter);
+
+            if (grafanaConfig.GrafanaOtelPrometheusApiTokenParameter != null)
+                project.WithParameterEnv("GRAFANA_OTEL_PROMETHEUS_API_TOKEN", grafanaConfig.GrafanaOtelPrometheusApiTokenParameter);
+
+            if (grafanaConfig.OtelExporterOtlpHeadersParameter != null)
+                project.WithParameterEnv("OTEL_EXPORTER_OTLP_HEADERS", grafanaConfig.OtelExporterOtlpHeadersParameter);
+        }
+
+        /// <summary>
+        /// Retorna os Resource Attributes do OpenTelemetry específicos para cada projeto
+        /// </summary>
+        private static string GetGrafanaOtelResourceAttributesForProject(ProjectType projectType, GrafanaCloudServiceConfig grafanaConfig)
+        {
+            return grafanaConfig.GetOtelResourceAttributesForProject(projectType);
         }
     }
 }

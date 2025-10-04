@@ -421,3 +421,84 @@ resource "azurerm_key_vault_secret" "elasticsearch_game_indexprefix" {
     azurerm_role_assignment.service_principal_kv_admin
   ]
 }
+
+# Grafana & OpenTelemetry Secrets
+resource "azurerm_key_vault_secret" "grafana_logs_api_token" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-logs-api-token"
+  value        = var.grafana_logs_api_token
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "grafana_otel_prometheus_api_token" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-otel-prometheus-api-token"
+  value        = var.grafana_otel_prometheus_api_token
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "grafana_otel_games_resource_attributes" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-otel-games-resource-attributes"
+  value        = var.grafana_otel_games_resource_attributes
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "grafana_otel_users_resource_attributes" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-otel-users-resource-attributes"
+  value        = var.grafana_otel_users_resource_attributes
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "grafana_otel_payments_resource_attributes" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-otel-payments-resource-attributes"
+  value        = var.grafana_otel_payments_resource_attributes
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "grafana_otel_exporter_endpoint" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-otel-exporter-endpoint"
+  value        = var.grafana_otel_exporter_endpoint
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "grafana_otel_exporter_protocol" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-otel-exporter-protocol"
+  value        = var.grafana_otel_exporter_protocol
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "grafana_otel_auth_header" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "grafana-otel-auth-header"
+  value        = var.grafana_otel_auth_header
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
