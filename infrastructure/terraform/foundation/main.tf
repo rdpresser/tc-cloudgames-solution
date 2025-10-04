@@ -208,7 +208,7 @@ module "servicebus" {
   tags                = local.common_tags
 
   # Topics e subscriptions para Azure Functions
-  topics = ["user.events-topic", "payment.events-topic"]
+  topics = []
 
   topic_subscriptions = {
     "user.events-topic" = {
