@@ -298,3 +298,33 @@ output "deployment_performance_summary" {
     timing_note = "Actual deployment duration measured by GitHub Actions pipeline with start/end timestamps"
   }
 }
+
+# =============================================================================
+# API Management
+# =============================================================================
+
+output "apim_info" {
+  description = "Azure API Management details"
+  value = {
+    name           = module.apim.apim_name
+    id             = module.apim.apim_id
+    location       = module.apim.apim_location
+    gateway_url    = module.apim.apim_gateway_url
+    portal_url     = module.apim.apim_portal_url
+    management_url = module.apim.apim_management_api_url
+    resource_group = module.apim.resource_group_name
+  }
+}
+
+output "apim_apis_info" {
+  description = "API Management APIs details"
+  value = {
+    for key, api in module.apim_api : key => {
+      name         = api.api_name
+      id           = api.api_id
+      display_name = api.api_display_name
+      path         = api.api_path
+      revision     = api.api_revision
+    }
+  }
+}

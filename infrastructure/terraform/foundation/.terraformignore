@@ -20,6 +20,7 @@ crash.*.log                # Terraform crash logs with timestamps
 # Environment and Secrets Files
 # =============================================================================
 *.tfvars                    # Variable files that might contain secrets
+!terraform.tfvars          # Allow specific terraform.tfvars for APIM configuration
 *.tfvars.json              # JSON variable files
 .env                       # Environment files
 .env.*                     # Environment files with suffixes
