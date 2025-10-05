@@ -363,8 +363,21 @@ variable "grafana_otel_auth_header" {
   sensitive   = true
 }
 
+# =============================================================================
+# SENDGRID Variables
+# =============================================================================
 variable "sendgrid_api_key" {
   description = "SendGrid API key"
   type        = string
   sensitive   = true
+}
+
+variable "sendgrid_email_new_user_tid" {
+  description = "SendGrid email template ID for new user"
+  type        = string
+}
+
+variable "sendgrid_email_purchase_tid" {
+  description = "SendGrid email template ID for purchase"
+  type        = string
 }

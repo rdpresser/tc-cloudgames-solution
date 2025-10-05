@@ -164,11 +164,24 @@ variable "sendgrid_api_key" {
   sensitive   = true
 
   validation {
-    condition = can(regex("^SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}$", var.sendgrid_api_key))
+    condition     = can(regex("^SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}$", var.sendgrid_api_key))
     error_message = "SendGrid API key must be a valid format starting with 'SG.' followed by 22 characters, a dot, and 43 characters."
   }
 }
 
+variable "sendgrid_email_new_user_tid" {
+  description = "SendGrid template ID for new user welcome email"
+  type        = string
+}
+
+variable "sendgrid_email_purchase_tid" {
+  description = "SendGrid template ID for purchase confirmation email"
+  type        = string
+}
+
+# =============================================================================
+# API MANAGEMENT Variables
+# =============================================================================
 variable "apis" {
   description = "Lista de APIs a serem importadas no API Management"
   type = map(object({

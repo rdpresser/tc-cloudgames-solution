@@ -186,7 +186,9 @@ module "key_vault" {
   grafana_otel_exporter_protocol            = var.grafana_otel_exporter_protocol
   grafana_otel_auth_header                  = var.grafana_otel_auth_header
 
-  sendgrid_api_key = var.sendgrid_api_key
+  sendgrid_api_key            = var.sendgrid_api_key
+  sendgrid_email_new_user_tid = var.sendgrid_email_new_user_tid
+  sendgrid_email_purchase_tid = var.sendgrid_email_purchase_tid
 
   depends_on = [
     module.resource_group,
@@ -211,11 +213,11 @@ module "servicebus" {
   topics = [
     {
       name   = "user.events-topic"
-      create = false  # Criado via código C#
+      create = false # Criado via código C#
     },
     {
       name   = "payment.events-topic"
-      create = false  # Criado via código C#
+      create = false # Criado via código C#
     }
   ]
 
@@ -260,7 +262,7 @@ module "function_app_service_plan" {
   service_name        = "functions-asp"
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
-  sku_name            = "Y1"  # Consumption plan for serverless functions
+  sku_name            = "Y1" # Consumption plan for serverless functions
   tags                = local.common_tags
 
   depends_on = [
@@ -272,16 +274,16 @@ module "function_app_service_plan" {
 # Azure Function App
 # =============================================================================
 module "function_app" {
-  source                         = "../modules/function_app"
-  name_prefix                    = local.full_name
-  service_name                   = "functions"
-  location                       = module.resource_group.location
-  resource_group_name            = module.resource_group.name
-  app_service_plan_id            = module.function_app_service_plan.app_service_plan_id
-  log_analytics_workspace_id     = module.logs.log_analytics_workspace_id
-  key_vault_id                   = module.key_vault.key_vault_id
-  key_vault_uri                  = module.key_vault.key_vault_uri
-  tags                           = local.common_tags
+  source                     = "../modules/function_app"
+  name_prefix                = local.full_name
+  service_name               = "functions"
+  location                   = module.resource_group.location
+  resource_group_name        = module.resource_group.name
+  app_service_plan_id        = module.function_app_service_plan.app_service_plan_id
+  log_analytics_workspace_id = module.logs.log_analytics_workspace_id
+  key_vault_id               = module.key_vault.key_vault_id
+  key_vault_uri              = module.key_vault.key_vault_uri
+  tags                       = local.common_tags
 
   depends_on = [
     module.resource_group,

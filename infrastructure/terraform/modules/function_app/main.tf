@@ -75,6 +75,8 @@ resource "azurerm_linux_function_app" "main" {
     # Key Vault references for sensitive data
     "SENDGRID_API_KEY" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-api-key)"
     "SERVICEBUS_CONNECTION" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-connection-string)"
+    "SENDGRID_EMAIL_NEW_USER_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-new-user-tid)"
+    "SENDGRID_EMAIL_PURCHASE_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-purchase-tid)"
   }
 
   identity {

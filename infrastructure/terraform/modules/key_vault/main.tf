@@ -513,3 +513,23 @@ resource "azurerm_key_vault_secret" "sendgrid_api_key" {
     azurerm_role_assignment.service_principal_kv_admin
   ]
 }
+
+resource "azurerm_key_vault_secret" "sendgrid_email_new_user_tid" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "sendgrid-email-new-user-tid"
+  value        = var.sendgrid_email_new_user_tid
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "sendgrid_email_purchase_tid" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "sendgrid-email-purchase-tid"
+  value        = var.sendgrid_email_purchase_tid
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
