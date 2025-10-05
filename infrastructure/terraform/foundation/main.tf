@@ -235,10 +235,10 @@ module "servicebus" {
     "game.events-topic" = {
       subscription_name = "purchase-subscription"
       sql_filter_rules = {
-        "GameAggregateFilter" = {
-          filter_expression = "DomainAggregate = 'GameAggregate'"
+        "GamePurchasePaymentFilter" = {
+          filter_expression = "DomainAggregate = 'GameAggregate' and MessageType = 'GamePurchasePaymentApprovedFunctionEvent'"
           action            = ""
-          rule_name         = "GamesDomainAggregateFilter"
+          rule_name         = "GamePurchasePaymentApprovedFilter"
         }
       }
     }
