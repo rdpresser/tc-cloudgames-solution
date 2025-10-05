@@ -55,6 +55,9 @@ module "resource_group" {
 # =============================================================================
 # Service Bus module
 # =============================================================================
+# =============================================================================
+# Service Bus module (sem RBAC inicial - será configurado depois)
+# =============================================================================
 module "servicebus" {
   source              = "../modules/service_bus"
   name_prefix         = local.full_name
@@ -62,15 +65,43 @@ module "servicebus" {
   resource_group_name = module.resource_group.name
   tags                = local.common_tags
 
-  # ⚠️  Resources serão criados via código C# (Wolverine/MassTransit)
-  # Deixando tudo opcional para que a aplicação tenha controle total
-  topics                  = []
-  topic_subscriptions     = {}
-  create_sql_filter_rules = false
+  # Topics e subscriptions para Azure Functions
+  topics = [
+    {
+      name   = "user.events-topic"
+      create = false # Criado via código C#
+    },
+    {
+      name   = "game.events-topic"
+      create = false # Criado via código C#
+    }
+  ]
 
-  # 🔑 RBAC: Azure Service Bus Data Owner 
-  # Permite que as APIs com Managed Identity criem filas, tópicos, subscriptions e regras SQL
-  # Necessário para Wolverine criar automaticamente todos os recursos (wolverine.response.*, topics, filters, etc.)
+  topic_subscriptions = {
+    "user.events-topic" = {
+      subscription_name = "welcome-subscription"
+      sql_filter_rules = {
+        "UserAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'UserAggregate'"
+          action            = ""
+          rule_name         = "UsersDomainAggregateFilter"
+        }
+      }
+    }
+    "game.events-topic" = {
+      subscription_name = "purchase-subscription"
+      sql_filter_rules = {
+        "GameAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'GameAggregate'"
+          action            = ""
+          rule_name         = "GamesDomainAggregateFilter"
+        }
+      }
+    }
+  }
+  create_sql_filter_rules = true
+
+  # RBAC será configurado separadamente para evitar ciclo de dependência
   managed_identity_principal_ids = []
 
   depends_on = [
