@@ -1,8 +1,3 @@
-using Microsoft.Azure.Functions.Worker.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using SendGrid;
-
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
@@ -11,13 +6,15 @@ var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
     .ConfigureServices((context, services) =>
     {
-        var sendGridApiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+        // Carrega variáveis adicionais do .env se estivermos em ambiente local
+        EnvironmentVariablesConfigurator.LoadFromEnvFilesIfLocal();
 
-        if (string.IsNullOrWhiteSpace(sendGridApiKey))
-            throw new InvalidOperationException("SENDGRID_API_KEY não foi configurada");
+        var connectionString = Environment.GetEnvironmentVariable("SERVICEBUS_CONNECTION");
+        Console.WriteLine($"Connection String encontrada: {(!string.IsNullOrEmpty(connectionString))}");
+        ArgumentNullException.ThrowIfNull(connectionString);
 
-        services.AddSingleton(new SendGridClient(sendGridApiKey));
+        services.AddDependencies();
     })
     .Build();
 
-host.Run();
+await host.RunAsync().ConfigureAwait(false);

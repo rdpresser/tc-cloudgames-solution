@@ -665,3 +665,5 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /.idea
+local.settings.json
+
