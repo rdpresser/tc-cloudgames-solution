@@ -92,7 +92,7 @@ module "servicebus" {
       subscription_name = "purchase-subscription"
       sql_filter_rules = {
         "GamePurchasePaymentFilter" = {
-          filter_expression = "DomainAggregate = 'GameAggregate' and MessageType = 'GamePurchasePaymentApprovedFunctionEvent'"
+          filter_expression = "DomainAggregate = 'GameAggregate'"
           action            = ""
           rule_name         = "GamePurchasePaymentApprovedFilter"
         }
