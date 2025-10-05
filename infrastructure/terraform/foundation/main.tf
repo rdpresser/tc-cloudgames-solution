@@ -216,7 +216,7 @@ module "servicebus" {
       create = false # Criado via código C#
     },
     {
-      name   = "payment.events-topic"
+      name   = "game.events-topic"
       create = false # Criado via código C#
     }
   ]
@@ -232,13 +232,13 @@ module "servicebus" {
         }
       }
     }
-    "payment.events-topic" = {
+    "game.events-topic" = {
       subscription_name = "purchase-subscription"
       sql_filter_rules = {
-        "PaymentAggregateFilter" = {
-          filter_expression = "DomainAggregate = 'PaymentAggregate'"
+        "GameAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'GameAggregate'"
           action            = ""
-          rule_name         = "PaymentsDomainAggregateFilter"
+          rule_name         = "GamesDomainAggregateFilter"
         }
       }
     }
