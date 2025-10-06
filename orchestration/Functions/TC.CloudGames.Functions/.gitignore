@@ -665,5 +665,11 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /.idea
+
+# Azure Functions
 local.settings.json
 
+# Azure Publish Profiles - Contains environment-specific deploy targets
+Properties/ServiceDependencies/**/profile.arm.json
+Properties/PublishProfiles/*.pubxml
+*.PublishSettings

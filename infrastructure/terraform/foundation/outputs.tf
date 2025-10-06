@@ -325,15 +325,16 @@ output "apim_info" {
   }
 }
 
-output "apim_apis_info" {
-  description = "API Management APIs details"
-  value = {
-    for key, api in module.apim_api : key => {
-      name         = api.api_name
-      id           = api.api_id
-      display_name = api.api_display_name
-      path         = api.api_path
-      revision     = api.api_revision
-    }
-  }
-}
+# APIM APIs outputs commented out since APIs are managed manually
+# output "apim_apis_info" {
+#   description = "API Management APIs details"
+#   value = {
+#     for key, api in module.apim_api : key => {
+#       name         = api.api_name
+#       id           = api.api_id
+#       display_name = api.api_display_name
+#       path         = api.api_path
+#       revision     = api.api_revision
+#     }
+#   }
+# }
