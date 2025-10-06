@@ -317,7 +317,7 @@ module "users_api_container_app" {
 
   # Environment variables and secret refs are configured via GitHub Actions pipeline
 
-  rbac_propagation_wait_seconds = 120
+  rbac_propagation_wait_seconds = 300  # 5 minutos para garantir propagação
 
   depends_on = [
     module.container_app_environment,
@@ -350,7 +350,7 @@ module "games_api_container_app" {
 
   # Environment variables and secret refs are configured via GitHub Actions pipeline
 
-  rbac_propagation_wait_seconds = 180
+  rbac_propagation_wait_seconds = 300  # 5 minutos para garantir propagação
 
   depends_on = [
     module.container_app_environment,
@@ -382,7 +382,7 @@ module "payments_api_container_app" {
   # Environment variables and secret refs are configured via GitHub Actions pipeline
   # using azure/container-apps-deploy-action@v2 with secretref pattern
 
-  rbac_propagation_wait_seconds = 180
+  rbac_propagation_wait_seconds = 300  # 5 minutos para garantir propagação
 
   depends_on = [
     module.container_app_environment,

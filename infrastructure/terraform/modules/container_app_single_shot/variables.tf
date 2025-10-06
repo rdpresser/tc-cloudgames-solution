@@ -31,7 +31,7 @@ variable "container_image_acr" {
 variable "container_image_placeholder" {
   description = "Public image used during initial creation (no ACR needed)"
   type        = string
-  default     = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+  default     = "nginx:alpine"  # More reliable public image
 }
 
 variable "container_registry_server" {

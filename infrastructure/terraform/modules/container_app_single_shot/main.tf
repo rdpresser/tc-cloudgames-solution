@@ -75,14 +75,10 @@ resource "azurerm_container_app" "main" {
   }
 
   # -------------------------------------------------------------------
-  # Container Registry Configuration (System Identity authentication)
-  # Uses the Container App's System Assigned Managed Identity for ACR authentication
-  # "System" indicates the system-assigned managed identity should be used
+  # NO REGISTRY configuration initially - will be added after RBAC propagation
+  # Registry will be configured by GitHub Actions pipeline after deployment
+  # This prevents authentication errors during initial Container App creation
   # -------------------------------------------------------------------
-  registry {
-    server   = var.container_registry_server
-    identity = "System"
-  }
 
   # -------------------------------------------------------------------
   # Public ingress (HTTP)
@@ -139,6 +135,6 @@ resource "time_sleep" "wait_for_rbac" {
 }
 
 # -------------------------------------------------------------------
-# 5) RBAC propagation complete marker
-# This ensures RBAC permissions are ready before Container App operations
+# 5) RBAC propagation complete
+# Registry will be configured via GitHub Actions pipeline after deployment
 # -------------------------------------------------------------------
