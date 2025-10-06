@@ -54,7 +54,7 @@ resource "azurerm_container_app" "main" {
     max_replicas = var.max_replicas
 
     container {
-      name   = var.service_name  # Usar apenas service_name (users-api)
+      name   = var.service_name
       image  = var.container_image_placeholder
       cpu    = var.cpu_requests
       memory = var.memory_requests
@@ -139,57 +139,6 @@ resource "time_sleep" "wait_for_rbac" {
 }
 
 # -------------------------------------------------------------------
-# 5) Update Container App to use ACR image after RBAC propagation
+# 5) RBAC propagation complete marker
+# This ensures RBAC permissions are ready before Container App operations
 # -------------------------------------------------------------------
-resource "azurerm_container_app" "update_to_acr" {
-  name                         = azurerm_container_app.main.name
-  container_app_environment_id = var.container_app_environment_id
-  resource_group_name          = var.resource_group_name
-  revision_mode                = "Single"
-
-  identity {
-    type = "SystemAssigned"
-  }
-
-  template {
-    min_replicas = var.min_replicas
-    max_replicas = var.max_replicas
-
-    container {
-      name   = var.service_name  # Usar apenas service_name (users-api, games-api, etc)
-      image  = var.container_image_acr  # Now using ACR image
-      cpu    = var.cpu_requests
-      memory = var.memory_requests
-    }
-  }
-
-  registry {
-    server   = var.container_registry_server
-    identity = azurerm_container_app.main.identity[0].principal_id
-  }
-
-  ingress {
-    external_enabled = true
-    target_port      = var.target_port
-    transport        = "http"
-
-    traffic_weight {
-      latest_revision = true
-      percentage      = 100
-    }
-  }
-
-  depends_on = [time_sleep.wait_for_rbac]
-  
-  timeouts {
-    create = var.timeouts_create
-    update = var.timeouts_update
-    delete = var.timeouts_delete
-  }
-
-  lifecycle {
-    replace_triggered_by = [
-      azurerm_container_app.main.id
-    ]
-  }
-}

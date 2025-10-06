@@ -1,26 +1,26 @@
 output "container_app_id" {
   description = "Container App resource ID"
-  value       = azurerm_container_app.update_to_acr.id
+  value       = azurerm_container_app.main.id
 }
 
 output "container_app_name" {
   description = "Container App name"
-  value       = azurerm_container_app.update_to_acr.name
+  value       = azurerm_container_app.main.name
 }
 
 output "container_app_fqdn" {
   description = "Latest revision FQDN (ingress endpoint)"
-  value       = azurerm_container_app.update_to_acr.latest_revision_fqdn
+  value       = azurerm_container_app.main.latest_revision_fqdn
 }
 
 output "system_assigned_identity_principal_id" {
   description = "System Assigned Managed Identity principalId"
-  value       = azurerm_container_app.update_to_acr.identity[0].principal_id
+  value       = azurerm_container_app.main.identity[0].principal_id
 }
 
 output "system_assigned_identity_tenant_id" {
   description = "Tenant ID for the System Assigned Managed Identity"
-  value       = azurerm_container_app.update_to_acr.identity[0].tenant_id
+  value       = azurerm_container_app.main.identity[0].tenant_id
 }
 
 output "role_assignment_key_vault_secrets_user_id" {
