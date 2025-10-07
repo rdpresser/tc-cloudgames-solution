@@ -66,6 +66,15 @@ tc-cloudgames-solution/
 - ♻️ **Shared** – Reusable code and contracts between microservices
 - 🔁 **CI/CD** – Automation and deployment workflows
 
+---
+
+## 📚 Documentation & Resources
+
+   - **Phase 1 Demo**: [YouTube Video](https://www.youtube.com/watch?v=9zyK9rb1lTs)
+   - **Phase 2 Demo**: [YouTube Video](https://www.youtube.com/watch?v=7JR0DxilQkg)
+   - **Phase 3 Demo**: [YouTube Video](https://www.youtube.com/watch?v=4D36zP36rkM)
+---
+
 ## 🏛️ Architecture Patterns
 
 ### Hexagonal Architecture (Ports & Adapters)
