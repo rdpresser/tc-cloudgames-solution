@@ -286,7 +286,7 @@ Each repository contains detailed documentation:
 - **Custom Health Checks**: Business logic validation
 
 ## Microservices Communication Flow
-![Microservices Communication Flow](images/microservices-communication-flow.png)
+![Microservices Communication Flow](./docs/images/microservices-communication-flow.png)
 
 ## 📄 License
 
