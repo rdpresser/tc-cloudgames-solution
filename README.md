@@ -24,15 +24,6 @@ tc-cloudgames-solution/
     └── clone-repos.ps1    # Repository cloning script
 ```
 
-## 🛠️ Architecture Diagram Overview
-
-<div align="center">
-  <a href="./docs/images/img_001_diagram.png" target="_blank">
-    <img src="./docs/images/img_001_diagram.png" alt="TC Cloud Games Architecture" width="600" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
-  </a>
-  <p><em>🔍 Click to enlarge</em></p>
-</div>
-
 ## 🛠️ Architecture Overview
 <div align="center">
   <a href="./docs/images/img_001_diagram.png" target="_blank" title="Click to view full-size architecture diagram">
