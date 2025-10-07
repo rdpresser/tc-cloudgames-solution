@@ -24,6 +24,25 @@ tc-cloudgames-solution/
     └── clone-repos.ps1    # Repository cloning script
 ```
 
+## 🛠️ Architecture Diagram Overview
+
+<div align="center">
+  <a href="./docs/images/img_001_diagram.png" target="_blank">
+    <img src="./docs/images/img_001_diagram.png" alt="TC Cloud Games Architecture" width="600" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
+  </a>
+  <p><em>🔍 Click to enlarge</em></p>
+</div>
+
+## 🛠️ Architecture Overview
+<div align="center">
+  <a href="./docs/images/img_001_diagram.png" target="_blank" title="Click to view full-size architecture diagram">
+    <img src="./docs/images/img_001_diagram.png" alt="TC Cloud Games - Microservices Architecture" width="600" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
+  </a>
+  <br>
+  <em>🔍 Click to view full-size diagram</em>
+</div>
+
+
 ## 📦 Repositories
 
 | Repository | Alias | Category | Description |
@@ -145,8 +164,6 @@ Each microservice follows hexagonal architecture:
 Before you begin, ensure you have the following installed:
 
 - [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download) - For building and running .NET applications
-- [Azure Developer CLI (azd)](https://aka.ms/azd-install) - For Azure deployment automation
-- [Dapr CLI](https://docs.dapr.io/get-dapr/cli/install/) - For microservices communication
 - [Docker Desktop](https://www.docker.com/) - For containerization
 - [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) - For infrastructure provisioning
 - Azure subscription with appropriate permissions
