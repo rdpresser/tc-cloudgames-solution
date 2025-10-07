@@ -129,6 +129,18 @@ The microservices communicate through a robust message broker architecture using
   <em>🔍 Click to view full-size diagram</em>
 </div>
 
+### Azure Service Bus Infrastructure
+
+The complete messaging infrastructure includes dedicated topics and subscriptions for each microservice domain:
+
+<div align="center">
+  <a href="./docs/images/servicebus_queues.png" target="_blank" title="Click to view Service Bus queues and topics">
+    <img src="./docs/images/servicebus_queues.png" alt="Service Bus Topics, Queues and Subscriptions" width="600" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
+  </a>
+  <br>
+  <em>🔍 Service Bus topics, subscriptions and message routing</em>
+</div>
+
 ### Key Communication Patterns
 - **Event Publishing**: Services publish domain events to Azure Service Bus topics
 - **Event Subscription**: Services subscribe to relevant events with SQL filters
