@@ -117,7 +117,25 @@ Each microservice follows hexagonal architecture:
   - Integration with payment gateways
   - Financial reporting
 
-## 🔧 Technology Stack
+## � Message Broker Communication Flow
+
+The microservices communicate through a robust message broker architecture using Azure Service Bus for event-driven interactions:
+
+<div align="center">
+  <a href="./docs/images/message_broker_flow.png" target="_blank" title="Click to view full-size message broker flow diagram">
+    <img src="./docs/images/message_broker_flow.png" alt="Message Broker Communication Flow" width="700" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
+  </a>
+  <br>
+  <em>🔍 Click to view full-size diagram</em>
+</div>
+
+### Key Communication Patterns
+- **Event Publishing**: Services publish domain events to Azure Service Bus topics
+- **Event Subscription**: Services subscribe to relevant events with SQL filters
+- **Async Processing**: Decoupled communication enables independent scaling
+- **Reliability**: Built-in retry mechanisms and dead letter queues
+
+## �🔧 Technology Stack
 
 ### Backend Framework
 - **.NET 9**: Modern, high-performance framework
