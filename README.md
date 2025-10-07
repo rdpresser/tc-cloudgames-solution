@@ -117,7 +117,7 @@ Each microservice follows hexagonal architecture:
   - Integration with payment gateways
   - Financial reporting
 
-## � Message Broker Communication Flow
+## Message Broker Communication Flow
 
 The microservices communicate through a robust message broker architecture using Azure Service Bus for event-driven interactions:
 
