@@ -285,6 +285,9 @@ Each repository contains detailed documentation:
 - **Dependency Health**: Redis, Elasticsearch, message brokers
 - **Custom Health Checks**: Business logic validation
 
+## Microservices Communication Flow
+![Microservices Communication Flow](images/microservices-communication-flow.png)
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the individual repository LICENSE files for details.
