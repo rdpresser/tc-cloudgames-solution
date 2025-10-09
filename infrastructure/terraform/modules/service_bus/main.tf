@@ -43,17 +43,39 @@ resource "azurerm_servicebus_topic" "this" {
 }
 
 # =============================================================================
-# Subscriptions (Para tópicos existentes ou criados pelo Terraform)
+# Subscriptions (Para tópicos criados pelo Terraform ou existentes)
 # =============================================================================
-# Data source para obter informações de tópicos existentes (criados via C#)
-data "azurerm_servicebus_topic" "existing" {
-  for_each = {
-    for topic_name, subscription in var.topic_subscriptions : topic_name => topic_name
-    if !contains([for t in var.topics : t.name if t.create], topic_name)
-  }
+# Lista de tópicos que devem ser criados via Terraform
+locals {
+  terraform_created_topics = toset([for t in var.topics : t.name if t.create])
   
-  name         = each.value
+  # Determina se há tópicos que precisam ser buscados via data source
+  has_existing_topics_needed = length([
+    for sub_key, subscription in var.topic_subscriptions : subscription.topic_name
+    if !contains(local.terraform_created_topics, subscription.topic_name)
+  ]) > 0
+  
+  # Tópicos únicos que precisam ser buscados via data source (apenas quando necessário)
+  existing_topics_needed = local.has_existing_topics_needed ? toset([
+    for sub_key, subscription in var.topic_subscriptions : subscription.topic_name
+    if !contains(local.terraform_created_topics, subscription.topic_name)
+  ]) : toset([])
+}
+
+# Data source para obter informações de tópicos existentes (apenas quando há tópicos existentes)
+data "azurerm_servicebus_topic" "existing" {
+  count = local.has_existing_topics_needed ? length(local.existing_topics_needed) : 0
+  
+  name         = tolist(local.existing_topics_needed)[count.index]
   namespace_id = azurerm_servicebus_namespace.this.id
+}
+
+# Cria um mapa de tópicos existentes para facilitar o lookup
+locals {
+  existing_topics_map = local.has_existing_topics_needed ? {
+    for idx, topic_name in tolist(local.existing_topics_needed) : 
+    topic_name => data.azurerm_servicebus_topic.existing[idx].id
+  } : {}
 }
 
 resource "azurerm_servicebus_subscription" "this" {
@@ -61,10 +83,13 @@ resource "azurerm_servicebus_subscription" "this" {
   name     = each.value.subscription_name
   
   # Use o tópico criado pelo Terraform se existir, senão use o data source do tópico existente
-  topic_id = contains([for t in var.topics : t.name if t.create], each.key) ? azurerm_servicebus_topic.this[each.key].id : data.azurerm_servicebus_topic.existing[each.key].id
+  topic_id = contains(local.terraform_created_topics, each.value.topic_name) ? azurerm_servicebus_topic.this[each.value.topic_name].id : local.existing_topics_map[each.value.topic_name]
 
   max_delivery_count = 10
   lock_duration      = "PT1M"
+  
+  # Dependência explícita para garantir que os tópicos sejam criados primeiro
+  depends_on = [azurerm_servicebus_topic.this]
 }
 
 # =============================================================================
@@ -73,10 +98,10 @@ resource "azurerm_servicebus_subscription" "this" {
 resource "azurerm_servicebus_subscription_rule" "sql_filter" {
   for_each = var.create_sql_filter_rules ? {
     for rule_key in flatten([
-      for topic_key, subscription in var.topic_subscriptions : [
+      for sub_key, subscription in var.topic_subscriptions : [
         for rule_name, rule in subscription.sql_filter_rules : {
-          key                = "${topic_key}-${rule_name}"
-          topic_key         = topic_key
+          key                = "${sub_key}-${rule_name}"
+          sub_key           = sub_key
           rule_name         = rule_name
           filter_expression = rule.filter_expression
           action           = rule.action
@@ -84,11 +109,11 @@ resource "azurerm_servicebus_subscription_rule" "sql_filter" {
         }
       ]
     ]) : rule_key.key => rule_key
-    if length(var.topic_subscriptions[rule_key.topic_key].sql_filter_rules) > 0
+    if length(var.topic_subscriptions[rule_key.sub_key].sql_filter_rules) > 0
   } : {}
 
   name            = each.value.custom_rule_name
-  subscription_id = azurerm_servicebus_subscription.this[each.value.topic_key].id
+  subscription_id = azurerm_servicebus_subscription.this[each.value.sub_key].id
   filter_type     = "SqlFilter"
   sql_filter      = each.value.filter_expression
   action          = each.value.action

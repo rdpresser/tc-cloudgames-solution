@@ -35,8 +35,9 @@ variable "topics" {
 }
 
 variable "topic_subscriptions" {
-  description = "Map of topic names to their subscription configurations. Leave empty if subscriptions will be created via application code."
+  description = "Map of subscription keys to their configurations. Each subscription must specify the topic_name it belongs to."
   type = map(object({
+    topic_name        = string
     subscription_name = string
     sql_filter_rules = optional(map(object({
       filter_expression = string
