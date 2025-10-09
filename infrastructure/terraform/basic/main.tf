@@ -69,22 +69,46 @@ module "servicebus" {
   topics = [
     {
       name   = "user.events-topic"
-      create = false # Criado via código C#
+      create = true
     },
     {
       name   = "game.events-topic"
-      create = false # Criado via código C#
+      create = true
+    },
+    {
+      name   = "payment.events-topic"
+      create = true
     }
   ]
 
   topic_subscriptions = {
+    "user.events-topic" = {
+      subscription_name = "games.user.events-subscription"
+      sql_filter_rules = {
+        "UserAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'UserAggregate'"
+          action            = ""
+          rule_name         = "UsersDomainAggregateFilter"
+        }
+      }
+    }
     "user.events-topic" = {
       subscription_name = "welcome-subscription"
       sql_filter_rules = {
         "UserAggregateFilter" = {
           filter_expression = "DomainAggregate = 'UserAggregate'"
           action            = ""
-          rule_name         = "UsersDomainAggregateFilter"
+          rule_name         = "WelcomeUserCreatedFilter"
+        }
+      }
+    }
+    "game.events-topic" = {
+      subscription_name = "payments.game.events-subscription"
+      sql_filter_rules = {
+        "GameAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'GameAggregate'"
+          action            = ""
+          rule_name         = "GamesDomainAggregateFilter"
         }
       }
     }
@@ -95,6 +119,16 @@ module "servicebus" {
           filter_expression = "DomainAggregate = 'GameAggregate'"
           action            = ""
           rule_name         = "GamePurchasePaymentApprovedFilter"
+        }
+      }
+    }
+    "payment.events-topic" = {
+      subscription_name = "games.payment.events-subscription"
+      sql_filter_rules = {
+        "PaymentAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'PaymentAggregate'"
+          action            = ""
+          rule_name         = "PaymentsDomainAggregateFilter"
         }
       }
     }
