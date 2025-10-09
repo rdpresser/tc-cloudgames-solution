@@ -82,7 +82,8 @@ module "servicebus" {
   ]
 
   topic_subscriptions = {
-    "user.events-topic" = {
+    "user.events-topic.games" = {
+      topic_name        = "user.events-topic"
       subscription_name = "games.user.events-subscription"
       sql_filter_rules = {
         "UserAggregateFilter" = {
@@ -92,7 +93,8 @@ module "servicebus" {
         }
       }
     }
-    "user.events-topic" = {
+    "user.events-topic.welcome" = {
+      topic_name        = "user.events-topic"
       subscription_name = "welcome-subscription"
       sql_filter_rules = {
         "UserAggregateFilter" = {
@@ -102,7 +104,8 @@ module "servicebus" {
         }
       }
     }
-    "game.events-topic" = {
+    "game.events-topic.payments" = {
+      topic_name        = "game.events-topic"
       subscription_name = "payments.game.events-subscription"
       sql_filter_rules = {
         "GameAggregateFilter" = {
@@ -112,7 +115,8 @@ module "servicebus" {
         }
       }
     }
-    "game.events-topic" = {
+    "game.events-topic.purchase" = {
+      topic_name        = "game.events-topic"
       subscription_name = "purchase-subscription"
       sql_filter_rules = {
         "GamePurchasePaymentFilter" = {
@@ -122,7 +126,8 @@ module "servicebus" {
         }
       }
     }
-    "payment.events-topic" = {
+    "payment.events-topic.games" = {
+      topic_name        = "payment.events-topic"
       subscription_name = "games.payment.events-subscription"
       sql_filter_rules = {
         "PaymentAggregateFilter" = {
