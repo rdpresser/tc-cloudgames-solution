@@ -43,17 +43,22 @@ resource "azurerm_servicebus_topic" "this" {
 }
 
 # =============================================================================
-# Subscriptions (Para tópicos existentes ou criados pelo Terraform)
+# Subscriptions (Para tópicos criados pelo Terraform ou existentes)
 # =============================================================================
-# Data source para obter informações de tópicos existentes (criados via C#)
-# Apenas busca tópicos existentes se eles não estão sendo criados pelo Terraform
+# Lista de tópicos que devem ser criados via Terraform
+locals {
+  terraform_created_topics = toset([for t in var.topics : t.name if t.create])
+  
+  # Tópicos que precisam ser buscados via data source (não estão sendo criados)
+  existing_topics_needed = toset([
+    for sub_key, subscription in var.topic_subscriptions : subscription.topic_name
+    if !contains(local.terraform_created_topics, subscription.topic_name)
+  ])
+}
+
+# Data source para obter informações de tópicos existentes (apenas quando necessário)
 data "azurerm_servicebus_topic" "existing" {
-  for_each = {
-    for topic_name in distinct([
-      for sub_key, subscription in var.topic_subscriptions : subscription.topic_name
-      if !contains([for t in var.topics : t.name if t.create], subscription.topic_name)
-    ]) : topic_name => topic_name
-  }
+  for_each = local.existing_topics_needed
   
   name         = each.value
   namespace_id = azurerm_servicebus_namespace.this.id
@@ -64,7 +69,7 @@ resource "azurerm_servicebus_subscription" "this" {
   name     = each.value.subscription_name
   
   # Use o tópico criado pelo Terraform se existir, senão use o data source do tópico existente
-  topic_id = contains([for t in var.topics : t.name if t.create], each.value.topic_name) ? azurerm_servicebus_topic.this[each.value.topic_name].id : data.azurerm_servicebus_topic.existing[each.value.topic_name].id
+  topic_id = contains(local.terraform_created_topics, each.value.topic_name) ? azurerm_servicebus_topic.this[each.value.topic_name].id : data.azurerm_servicebus_topic.existing[each.value.topic_name].id
 
   max_delivery_count = 10
   lock_duration      = "PT1M"
