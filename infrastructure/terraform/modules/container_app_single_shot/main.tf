@@ -55,7 +55,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = var.service_name
-      image  = var.container_image_placeholder
+      image  = var.container_image_placeholder  # Use placeholder initially, pipeline updates to ACR image
       cpu    = var.cpu_requests
       memory = var.memory_requests
     }
@@ -75,10 +75,12 @@ resource "azurerm_container_app" "main" {
   }
 
   # -------------------------------------------------------------------
-  # NO REGISTRY configuration initially - will be added after RBAC propagation
-  # Registry will be configured by GitHub Actions pipeline after deployment
-  # This prevents authentication errors during initial Container App creation
+  # Registry configuration with System Assigned Identity for ACR authentication
   # -------------------------------------------------------------------
+  registry {
+    server   = var.container_registry_server
+    identity = "system"
+  }
 
   # -------------------------------------------------------------------
   # Public ingress (HTTP)
