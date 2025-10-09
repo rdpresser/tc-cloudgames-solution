@@ -49,19 +49,33 @@ resource "azurerm_servicebus_topic" "this" {
 locals {
   terraform_created_topics = toset([for t in var.topics : t.name if t.create])
   
-  # Tópicos que precisam ser buscados via data source (não estão sendo criados)
-  existing_topics_needed = toset([
+  # Determina se há tópicos que precisam ser buscados via data source
+  has_existing_topics_needed = length([
     for sub_key, subscription in var.topic_subscriptions : subscription.topic_name
     if !contains(local.terraform_created_topics, subscription.topic_name)
-  ])
+  ]) > 0
+  
+  # Tópicos únicos que precisam ser buscados via data source (apenas quando necessário)
+  existing_topics_needed = local.has_existing_topics_needed ? toset([
+    for sub_key, subscription in var.topic_subscriptions : subscription.topic_name
+    if !contains(local.terraform_created_topics, subscription.topic_name)
+  ]) : toset([])
 }
 
-# Data source para obter informações de tópicos existentes (apenas quando necessário)
+# Data source para obter informações de tópicos existentes (apenas quando há tópicos existentes)
 data "azurerm_servicebus_topic" "existing" {
-  for_each = local.existing_topics_needed
+  count = local.has_existing_topics_needed ? length(local.existing_topics_needed) : 0
   
-  name         = each.value
+  name         = tolist(local.existing_topics_needed)[count.index]
   namespace_id = azurerm_servicebus_namespace.this.id
+}
+
+# Cria um mapa de tópicos existentes para facilitar o lookup
+locals {
+  existing_topics_map = local.has_existing_topics_needed ? {
+    for idx, topic_name in tolist(local.existing_topics_needed) : 
+    topic_name => data.azurerm_servicebus_topic.existing[idx].id
+  } : {}
 }
 
 resource "azurerm_servicebus_subscription" "this" {
@@ -69,7 +83,7 @@ resource "azurerm_servicebus_subscription" "this" {
   name     = each.value.subscription_name
   
   # Use o tópico criado pelo Terraform se existir, senão use o data source do tópico existente
-  topic_id = contains(local.terraform_created_topics, each.value.topic_name) ? azurerm_servicebus_topic.this[each.value.topic_name].id : data.azurerm_servicebus_topic.existing[each.value.topic_name].id
+  topic_id = contains(local.terraform_created_topics, each.value.topic_name) ? azurerm_servicebus_topic.this[each.value.topic_name].id : local.existing_topics_map[each.value.topic_name]
 
   max_delivery_count = 10
   lock_duration      = "PT1M"
