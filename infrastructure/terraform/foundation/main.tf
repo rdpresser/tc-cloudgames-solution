@@ -213,17 +213,22 @@ module "servicebus" {
   topics = [
     {
       name   = "user.events-topic"
-      create = false # Criado via código C#
+      create = true
     },
     {
       name   = "game.events-topic"
-      create = false # Criado via código C#
+      create = true
+    },
+    {
+      name   = "payment.events-topic"
+      create = true
     }
   ]
 
   topic_subscriptions = {
-    "user.events-topic" = {
-      subscription_name = "welcome-subscription"
+    "user.events-topic.games" = {
+      topic_name        = "user.events-topic"
+      subscription_name = "games.user.events-subscription"
       sql_filter_rules = {
         "UserAggregateFilter" = {
           filter_expression = "DomainAggregate = 'UserAggregate'"
@@ -232,13 +237,47 @@ module "servicebus" {
         }
       }
     }
-    "game.events-topic" = {
+    "user.events-topic.welcome" = {
+      topic_name        = "user.events-topic"
+      subscription_name = "welcome-subscription"
+      sql_filter_rules = {
+        "UserAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'UserAggregate'"
+          action            = ""
+          rule_name         = "WelcomeUserCreatedFilter"
+        }
+      }
+    }
+    "game.events-topic.payments" = {
+      topic_name        = "game.events-topic"
+      subscription_name = "payments.game.events-subscription"
+      sql_filter_rules = {
+        "GameAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'GameAggregate'"
+          action            = ""
+          rule_name         = "GamesDomainAggregateFilter"
+        }
+      }
+    }
+    "game.events-topic.purchase" = {
+      topic_name        = "game.events-topic"
       subscription_name = "purchase-subscription"
       sql_filter_rules = {
         "GamePurchasePaymentFilter" = {
           filter_expression = "DomainAggregate = 'GameAggregate'"
           action            = ""
           rule_name         = "GamePurchasePaymentApprovedFilter"
+        }
+      }
+    }
+    "payment.events-topic.games" = {
+      topic_name        = "payment.events-topic"
+      subscription_name = "games.payment.events-subscription"
+      sql_filter_rules = {
+        "PaymentAggregateFilter" = {
+          filter_expression = "DomainAggregate = 'PaymentAggregate'"
+          action            = ""
+          rule_name         = "PaymentsDomainAggregateFilter"
         }
       }
     }
