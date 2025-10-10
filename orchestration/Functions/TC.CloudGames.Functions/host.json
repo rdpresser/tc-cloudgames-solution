@@ -12,5 +12,11 @@
         "maxConcurrentSessions": 8
       }
     }
+  },
+  "logging": {
+    "logLevel": {
+      "default": "Information",
+      "Microsoft.Azure.WebJobs.Extensions.ServiceBus": "Debug"
+    }
   }
 }
