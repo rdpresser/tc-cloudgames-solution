@@ -322,13 +322,15 @@ module "function_app" {
   log_analytics_workspace_id = module.logs.log_analytics_workspace_id
   key_vault_id               = module.key_vault.key_vault_id
   key_vault_uri              = module.key_vault.key_vault_uri
+  servicebus_namespace_id    = module.servicebus.namespace_id
   tags                       = local.common_tags
 
   depends_on = [
     module.resource_group,
     module.function_app_service_plan,
     module.logs,
-    module.key_vault
+    module.key_vault,
+    module.servicebus
   ]
 }
 

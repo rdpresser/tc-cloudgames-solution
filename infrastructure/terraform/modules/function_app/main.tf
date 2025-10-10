@@ -74,9 +74,12 @@ resource "azurerm_linux_function_app" "main" {
     
     # Key Vault references for sensitive data
     "SENDGRID_API_KEY" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-api-key)"
-    "SERVICEBUS_CONNECTION" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-connection-string)"
     "SENDGRID_EMAIL_NEW_USER_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-new-user-tid)"
     "SENDGRID_EMAIL_PURCHASE_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-purchase-tid)"
+    
+    # Service Bus settings
+    "SERVICEBUS_CONNECTION" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-connection-string)"
+    "SERVICEBUS_NAMESPACE" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-namespace)"
   }
 
   identity {
@@ -87,12 +90,20 @@ resource "azurerm_linux_function_app" "main" {
 }
 
 # =============================================================================
-# Key Vault Access Policy for Function App
+# RBAC Role Assignments for Function App
 # =============================================================================
-# RBAC Role Assignment for Key Vault Access
-# =============================================================================
+
+# Key Vault Access
 resource "azurerm_role_assignment" "function_app_kv_secrets_user" {
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
+}
+
+# Service Bus Access (if Service Bus ID is provided)
+resource "azurerm_role_assignment" "function_app_servicebus_data_owner" {
+  count                = var.servicebus_namespace_id != null ? 1 : 0
+  scope                = var.servicebus_namespace_id
+  role_definition_name = "Azure Service Bus Data Owner"
   principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
 }

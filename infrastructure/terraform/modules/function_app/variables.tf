@@ -65,6 +65,17 @@ variable "key_vault_uri" {
   }
 }
 
+variable "servicebus_namespace_id" {
+  description = "ID of the Service Bus namespace for RBAC access"
+  type        = string
+  default     = null
+
+  validation {
+    condition = var.servicebus_namespace_id == null || can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.ServiceBus/namespaces/[^/]+$", var.servicebus_namespace_id))
+    error_message = "Service Bus namespace ID must be a valid Azure resource ID format."
+  }
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
