@@ -239,7 +239,7 @@ variable "servicebus_connection_string" {
 variable "servicebus_auto_provision" {
   description = "Service Bus auto provision setting"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "servicebus_max_delivery_count" {
