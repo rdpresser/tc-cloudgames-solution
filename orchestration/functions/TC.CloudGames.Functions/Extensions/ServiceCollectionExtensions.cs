@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.Extensions.Azure;
 
 namespace TC.CloudGames.Functions.Extensions
 {
@@ -17,8 +17,41 @@ namespace TC.CloudGames.Functions.Extensions
             });
 
             services.AddScoped<ISendGridService, SendGridService>();
-            
+
+            // Configurar Service Bus client para suportar Managed Identity
+            ConfigureServiceBusClient(services);
+
             return services;
+        }
+
+        private static void ConfigureServiceBusClient(IServiceCollection services)
+        {
+            var connectionString = Environment.GetEnvironmentVariable("SERVICEBUS_CONNECTION");
+            var fullyQualifiedNamespace = Environment.GetEnvironmentVariable("SERVICEBUS_NAMESPACE");
+
+            // Se estiver rodando no Azure com Managed Identity
+            if (!string.IsNullOrEmpty(fullyQualifiedNamespace) && string.IsNullOrEmpty(connectionString))
+            {
+                Console.WriteLine($"🔐 Configurando Service Bus com Managed Identity: {fullyQualifiedNamespace}");
+
+                services.AddAzureClients(builder =>
+                {
+                    builder.AddServiceBusClient(fullyQualifiedNamespace);
+                });
+            }
+            else if (!string.IsNullOrEmpty(connectionString))
+            {
+                Console.WriteLine("🔑 Configurando Service Bus com Connection String");
+
+                services.AddAzureClients(builder =>
+                {
+                    builder.AddServiceBusClient(connectionString);
+                });
+            }
+            else
+            {
+                Console.WriteLine("⚠️ Service Bus não configurado - nem connection string nem namespace encontrado");
+            }
         }
     }
 }
