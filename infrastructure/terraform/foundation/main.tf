@@ -213,30 +213,30 @@ module "servicebus" {
   topics = [
     {
       name   = "user.events-topic"
-      create = true
+      create = false
     },
     {
       name   = "game.events-topic"
-      create = true
+      create = false
     },
-    {
-      name   = "payment.events-topic"
-      create = true
-    }
+    # {
+    #   name   = "payment.events-topic"
+    #   create = true
+    # }
   ]
 
   topic_subscriptions = {
-    "user.events-topic.games" = {
-      topic_name        = "user.events-topic"
-      subscription_name = "games.user.events-subscription"
-      sql_filter_rules = {
-        "UserAggregateFilter" = {
-          filter_expression = "DomainAggregate = 'UserAggregate'"
-          action            = ""
-          rule_name         = "UsersDomainAggregateFilter"
-        }
-      }
-    }
+    # "user.events-topic.games" = {
+    #   topic_name        = "user.events-topic"
+    #   subscription_name = "games.user.events-subscription"
+    #   sql_filter_rules = {
+    #     "UserAggregateFilter" = {
+    #       filter_expression = "DomainAggregate = 'UserAggregate'"
+    #       action            = ""
+    #       rule_name         = "UsersDomainAggregateFilter"
+    #     }
+    #   }
+    # }
     "user.events-topic.welcome" = {
       topic_name        = "user.events-topic"
       subscription_name = "welcome-subscription"
@@ -248,17 +248,17 @@ module "servicebus" {
         }
       }
     }
-    "game.events-topic.payments" = {
-      topic_name        = "game.events-topic"
-      subscription_name = "payments.game.events-subscription"
-      sql_filter_rules = {
-        "GameAggregateFilter" = {
-          filter_expression = "DomainAggregate = 'GameAggregate'"
-          action            = ""
-          rule_name         = "GamesDomainAggregateFilter"
-        }
-      }
-    }
+    # "game.events-topic.payments" = {
+    #   topic_name        = "game.events-topic"
+    #   subscription_name = "payments.game.events-subscription"
+    #   sql_filter_rules = {
+    #     "GameAggregateFilter" = {
+    #       filter_expression = "DomainAggregate = 'GameAggregate'"
+    #       action            = ""
+    #       rule_name         = "GamesDomainAggregateFilter"
+    #     }
+    #   }
+    # }
     "game.events-topic.purchase" = {
       topic_name        = "game.events-topic"
       subscription_name = "purchase-subscription"
@@ -270,17 +270,17 @@ module "servicebus" {
         }
       }
     }
-    "payment.events-topic.games" = {
-      topic_name        = "payment.events-topic"
-      subscription_name = "games.payment.events-subscription"
-      sql_filter_rules = {
-        "PaymentAggregateFilter" = {
-          filter_expression = "DomainAggregate = 'PaymentAggregate'"
-          action            = ""
-          rule_name         = "PaymentsDomainAggregateFilter"
-        }
-      }
-    }
+    # "payment.events-topic.games" = {
+    #   topic_name        = "payment.events-topic"
+    #   subscription_name = "games.payment.events-subscription"
+    #   sql_filter_rules = {
+    #     "PaymentAggregateFilter" = {
+    #       filter_expression = "DomainAggregate = 'PaymentAggregate'"
+    #       action            = ""
+    #       rule_name         = "PaymentsDomainAggregateFilter"
+    #     }
+    #   }
+    # }
   }
   create_sql_filter_rules = true
 
