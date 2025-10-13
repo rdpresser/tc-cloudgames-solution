@@ -87,6 +87,31 @@ resource "azurerm_linux_function_app" "main" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to app_settings that Azure might modify automatically
+      app_settings["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"],
+      app_settings["WEBSITE_CONTENTSHARE"],
+      
+      # Ignore hidden tags that Azure adds automatically
+      tags["hidden-link: /app-insights-resource-id"],
+      tags["hidden-link: /app-insights-conn-string"],
+      tags["hidden-link: /app-insights-instrumentation-key"],
+      
+      # Ignore automatic site_config changes
+      site_config[0].scm_use_main_ip_restriction,
+      site_config[0].use_32_bit_worker,
+      site_config[0].websockets_enabled,
+      site_config[0].always_on,
+      site_config[0].default_documents,
+      site_config[0].http2_enabled,
+      site_config[0].managed_pipeline_mode,
+      site_config[0].minimum_tls_version,
+      site_config[0].remote_debugging_enabled,
+      site_config[0].ftps_state
+    ]
+  }
 }
 
 # =============================================================================
