@@ -15,6 +15,7 @@
     <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.5.1" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="9.5.1" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="9.5.1" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.5.1" />
     <PackageReference Include="DotNetEnv" Version="3.1.1" />    
   </ItemGroup>
 
@@ -22,6 +23,7 @@
     <ProjectReference Include="..\..\..\..\services\games\src\Adapters\Inbound\TC.CloudGames.Games.Api\TC.CloudGames.Games.Api.csproj" />
     <ProjectReference Include="..\..\..\..\services\payments\src\Adapters\Inbound\TC.CloudGames.Payments.Api\TC.CloudGames.Payments.Api.csproj" />
     <ProjectReference Include="..\..\..\..\services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\TC.CloudGames.Users.Api.csproj" />
+    <ProjectReference Include="..\..\..\functions\TC.CloudGames.Functions\TC.CloudGames.Functions.csproj" />
   </ItemGroup>
 
 </Project>

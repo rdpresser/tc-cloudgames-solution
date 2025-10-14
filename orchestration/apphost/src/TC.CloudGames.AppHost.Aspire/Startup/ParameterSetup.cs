@@ -111,6 +111,18 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             registry.AddParameter(builder, "aspnetcore-environment", "ASPNETCORE_ENVIRONMENT", "ASPNETCORE_ENVIRONMENT", environment);
             registry.AddParameter(builder, "message-broker-type", "MessageBroker:Type", "MESSAGE_BROKER_TYPE",
                 environment == "development" ? "RabbitMQ" : "AzureServiceBus");
+
+            // Configurar parâmetros do SendGrid para Functions
+            ConfigureSendGridParameters(builder, registry, logger);
+        }
+
+        private static void ConfigureSendGridParameters(IDistributedApplicationBuilder builder, ServiceParameterRegistry registry, ILogger logger)
+        {
+            logger.LogDebug("📧 Configurando parâmetros do SendGrid...");
+
+            registry.AddParameter(builder, "sendgrid-api-key", "SendGrid:ApiKey", "SENDGRID_API_KEY", "", secret: true);
+            registry.AddParameter(builder, "sendgrid-email-new-user-tid", "SendGrid:EmailNewUserTid", "SENDGRID_EMAIL_NEW_USER_TID", "");
+            registry.AddParameter(builder, "sendgrid-email-purchase-tid", "SendGrid:EmailPurchaseTid", "SENDGRID_EMAIL_PURCHASE_TID", "");
         }
     }
 
@@ -277,6 +289,19 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             return GrafanaCloudServiceConfig.CreateFromConfiguration(configuration, grafanaLogsTokenParameter, grafanaPrometheusTokenParameter, otelExporterHeadersParameter, logger);
         }
 
+        /// <summary>
+        /// Obtém configuração do SendGrid para Functions
+        /// </summary>
+        public SendGridServiceConfig GetSendGridConfig()
+        {
+            return new SendGridServiceConfig
+            {
+                ApiKeyParameter = Contains("sendgrid-api-key") ? this["sendgrid-api-key"] : null,
+                EmailNewUserTidParameter = Contains("sendgrid-email-new-user-tid") ? this["sendgrid-email-new-user-tid"] : null,
+                EmailPurchaseTidParameter = Contains("sendgrid-email-purchase-tid") ? this["sendgrid-email-purchase-tid"] : null
+            };
+        }
+
         public void LogAll(ConfigurationManager config, ILogger logger)
         {
             logger.LogInformation("📋 Resumo da Resolução de Parâmetros:");
@@ -285,6 +310,16 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 logger.LogInformation("🔎 {ParameterName} configurado", kvp.Key);
             }
         }
+    }
+
+    /// <summary>
+    /// Configuração para SendGrid
+    /// </summary>
+    public class SendGridServiceConfig
+    {
+        public IResourceBuilder<ParameterResource>? ApiKeyParameter { get; set; }
+        public IResourceBuilder<ParameterResource>? EmailNewUserTidParameter { get; set; }
+        public IResourceBuilder<ParameterResource>? EmailPurchaseTidParameter { get; set; }
     }
 
     /// <summary>

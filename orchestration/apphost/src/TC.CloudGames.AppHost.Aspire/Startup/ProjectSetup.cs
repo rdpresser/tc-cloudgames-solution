@@ -1,4 +1,7 @@
 ﻿using TC.CloudGames.AppHost.Aspire.Extensions;
+using Aspire.Hosting.Azure.Storage;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace TC.CloudGames.AppHost.Aspire.Startup
 {
@@ -283,6 +286,77 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             if (grafanaConfig.OtelExporterOtlpHeadersParameter != null)
                 project.WithParameterEnv("OTEL_EXPORTER_OTLP_HEADERS", grafanaConfig.OtelExporterOtlpHeadersParameter);
+        }
+
+        /// <summary>
+        /// Configura o projeto Azure Functions com dependências necessárias
+        /// </summary>
+        public static IResourceBuilder<ProjectResource> ConfigureFunctions(
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry,
+            IResourceBuilder<IResource> azurite,
+            MessageBrokerResources messageBroker,
+            Microsoft.Extensions.Logging.ILogger? logger = null)
+        {
+            logger?.LogInformation("⚡ Configurando Azure Functions");
+
+            var functionsProject = builder.AddProject<Projects.TC_CloudGames_Functions>("functions");
+
+            // Configurar Azurite se disponível
+            if (azurite != null)
+            {
+                functionsProject = functionsProject
+                    .WithEnvironment("AzureWebJobsStorage", "UseDevelopmentStorage=true")
+                    .WithEnvironment("AZURITE_ACCOUNT_NAME", "devstoreaccount1")
+                    .WithEnvironment("AZURITE_BLOB_ENDPOINT", "http://localhost:10000")
+                    .WithEnvironment("AZURITE_QUEUE_ENDPOINT", "http://localhost:10001")
+                    .WithEnvironment("AZURITE_TABLE_ENDPOINT", "http://localhost:10002")
+                    .WaitFor(azurite);
+            }
+
+            // Configurar Service Bus se disponível
+            if (messageBroker.Type == MessageBrokerType.AzureServiceBus && messageBroker.ServiceBus != null)
+            {
+                logger?.LogInformation("🚌 Conectando Functions ao Azure Service Bus");
+            }
+
+            // Configurar variáveis de ambiente específicas para Functions
+            ConfigureFunctionEnvironmentVariables(functionsProject, registry, builder.Configuration, logger);
+
+            return functionsProject;
+        }
+
+        /// <summary>
+        /// Configura variáveis de ambiente específicas para Azure Functions
+        /// </summary>
+        private static void ConfigureFunctionEnvironmentVariables(
+            IResourceBuilder<ProjectResource> project,
+            ServiceParameterRegistry registry,
+            ConfigurationManager configuration,
+            Microsoft.Extensions.Logging.ILogger? logger = null)
+        {
+            logger?.LogInformation("🔧 Configurando variáveis de ambiente para Azure Functions");
+
+            // Configurações básicas do Azure Functions
+            project.WithEnvironment("FUNCTIONS_WORKER_RUNTIME", "dotnet-isolated");
+            project.WithEnvironment("FUNCTIONS_EXTENSION_VERSION", "~4");
+
+            // SendGrid
+            var sendGridConfig = registry.GetSendGridConfig();
+            if (sendGridConfig.ApiKeyParameter != null)
+                project.WithParameterEnv("SENDGRID_API_KEY", sendGridConfig.ApiKeyParameter);
+            if (sendGridConfig.EmailNewUserTidParameter != null)
+                project.WithParameterEnv("SENDGRID_EMAIL_NEW_USER_TID", sendGridConfig.EmailNewUserTidParameter);
+            if (sendGridConfig.EmailPurchaseTidParameter != null)
+                project.WithParameterEnv("SENDGRID_EMAIL_PURCHASE_TID", sendGridConfig.EmailPurchaseTidParameter);
+
+            // Service Bus
+            var serviceBusConfig = registry.GetAzureServiceBusConfig(configuration);
+            if (serviceBusConfig.ConnectionStringParameter != null)
+            {
+                project.WithParameterEnv("SERVICEBUS_CONNECTION", serviceBusConfig.ConnectionStringParameter);
+                project.WithParameterEnv("AzureWebJobsServiceBus", serviceBusConfig.ConnectionStringParameter);
+            }
         }
 
         /// <summary>
