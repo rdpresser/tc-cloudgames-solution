@@ -38,13 +38,19 @@ public static IResourceBuilder<IResource> ConfigureAzurite(
 ```
 
 ### 3. **Azure Functions Configuration**
-When Azurite is available, Functions are automatically configured:
+When Azurite is available, Functions are automatically configured with simplified storage settings:
 
 ```csharp
 // Configure Functions if Azurite is available
 if (azurite != null)
 {
-    ProjectSetup.ConfigureFunctions(builder, registry, azurite, messageBroker, logger);
+    functionsProject = functionsProject
+        .WithEnvironment("AzureWebJobsStorage", "UseDevelopmentStorage=true")
+        .WithEnvironment("AZURITE_ACCOUNT_NAME", "devstoreaccount1")
+        .WithEnvironment("AZURITE_BLOB_ENDPOINT", "http://localhost:10000")
+        .WithEnvironment("AZURITE_QUEUE_ENDPOINT", "http://localhost:10001")
+        .WithEnvironment("AZURITE_TABLE_ENDPOINT", "http://localhost:10002")
+        .WaitFor(azurite);
 }
 ```
 
@@ -93,7 +99,21 @@ When enabled, Azurite provides the following endpoints:
 | **Queue Storage** | `http://localhost:10001` | 10001 | ? Functional |
 | **Table Storage** | `http://localhost:10002` | 10002 | ? Functional |
 
-### Complete Connection String
+### Azure Functions Storage Configuration
+
+The Azure Functions are configured with the following environment variables:
+
+```
+AzureWebJobsStorage=UseDevelopmentStorage=true
+AZURITE_ACCOUNT_NAME=devstoreaccount1
+AZURITE_BLOB_ENDPOINT=http://localhost:10000
+AZURITE_QUEUE_ENDPOINT=http://localhost:10001
+AZURITE_TABLE_ENDPOINT=http://localhost:10002
+```
+
+### Alternative: Complete Connection String
+If you need the full connection string format for manual configuration:
+
 ```
 DefaultEndpointsProtocol=http;
 AccountName=devstoreaccount1;
@@ -120,6 +140,7 @@ When Azurite is enabled, you'll see:
 3. **?? Flexible**: Can be enabled/disabled per environment or profile
 4. **?? Clean Code**: Simplified logic without complex profile detection
 5. **?? Reliable**: Works consistently across different environments
+6. **? Standard Approach**: Uses `UseDevelopmentStorage=true` as recommended by Microsoft
 
 ## ????? Quick Test
 
@@ -134,6 +155,7 @@ dotnet run
 2. **Check the logs** - should see:
 ```
 ??? Configuring Azure Storage Emulator (Azurite)
+? Configuring Azure Functions
 ```
 
 3. **Test the endpoints**:
@@ -142,5 +164,7 @@ dotnet run
    - http://localhost:10002 (Table)
 
 4. **Confirm in Aspire Dashboard** that the `azurite` container is running without errors.
+
+5. **Verify Functions Configuration** - check that Azure Functions can access storage with `UseDevelopmentStorage=true`.
 
 **Simple and effective!** ??
