@@ -119,13 +119,27 @@ Connection = "AzureWebJobsServiceBus"
    ? ServiceBusTrigger uses "AzureWebJobsServiceBus" in both environments
    ```
 
-## ?? **Added Dependencies**
+## ?? **Required Dependencies**
 
-To support Managed Identity in Azure:
+To support Managed Identity in Azure, the following packages are used:
 
 ```xml
-<PackageReference Include="Azure.Identity" Version="1.13.1" />
+<!-- Azure Functions Runtime -->
+<PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.1.0" />
+<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.24.0" />
+<PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.5" />
+
+<!-- Azure Identity and Extensions -->
+<PackageReference Include="Azure.Identity" Version="1.17.0" />
 <PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.0" />
+
+<!-- SendGrid (for email functionality) -->
+<PackageReference Include="SendGrid" Version="9.29.3" />
+<PackageReference Include="SendGrid.Extensions.DependencyInjection" Version="1.0.1" />
+
+<!-- Additional Tools -->
+<PackageReference Include="DotNetEnv" Version="3.1.1" />
+<PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0" />
 ```
 
 ## ?? **Benefits**
