@@ -1,26 +1,26 @@
-# Azure Functions - Configuração Adaptativa para Service Bus
+# Azure Functions - Adaptive Service Bus Configuration
 
-Este documento explica como as Azure Functions foram configuradas para funcionar automaticamente tanto em ambiente de desenvolvimento (localhost) quanto em produção (Azure) sem necessidade de alterações no código.
+This document explains how Azure Functions have been configured to work automatically in both development (localhost) and production (Azure) environments without requiring code changes.
 
-## ?? **Como Funciona**
+## ?? **How It Works**
 
-### **Detecção Automática de Ambiente**
+### **Automatic Environment Detection**
 
-O sistema detecta automaticamente o ambiente baseado na variável `DOTNET_ENVIRONMENT`:
+The system automatically detects the environment based on the `DOTNET_ENVIRONMENT` variable:
 
 ```csharp
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
 ```
 
-### **Configuração por Ambiente**
+### **Configuration by Environment**
 
 #### **?? Development (Localhost)**
-- **Detecta**: `DOTNET_ENVIRONMENT = "Development"`
-- **Usa**: Connection String (`SERVICEBUS_CONNECTION`)
-- **Configuração**: Connection string completa com chaves de acesso
+- **Detects**: `DOTNET_ENVIRONMENT = "Development"`
+- **Uses**: Connection String (`SERVICEBUS_CONNECTION`)
+- **Configuration**: Complete connection string with access keys
 
 ```csharp
-// Em Development (localhost), usa connection string
+// In Development (localhost), uses connection string
 if (environment.Equals("Development", StringComparison.OrdinalIgnoreCase))
 {
     services.AddAzureClients(builder =>
@@ -28,18 +28,18 @@ if (environment.Equals("Development", StringComparison.OrdinalIgnoreCase))
         builder.AddServiceBusClient(connectionString);
     });
     
-    // Configurar a variável para o trigger funcionar
+    // Configure the variable for trigger to work
     Environment.SetEnvironmentVariable("AzureWebJobsServiceBus", connectionString);
 }
 ```
 
 #### **?? Production (Azure)**
-- **Detecta**: `DOTNET_ENVIRONMENT != "Development"` (ou não definido)
-- **Usa**: Namespace (`SERVICEBUS_NAMESPACE`) + Managed Identity
-- **Configuração**: Autenticação automática via DefaultAzureCredential
+- **Detects**: `DOTNET_ENVIRONMENT != "Development"` (or not defined)
+- **Uses**: Namespace (`SERVICEBUS_NAMESPACE`) + Managed Identity
+- **Configuration**: Automatic authentication via DefaultAzureCredential
 
 ```csharp
-// Em produção (Azure), usa Managed Identity com namespace
+// In production (Azure), uses Managed Identity with namespace
 else
 {
     services.AddAzureClients(builder =>
@@ -48,12 +48,12 @@ else
                .WithCredential(new DefaultAzureCredential());
     });
     
-    // Configurar a variável para o trigger funcionar com namespace
+    // Configure the variable for trigger to work with namespace
     Environment.SetEnvironmentVariable("AzureWebJobsServiceBus__fullyQualifiedNamespace", fullyQualifiedNamespace);
 }
 ```
 
-## ?? **Configuração por Ambiente**
+## ?? **Configuration by Environment**
 
 ### **Development (local.settings.json)**
 ```json
@@ -69,118 +69,118 @@ else
 ### **Production (Azure App Settings)**
 ```
 SERVICEBUS_NAMESPACE = your-namespace.servicebus.windows.net
-// SERVICEBUS_CONNECTION não é necessário (Managed Identity)
-// DOTNET_ENVIRONMENT não definido (padrão = Production)
+// SERVICEBUS_CONNECTION is not needed (Managed Identity)
+// DOTNET_ENVIRONMENT not defined (default = Production)
 ```
 
-## ?? **Triggers Genéricos**
+## ?? **Generic Triggers**
 
-As Functions agora usam uma configuração genérica que funciona em ambos ambientes:
+Functions now use a generic configuration that works in both environments:
 
 ```csharp
 [ServiceBusTrigger("topic-name", "subscription-name", Connection = "AzureWebJobsServiceBus")]
 ```
 
-**Antes (específico para ambiente):**
+**Before (environment-specific):**
 ```csharp
-// ? Específico para um ambiente
-Connection = "SERVICEBUS_NAMESPACE"  // Só funciona no Azure
-Connection = "SERVICEBUS_CONNECTION" // Só funciona em Development
+// ? Environment-specific
+Connection = "SERVICEBUS_NAMESPACE"  // Only works in Azure
+Connection = "SERVICEBUS_CONNECTION" // Only works in Development
 ```
 
-**Depois (genérico):**
+**After (generic):**
 ```csharp
-// ? Funciona em ambos os ambientes
+// ? Works in both environments
 Connection = "AzureWebJobsServiceBus"
 ```
 
-## ?? **Fluxo de Configuração**
+## ?? **Configuration Flow**
 
-1. **Startup da Function**
+1. **Function Startup**
    ```
    ?? ServiceCollectionExtensions.AddDependencies()
    ```
 
-2. **Detecção de Ambiente**
+2. **Environment Detection**
    ```
    ?? DOTNET_ENVIRONMENT = "Development" ? 
        ? Localhost (Connection String)
        ? Azure (Managed Identity)
    ```
 
-3. **Configuração Automática**
+3. **Automatic Configuration**
    ```
    ?? Development: AzureWebJobsServiceBus = connection string
    ?? Production:  AzureWebJobsServiceBus__fullyQualifiedNamespace = namespace
    ```
 
-4. **Triggers Funcionando**
+4. **Triggers Working**
    ```
-   ? ServiceBusTrigger usa "AzureWebJobsServiceBus" em ambos ambientes
+   ? ServiceBusTrigger uses "AzureWebJobsServiceBus" in both environments
    ```
 
-## ?? **Dependências Adicionadas**
+## ?? **Added Dependencies**
 
-Para suportar Managed Identity no Azure:
+To support Managed Identity in Azure:
 
 ```xml
 <PackageReference Include="Azure.Identity" Version="1.13.1" />
 <PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.0" />
 ```
 
-## ?? **Benefícios**
+## ?? **Benefits**
 
-1. **? Zero alterações de código** entre ambientes
-2. **? Segurança aprimorada** com Managed Identity no Azure
-3. **? Desenvolvimento simplificado** com connection string local
-4. **? Configuração automática** baseada em ambiente
-5. **? Logs informativos** sobre qual configuração está sendo usada
+1. **? Zero code changes** between environments
+2. **? Enhanced security** with Managed Identity in Azure
+3. **? Simplified development** with local connection string
+4. **? Automatic configuration** based on environment
+5. **? Informative logs** about which configuration is being used
 
-## ?? **Logs de Diagnóstico**
+## ?? **Diagnostic Logs**
 
-Durante a inicialização, você verá logs como:
+During initialization, you'll see logs like:
 
 **Development:**
 ```
-?? Ambiente detectado: Development
-?? [Development] Configurando Service Bus com Connection String
-? Service Bus configurado com sucesso
+?? Environment detected: Development
+?? [Development] Configuring Service Bus with Connection String
+? Service Bus configured successfully
 ```
 
 **Production:**
 ```
-?? Ambiente detectado: Production
-?? [Production] Configurando Service Bus com Managed Identity: your-namespace.servicebus.windows.net
-? Service Bus configurado com sucesso
+?? Environment detected: Production
+?? [Production] Configuring Service Bus with Managed Identity: your-namespace.servicebus.windows.net
+? Service Bus configured successfully
 ```
 
-## ??? **Como Usar**
+## ??? **How to Use**
 
 ### **1. Development (localhost)**
-1. Configure `local.settings.json` com `DOTNET_ENVIRONMENT = "Development"`
-2. Adicione `SERVICEBUS_CONNECTION` com sua connection string
-3. Execute a Function - ela usará connection string automaticamente
+1. Configure `local.settings.json` with `DOTNET_ENVIRONMENT = "Development"`
+2. Add `SERVICEBUS_CONNECTION` with your connection string
+3. Run the Function - it will use connection string automatically
 
 ### **2. Production (Azure)**
-1. Configure no Azure App Settings apenas `SERVICEBUS_NAMESPACE`
-2. Configure Managed Identity na Function App
-3. Dê permissões à Managed Identity no Service Bus
-4. Deploy - ela usará Managed Identity automaticamente
+1. Configure only `SERVICEBUS_NAMESPACE` in Azure App Settings
+2. Configure Managed Identity in the Function App
+3. Grant permissions to Managed Identity in Service Bus
+4. Deploy - it will use Managed Identity automatically
 
 ### **3. Triggers**
 ```csharp
 [ServiceBusTrigger("topic", "subscription", Connection = "AzureWebJobsServiceBus")]
 ```
 
-**Sempre use `Connection = "AzureWebJobsServiceBus"` - funciona em ambos ambientes!**
+**Always use `Connection = "AzureWebJobsServiceBus"` - works in both environments!**
 
-## ?? **Resultado**
+## ?? **Result**
 
-Agora você pode:
-- ? Desenvolver localmente com connection string
-- ? Deployar no Azure com Managed Identity
-- ? Sem alterar código entre ambientes
-- ? Configuração automática e segura
-- ? Logs claros sobre qual método está sendo usado
+Now you can:
+- ? Develop locally with connection string
+- ? Deploy to Azure with Managed Identity
+- ? No code changes between environments
+- ? Automatic and secure configuration
+- ? Clear logs about which method is being used
 
-**Zero modificações de código necessárias entre Development e Production!** ??
+**Zero code modifications needed between Development and Production!** ??
