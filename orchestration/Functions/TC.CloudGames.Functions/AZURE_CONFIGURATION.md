@@ -1,13 +1,13 @@
 # Azure Functions Configuration Guide
 
-## Para usar com System Managed Identity no Azure:
+## To use with System Managed Identity in Azure:
 
-### Application Settings necessárias no Azure Portal:
+### Required Application Settings in Azure Portal:
 
 ```
 # Service Bus Configuration
 SERVICEBUS_NAMESPACE=tc-cloudgames-dev.servicebus.windows.net
-# OU use connection string para local/teste
+# OR use connection string for local/testing
 SERVICEBUS_CONNECTION=Endpoint=sb://tc-cloudgames-dev.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=...
 
 # SendGrid Configuration
@@ -22,11 +22,11 @@ FUNCTIONS_EXTENSION_VERSION=~4
 
 ### Managed Identity Setup:
 
-1. A Azure Function já tem System Managed Identity habilitada
-2. O Terraform já configurou as permissões "Azure Service Bus Data Owner"
-3. Use SERVICEBUS_NAMESPACE em vez de SERVICEBUS_CONNECTION para Managed Identity
+1. The Azure Function already has System Managed Identity enabled
+2. Terraform has already configured "Azure Service Bus Data Owner" permissions
+3. Use SERVICEBUS_NAMESPACE instead of SERVICEBUS_CONNECTION for Managed Identity
 
-### Service Bus Topics e Subscriptions esperadas:
+### Expected Service Bus Topics and Subscriptions:
 
 - **user.events-topic**
   - welcome-subscription
@@ -36,9 +36,9 @@ FUNCTIONS_EXTENSION_VERSION=~4
 
 ### Debugging:
 
-Se as funções não estão sendo triggered:
+If functions are not being triggered:
 
-1. Verifique se as mensagens estão chegando nos tópicos corretos
-2. Verifique se as subscriptions existem e têm as regras de filtro corretas
-3. Verifique os logs da Function App
-4. Verifique se a Managed Identity tem as permissões corretas
+1. Check if messages are reaching the correct topics
+2. Check if subscriptions exist and have the correct filter rules
+3. Check Function App logs
+4. Check if Managed Identity has the correct permissions

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using TC.CloudGames.AppHost.Aspire.Extensions;
+using Aspire.Hosting.Azure.Storage;
 
 namespace TC.CloudGames.AppHost.Aspire.Startup
 {
@@ -49,6 +50,22 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                     .WithContainerName("TC-CloudGames-Redis")
                     .WithDataVolume("tccloudgames_redis_data", isReadOnly: false);
             }
+        }
+
+        /// <summary>
+        /// Configura o Azure Storage Emulator (Azurite)
+        /// </summary>
+        public static IResourceBuilder<IResource> ConfigureAzurite(
+            IDistributedApplicationBuilder builder,
+            ILogger? logger = null)
+        {
+            logger?.LogInformation("🗄️ Configurando Azure Storage Emulator (Azurite)");
+            
+            return builder.AddContainer("azurite", "mcr.microsoft.com/azure-storage/azurite")
+                .WithBindMount("azurite-data", "/workspace")
+                .WithEndpoint(port: 10000, targetPort: 10000, name: "blob")
+                .WithEndpoint(port: 10001, targetPort: 10001, name: "queue")
+                .WithEndpoint(port: 10002, targetPort: 10002, name: "table");
         }
 
         /// <summary>

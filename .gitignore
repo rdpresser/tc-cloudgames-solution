@@ -114,6 +114,9 @@ venv/
 secrets.json
 appsettings.Development.json
 appsettings.Local.json
+local.settings.Development.json
+local.settings.Production.json
+local.settings.json
 *.key
 *.pem
 *.p12

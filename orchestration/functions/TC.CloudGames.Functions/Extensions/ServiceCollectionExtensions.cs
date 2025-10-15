@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Azure;
+﻿using Azure.Identity;
+using Microsoft.Extensions.Azure;
 
 namespace TC.CloudGames.Functions.Extensions
 {
@@ -18,7 +19,7 @@ namespace TC.CloudGames.Functions.Extensions
 
             services.AddScoped<ISendGridService, SendGridService>();
 
-            // Configurar Service Bus client para suportar Managed Identity
+            // Configurar Service Bus client com detecção automática de ambiente
             ConfigureServiceBusClient(services);
 
             return services;
@@ -26,32 +27,53 @@ namespace TC.CloudGames.Functions.Extensions
 
         private static void ConfigureServiceBusClient(IServiceCollection services)
         {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
             var connectionString = Environment.GetEnvironmentVariable("SERVICEBUS_CONNECTION");
             var fullyQualifiedNamespace = Environment.GetEnvironmentVariable("SERVICEBUS_NAMESPACE");
 
-            // Se estiver rodando no Azure com Managed Identity
-            if (!string.IsNullOrEmpty(fullyQualifiedNamespace) && string.IsNullOrEmpty(connectionString))
-            {
-                Console.WriteLine($"🔐 Configurando Service Bus com Managed Identity: {fullyQualifiedNamespace}");
+            Console.WriteLine($"🌍 Ambiente detectado: {environment}");
 
-                services.AddAzureClients(builder =>
-                {
-                    builder.AddServiceBusClient(fullyQualifiedNamespace);
-                });
-            }
-            else if (!string.IsNullOrEmpty(connectionString))
+            // Em Development (localhost), usa connection string
+            if (environment.Equals("Development", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("🔑 Configurando Service Bus com Connection String");
-
-                services.AddAzureClients(builder =>
+                if (!string.IsNullOrEmpty(connectionString))
                 {
-                    builder.AddServiceBusClient(connectionString);
-                });
+                    Console.WriteLine("🔑 [Development] Configurando Service Bus com Connection String");
+                    services.AddAzureClients(builder =>
+                    {
+                        builder.AddServiceBusClient(connectionString);
+                    });
+                    
+                    // Configurar a variável para o trigger funcionar
+                    Environment.SetEnvironmentVariable("AzureWebJobsServiceBus", connectionString);
+                }
+                else
+                {
+                    throw new InvalidOperationException("⚠️ SERVICEBUS_CONNECTION é obrigatório em ambiente Development");
+                }
             }
+            // Em produção (Azure), usa Managed Identity com namespace
             else
             {
-                Console.WriteLine("⚠️ Service Bus não configurado - nem connection string nem namespace encontrado");
+                if (!string.IsNullOrEmpty(fullyQualifiedNamespace))
+                {
+                    Console.WriteLine($"🔐 [Production] Configurando Service Bus com Managed Identity: {fullyQualifiedNamespace}");
+                    services.AddAzureClients(builder =>
+                    {
+                        builder.AddServiceBusClient(fullyQualifiedNamespace)
+                               .WithCredential(new DefaultAzureCredential());
+                    });
+                    
+                    // Configurar a variável para o trigger funcionar com namespace
+                    Environment.SetEnvironmentVariable("AzureWebJobsServiceBus__fullyQualifiedNamespace", fullyQualifiedNamespace);
+                }
+                else
+                {
+                    throw new InvalidOperationException("⚠️ SERVICEBUS_NAMESPACE é obrigatório em ambiente de produção (Azure)");
+                }
             }
+
+            Console.WriteLine("✅ Service Bus configurado com sucesso");
         }
     }
 }

@@ -13,7 +13,7 @@ public class SendPurchaseEmailFunction
 
     [Function("SendPurchaseEmail")]
     public async Task RunAsync(
-        [ServiceBusTrigger("game.events-topic", "purchase-subscription", Connection = "SERVICEBUS_CONNECTION")] string messageBody)
+        [ServiceBusTrigger("game.events-topic", "purchase-subscription", Connection = "AzureWebJobsServiceBus")] string messageBody)
     {
         _logger.LogInformation("🔔 Mensagem recebida no trigger SendPurchaseEmail: {Message}", messageBody);
 
