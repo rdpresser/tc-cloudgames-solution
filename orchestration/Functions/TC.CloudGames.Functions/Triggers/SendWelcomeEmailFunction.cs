@@ -13,7 +13,7 @@
 
         [Function("SendWelcomeEmail")]
         public async Task RunAsync(
-            [ServiceBusTrigger("user.events-topic", "welcome-subscription", Connection = "SERVICEBUS_NAMESPACE")] string messageBody)
+            [ServiceBusTrigger("user.events-topic", "welcome-subscription", Connection = "AzureWebJobsServiceBus")] string messageBody)
         {
             _logger.LogInformation("🔔 Mensagem recebida no trigger SendWelcomeEmail: {Message}", messageBody);
 

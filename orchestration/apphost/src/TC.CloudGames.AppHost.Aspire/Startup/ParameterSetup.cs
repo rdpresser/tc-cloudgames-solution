@@ -302,6 +302,21 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             };
         }
 
+        /// <summary>
+        /// Obtém configuração do ambiente de execução
+        /// </summary>
+        public EnvironmentServiceConfig GetEnvironmentConfig(ConfigurationManager configuration, ILogger? logger = null)
+        {
+            return new EnvironmentServiceConfig
+            {
+                AspNetCoreEnvironment = ServiceConfigResolver.GetResolvedValue("ASPNETCORE_ENVIRONMENT", "ASPNETCORE_ENVIRONMENT", configuration, "Development", logger),
+                DotNetEnvironment = ServiceConfigResolver.GetResolvedValue("DOTNET_ENVIRONMENT", "DOTNET_ENVIRONMENT", configuration, "Development", logger),
+                
+                // Aspire Parameters
+                AspNetCoreEnvironmentParameter = Contains("aspnetcore-environment") ? this["aspnetcore-environment"] : null
+            };
+        }
+
         public void LogAll(ConfigurationManager config, ILogger logger)
         {
             logger.LogInformation("📋 Resumo da Resolução de Parâmetros:");
@@ -320,6 +335,18 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         public IResourceBuilder<ParameterResource>? ApiKeyParameter { get; set; }
         public IResourceBuilder<ParameterResource>? EmailNewUserTidParameter { get; set; }
         public IResourceBuilder<ParameterResource>? EmailPurchaseTidParameter { get; set; }
+    }
+
+    /// <summary>
+    /// Configuração para ambiente de execução
+    /// </summary>
+    public class EnvironmentServiceConfig
+    {
+        public required string AspNetCoreEnvironment { get; set; }
+        public required string DotNetEnvironment { get; set; }
+        
+        // Recursos Aspire para parâmetros
+        public IResourceBuilder<ParameterResource>? AspNetCoreEnvironmentParameter { get; set; }
     }
 
     /// <summary>

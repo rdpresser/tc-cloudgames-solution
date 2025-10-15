@@ -85,6 +85,9 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             // Wait for message broker only if it has local resources
             WaitForMessageBrokerIfNeeded(project, messageBroker);
 
+            // Configure environment variables específicas para o ambiente
+            ConfigureEnvironmentVariables(project, builder, registry);
+
             // Configure environment variables específicas para o tipo de projeto
             ConfigureDatabaseEnvironment(project, projectType, builder, registry);
             ConfigureMessageBrokerEnvironment(project, builder, registry, messageBroker.Type, projectType);
@@ -129,6 +132,22 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                     // Azure Service Bus externo não precisa de WaitFor
                     break;
             }
+        }
+
+        private static void ConfigureEnvironmentVariables(
+            IResourceBuilder<ProjectResource> project,
+            IDistributedApplicationBuilder builder,
+            ServiceParameterRegistry registry)
+        {
+            var environmentConfig = registry.GetEnvironmentConfig(builder.Configuration);
+
+            project
+                .WithEnvironment("ASPNETCORE_ENVIRONMENT", environmentConfig.AspNetCoreEnvironment)
+                .WithEnvironment("DOTNET_ENVIRONMENT", environmentConfig.DotNetEnvironment);
+
+            // Add parameter for ASPNETCORE_ENVIRONMENT if available
+            if (environmentConfig.AspNetCoreEnvironmentParameter != null)
+                project.WithParameterEnv("ASPNETCORE_ENVIRONMENT", environmentConfig.AspNetCoreEnvironmentParameter);
         }
 
         private static void ConfigureDatabaseEnvironment(
