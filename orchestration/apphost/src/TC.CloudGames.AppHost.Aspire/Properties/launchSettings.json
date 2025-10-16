@@ -4,9 +4,9 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_ENVIRONMENT": "Production",
         "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2UNENCRYPTEDSUPPORT": "true",
-        "DOTNET_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Production",
         "ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21262",
         "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22186"
       },
