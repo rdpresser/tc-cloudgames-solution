@@ -284,7 +284,7 @@ resource "azurerm_key_vault_secret" "cache_payments_instance_name" {
 resource "azurerm_key_vault_secret" "servicebus_namespace" {
   key_vault_id = azurerm_key_vault.key_vault.id
   name         = "servicebus-namespace"
-  value        = var.servicebus_namespace
+  value        = "${var.servicebus_namespace}.servicebus.windows.net"
 
   depends_on = [
     azurerm_role_assignment.service_principal_kv_admin
