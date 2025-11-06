@@ -2,10 +2,10 @@
 using TC.CloudGames.AppHost.Aspire.Extensions;
 using TC.CloudGames.AppHost.Aspire.Startup;
 
-var builder = DistributedApplication.CreateBuilder(args);
+// Configure environment variables from .env files BEFORE creating the builder
+ApplicationBuilderExtensions.LoadEnvironmentVariables();
 
-// Configure environment variables from .env files
-builder.ConfigureEnvironmentVariables();
+var builder = DistributedApplication.CreateBuilder(args);
 
 // Setup logger
 var loggerFactory = LoggerFactory.Create(config =>
