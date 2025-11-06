@@ -28,20 +28,9 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     public record DatabaseServiceConfig : ServiceConfig
     {
         public override string ContainerName { get; init; } = "TC-CloudGames-Postgres";
-        public required string Host { get; init; }
-        public required int Port { get; init; }
         public required string UsersDbName { get; init; }
         public required string GamesDbName { get; init; }
         public required string PaymentsDbName { get; init; }
-        public required string MaintenanceDbName { get; init; }
-        public required string User { get; init; }
-        public required string Password { get; init; }
-        public required string Schema { get; init; }
-        public required int ConnectionTimeout { get; init; }
-
-        // Recursos Aspire para parâmetros secretos
-        public IResourceBuilder<ParameterResource>? UserParameter { get; init; }
-        public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
     }
 
     /// <summary>
@@ -50,15 +39,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     public record CacheServiceConfig : ServiceConfig
     {
         public override string ContainerName { get; init; } = "TC-CloudGames-Redis";
-        public required string Host { get; init; }
-        public required int Port { get; init; }
-        public required string Password { get; init; }
         public required Dictionary<string, string> InstanceNames { get; init; }
-        public required bool Secure { get; init; }
-
-        // Recursos Aspire para parâmetros secretos
-        public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
-
         /// <summary>
         /// Obtém o nome da instância para um projeto específico
         /// </summary>
@@ -81,13 +62,8 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
             return new CacheServiceConfig
             {
                 UseExternalService = useExternal,
-                ContainerName = ServiceConfigResolver.GetResolvedValue("Cache:ContainerName", "CACHE_CONTAINER_NAME", configuration, "TC-CloudGames-Redis", logger),
-                Host = ServiceConfigResolver.GetResolvedValue("Cache:Host", "CACHE_HOST", configuration, useExternal ? "" : "localhost", logger),
-                Port = int.Parse(ServiceConfigResolver.GetResolvedValue("Cache:Port", "CACHE_PORT", configuration, "6379", logger)),
-                Password = ServiceConfigResolver.GetResolvedValue("Cache:Password", "CACHE_PASSWORD", configuration, "Redis@123", logger),
-                InstanceNames = ParseInstanceNamesFromConfiguration(configuration, logger),
-                Secure = bool.Parse(ServiceConfigResolver.GetResolvedValue("Cache:Secure", "CACHE_SECURE", configuration, "false", logger)),
-                PasswordParameter = passwordParameter
+                ContainerName = ServiceConfigResolver.GetConfigurationValue("Cache:ContainerName", configuration, "TC-CloudGames-Redis", logger),
+                InstanceNames = ParseInstanceNamesFromConfiguration(configuration, logger)
             };
         }
 
@@ -111,7 +87,7 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
             }
 
             // Fallback to old format (single InstanceName)
-            var singleInstanceName = ServiceConfigResolver.GetResolvedValue("Cache:InstanceName", "CACHE_INSTANCE_NAME", configuration, "TC.CloudGames.Users.Api:", logger);
+            var singleInstanceName = ServiceConfigResolver.GetConfigurationValue("Cache:InstanceName", configuration, "TC.CloudGames.Users.Api:", logger);
 
             // Try to determine project type from single instance name
             if (singleInstanceName.Contains("Users", StringComparison.OrdinalIgnoreCase))
@@ -146,23 +122,9 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     public record RabbitMqServiceConfig : ServiceConfig
     {
         public override string ContainerName { get; init; } = "TC-CloudGames-RabbitMq";
-        public required string Host { get; init; }
-        public required int Port { get; init; }
-        public required string VirtualHost { get; init; }
-        public required string UserName { get; init; }
-        public required string Password { get; init; }
         public required string UsersExchange { get; init; }
         public required string GamesExchange { get; init; }
         public required string PaymentsExchange { get; init; }
-        public required bool AutoProvision { get; init; }
-        public required bool Durable { get; init; }
-        public required bool UseQuorumQueues { get; init; }
-        public required bool AutoPurgeOnStartup { get; init; } = false;
-
-        // Recursos Aspire para parâmetros secretos
-        public IResourceBuilder<ParameterResource>? UserParameter { get; init; }
-        public IResourceBuilder<ParameterResource>? PasswordParameter { get; init; }
-
         /// <summary>
         /// Retorna o exchange correto baseado no tipo de projeto
         /// </summary>
@@ -181,19 +143,9 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     public record AzureServiceBusServiceConfig : ServiceConfig
     {
         public override string ContainerName { get; init; } = "TC-CloudGames-AzureServiceBus";
-        public required string ConnectionString { get; init; }
         public required string UsersTopicName { get; init; }
         public required string GamesTopicName { get; init; }
         public required string PaymentsTopicName { get; init; }
-        public required bool AutoProvision { get; init; }
-        public required int MaxDeliveryCount { get; init; }
-        public required bool EnableDeadLettering { get; init; }
-        public required bool AutoPurgeOnStartup { get; init; } = false;
-        public required bool UseControlQueues { get; init; }
-
-        // Recursos Aspire para parâmetros secretos
-        public IResourceBuilder<ParameterResource>? ConnectionStringParameter { get; init; }
-
         /// <summary>
         /// Retorna o topicName correto baseado no tipo de projeto
         /// </summary>
@@ -211,20 +163,9 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     /// </summary>
     public record GrafanaCloudServiceConfig : ServiceConfig
     {
-        public required string GrafanaLogsApiToken { get; init; }
-        public required string GrafanaOtelPrometheusApiToken { get; init; }
         public required string GrafanaOtelGamesResourceAttributes { get; init; }
         public required string GrafanaOtelUsersResourceAttributes { get; init; }
         public required string GrafanaOtelPaymentsResourceAttributes { get; init; }
-        public required string OtelExporterOtlpEndpoint { get; init; }
-        public required string OtelExporterOtlpProtocol { get; init; }
-        public required string OtelExporterOtlpHeaders { get; init; }
-
-        // Recursos Aspire para parâmetros secretos
-        public IResourceBuilder<ParameterResource>? GrafanaLogsApiTokenParameter { get; init; }
-        public IResourceBuilder<ParameterResource>? GrafanaOtelPrometheusApiTokenParameter { get; init; }
-        public IResourceBuilder<ParameterResource>? OtelExporterOtlpHeadersParameter { get; init; }
-
         /// <summary>
         /// Retorna os Resource Attributes corretos baseado no tipo de projeto
         /// </summary>
@@ -241,9 +182,6 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
         /// </summary>
         public static GrafanaCloudServiceConfig CreateFromConfiguration(
             ConfigurationManager configuration,
-            IResourceBuilder<ParameterResource>? grafanaLogsApiTokenParameter = null,
-            IResourceBuilder<ParameterResource>? grafanaOtelPrometheusApiTokenParameter = null,
-            IResourceBuilder<ParameterResource>? otelExporterOtlpHeadersParameter = null,
             ILogger? logger = null)
         {
             var useExternal = ServiceConfigResolver.ShouldUseExternalService(configuration, "GrafanaCloud", logger);
@@ -251,20 +189,10 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
             return new GrafanaCloudServiceConfig
             {
                 UseExternalService = useExternal,
-                ContainerName = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:ContainerName", "GRAFANA_CLOUD_CONTAINER_NAME", configuration, "TC-CloudGames-GrafanaCloud", logger),
-                GrafanaLogsApiToken = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaLogsApiToken", "GRAFANA_LOGS_API_TOKEN", configuration, "<placeholder for GRAFANA_LOGS_API_TOKEN>", logger),
-                GrafanaOtelPrometheusApiToken = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelPrometheusApiToken", "GRAFANA_OTEL_PROMETHEUS_API_TOKEN", configuration, "<placeholder for GRAFANA_OTEL_PROMETHEUS_API_TOKEN>", logger),
-                GrafanaOtelGamesResourceAttributes = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelGamesResourceAttributes", "GRAFANA_OTEL_GAMES_RESOURCE_ATTRIBUTES", configuration, "service.name=tccloudgames-games,service.namespace=tccloudgames,deployment.environment=production", logger),
-                GrafanaOtelUsersResourceAttributes = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelUsersResourceAttributes", "GRAFANA_OTEL_USERS_RESOURCE_ATTRIBUTES", configuration, "service.name=tccloudgames-users,service.namespace=tccloudgames,deployment.environment=production", logger),
-                GrafanaOtelPaymentsResourceAttributes = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:GrafanaOtelPaymentsResourceAttributes", "GRAFANA_OTEL_PAYMENTS_RESOURCE_ATTRIBUTES", configuration, "service.name=tccloudgames-payments,service.namespace=tccloudgames,deployment.environment=production", logger),
-                OtelExporterOtlpEndpoint = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:OtelExporterOtlpEndpoint", "OTEL_EXPORTER_OTLP_ENDPOINT", configuration, "https://otlp-gateway-prod-sa-east-1.grafana.net/otlp", logger),
-                OtelExporterOtlpProtocol = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:OtelExporterOtlpProtocol", "OTEL_EXPORTER_OTLP_PROTOCOL", configuration, "http/protobuf", logger),
-                OtelExporterOtlpHeaders = ServiceConfigResolver.GetResolvedValue("GrafanaCloud:OtelExporterOtlpHeaders", "OTEL_EXPORTER_OTLP_HEADERS", configuration, "<placeholder for OTEL_EXPORTER_OTLP_HEADERS>", logger),
-
-                // Aspire Parameters
-                GrafanaLogsApiTokenParameter = grafanaLogsApiTokenParameter,
-                GrafanaOtelPrometheusApiTokenParameter = grafanaOtelPrometheusApiTokenParameter,
-                OtelExporterOtlpHeadersParameter = otelExporterOtlpHeadersParameter
+                ContainerName = ServiceConfigResolver.GetConfigurationValue("GrafanaCloud:ContainerName", configuration, "TC-CloudGames-GrafanaCloud", logger),
+                GrafanaOtelGamesResourceAttributes = ServiceConfigResolver.GetConfigurationValue("GrafanaCloud:GrafanaOtelGamesResourceAttributes", configuration, "service.name=tccloudgames-games,service.namespace=tccloudgames,deployment.environment=production", logger),
+                GrafanaOtelUsersResourceAttributes = ServiceConfigResolver.GetConfigurationValue("GrafanaCloud:GrafanaOtelUsersResourceAttributes", configuration, "service.name=tccloudgames-users,service.namespace=tccloudgames,deployment.environment=production", logger),
+                GrafanaOtelPaymentsResourceAttributes = ServiceConfigResolver.GetConfigurationValue("GrafanaCloud:GrafanaOtelPaymentsResourceAttributes", configuration, "service.name=tccloudgames-payments,service.namespace=tccloudgames,deployment.environment=production", logger),
             };
         }
     }
@@ -275,53 +203,33 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
     public static class ServiceConfigResolver
     {
         /// <summary>
-        /// Resolve valor com fallback: ENV ? Configuration ? Default
+        /// Resolve valor diretamente do IConfiguration (simplificado)
         /// </summary>
-        public static string GetResolvedValue(
+        public static string GetConfigurationValue(
             string configKey,
-            string envVarName,
             ConfigurationManager configuration,
             string? defaultValue = null,
             ILogger? logger = null)
         {
-            var sources = new List<(string source, string? value)>();
-
-            // 1. Prioridade: Variável de ambiente
-            var envValue = Environment.GetEnvironmentVariable(envVarName);
-            sources.Add(($"Environment Variable '{envVarName}'", envValue));
-
-            if (!string.IsNullOrEmpty(envValue))
-            {
-                logger?.LogDebug("Config '{ConfigKey}' found in environment variable '{EnvVar}': {Value}",
-                    configKey, envVarName, envValue);
-                return envValue;
-            }
-
-            // 2. Segunda prioridade: Configuration
+            // Apenas IConfiguration, pois as env vars já foram carregadas
             var configValue = configuration[configKey];
-            sources.Add(($"Configuration '{configKey}'", configValue));
 
             if (!string.IsNullOrEmpty(configValue))
             {
-                logger?.LogDebug("Config '{ConfigKey}' found in configuration: {Value}", configKey, configValue);
+                logger?.LogDebug("Config '{ConfigKey}' found: {Value}", configKey, configValue);
                 return configValue;
             }
 
-            // 3. Terceira prioridade: Valor padrão
+            // Usar valor padrão se não encontrou
             if (!string.IsNullOrEmpty(defaultValue))
             {
-                sources.Add(("Default Value", defaultValue));
                 logger?.LogDebug("Config '{ConfigKey}' using default value: {Value}", configKey, defaultValue);
                 return defaultValue;
             }
 
-            // 4. Se não encontrou, exceção
-            logger?.LogError("Configuration '{ConfigKey}' not found in any source. Checked sources: {Sources}",
-                configKey, string.Join(", ", sources.Select(s => $"{s.source}: {(s.value ?? "null")}")));
-
-            throw new InvalidOperationException(
-                $"Required configuration '{configKey}' not found. " +
-                $"Checked: {string.Join(", ", sources.Select(s => s.source))}");
+            // Se não encontrou, exceção
+            logger?.LogError("Configuration '{ConfigKey}' not found and no default provided", configKey);
+            throw new InvalidOperationException($"Required configuration '{configKey}' not found in IConfiguration");
         }
 
         /// <summary>
@@ -332,9 +240,8 @@ namespace TC.CloudGames.AppHost.Aspire.Extensions
             string serviceKey,
             ILogger? logger = null)
         {
-            var useExternal = bool.Parse(GetResolvedValue(
+            var useExternal = bool.Parse(GetConfigurationValue(
                 $"{serviceKey}:UseExternalService",
-                $"USE_EXTERNAL_{serviceKey.ToUpperInvariant()}",
                 configuration,
                 "false",
                 logger));

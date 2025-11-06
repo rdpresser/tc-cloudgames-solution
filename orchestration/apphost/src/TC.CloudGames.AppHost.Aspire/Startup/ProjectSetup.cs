@@ -1,7 +1,6 @@
-﻿using TC.CloudGames.AppHost.Aspire.Extensions;
-using Aspire.Hosting.Azure.Storage;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using TC.CloudGames.AppHost.Aspire.Extensions;
 
 namespace TC.CloudGames.AppHost.Aspire.Startup
 {
@@ -158,23 +157,19 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         {
             var dbConfig = registry.GetDatabaseConfig(builder.Configuration);
 
-            // Seleciona o nome do banco baseado no tipo de projeto
+            // Apenas setar as configurações específicas por projeto
             var databaseName = GetDatabaseNameForProject(projectType, dbConfig);
+            project.WithEnvironment("Database__Name", databaseName);
 
-            project
-                .WithEnvironment("DB_HOST", dbConfig.Host)
-                .WithEnvironment("DB_PORT", dbConfig.Port.ToString())
-                .WithEnvironment("DB_NAME", databaseName)
-                .WithEnvironment("DB_MAINTENANCE_NAME", dbConfig.MaintenanceDbName)
-                .WithEnvironment("DB_SCHEMA", dbConfig.Schema)
-                .WithEnvironment("DB_CONNECTION_TIMEOUT", dbConfig.ConnectionTimeout.ToString());
-
-            // Add parameters for secrets
+            // Secrets ainda precisam ser configurados via parameters para segurança
             if (dbConfig.UserParameter != null)
-                project.WithParameterEnv("DB_USER", dbConfig.UserParameter);
+                project.WithParameterEnv("Database__User", dbConfig.UserParameter);
 
             if (dbConfig.PasswordParameter != null)
-                project.WithParameterEnv("DB_PASSWORD", dbConfig.PasswordParameter);
+                project.WithParameterEnv("Database__Password", dbConfig.PasswordParameter);
+
+            // Nota: Outras configurações (Host, Port, Schema, etc.) são automaticamente 
+            // disponibilizadas pelo IConfiguration do Aspire via .env/appsettings
         }
 
         /// <summary>
@@ -198,39 +193,34 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
             MessageBrokerType messageBrokerType,
             ProjectType projectType)
         {
-            project.WithEnvironment("MESSAGE_BROKER_TYPE", messageBrokerType.ToString());
-
+            // Apenas setar configurações específicas por tipo de projeto
             switch (messageBrokerType)
             {
                 case MessageBrokerType.RabbitMQ:
-                    ConfigureRabbitMqEnvironment(project, builder, registry, projectType);
+                    ConfigureRabbitMqEnvironmentSpecific(project, registry, projectType, builder);
                     break;
                 case MessageBrokerType.AzureServiceBus:
-                    ConfigureAzureServiceBusEnvironment(project, builder, registry, projectType);
+                    ConfigureAzureServiceBusEnvironmentSpecific(project, registry, projectType, builder);
                     break;
             }
+
+            // Nota: Configurações genéricas (Host, Port, etc.) são automaticamente 
+            // disponibilizadas pelo IConfiguration do Aspire via .env/appsettings
         }
 
-        private static void ConfigureRabbitMqEnvironment(
+        private static void ConfigureRabbitMqEnvironmentSpecific(
             IResourceBuilder<ProjectResource> project,
-            IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
-            ProjectType projectType)
+            ProjectType projectType,
+            IDistributedApplicationBuilder builder)
         {
             var rabbitConfig = registry.GetRabbitMqConfig(builder.Configuration);
+
+            // Apenas configurações específicas por projeto
             var exchange = rabbitConfig.GetExchangeForProject(projectType);
+            project.WithEnvironment("RABBITMQ_EXCHANGE", exchange);
 
-            project
-                .WithEnvironment("RABBITMQ_HOST", rabbitConfig.Host)
-                .WithEnvironment("RABBITMQ_PORT", rabbitConfig.Port.ToString())
-                .WithEnvironment("RABBITMQ_VHOST", rabbitConfig.VirtualHost)
-                .WithEnvironment("RABBITMQ_EXCHANGE", exchange)
-                .WithEnvironment("RABBITMQ_AUTO_PROVISION", rabbitConfig.AutoProvision.ToString())
-                .WithEnvironment("RABBITMQ_DURABLE", rabbitConfig.Durable.ToString())
-                .WithEnvironment("RABBITMQ_USE_QUORUM_QUEUES", rabbitConfig.UseQuorumQueues.ToString())
-                .WithEnvironment("RABBITMQ_AUTO_PURGE_ON_STARTUP", rabbitConfig.AutoPurgeOnStartup.ToString());
-
-            // Add parameters for secrets
+            // Secrets ainda precisam ser configurados via parameters
             if (rabbitConfig.UserParameter != null)
                 project.WithParameterEnv("RABBITMQ_USERNAME", rabbitConfig.UserParameter);
 
@@ -238,26 +228,24 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
                 project.WithParameterEnv("RABBITMQ_PASSWORD", rabbitConfig.PasswordParameter);
         }
 
-        private static void ConfigureAzureServiceBusEnvironment(
+        private static void ConfigureAzureServiceBusEnvironmentSpecific(
             IResourceBuilder<ProjectResource> project,
-            IDistributedApplicationBuilder builder,
             ServiceParameterRegistry registry,
-            ProjectType projectType)
+            ProjectType projectType,
+            IDistributedApplicationBuilder builder)
         {
             var serviceBusConfig = registry.GetAzureServiceBusConfig(builder.Configuration);
+
+            // Apenas configurações específicas por projeto
             var topicName = serviceBusConfig.GetTopicNameForProject(projectType);
+            project.WithEnvironment("AZURE_SERVICEBUS_TOPIC_NAME", topicName);
 
-            project
-                .WithEnvironment("AZURE_SERVICEBUS_TOPIC_NAME", topicName)
-                .WithEnvironment("AZURE_SERVICEBUS_AUTO_PROVISION", serviceBusConfig.AutoProvision.ToString())
-                .WithEnvironment("AZURE_SERVICEBUS_MAX_DELIVERY_COUNT", serviceBusConfig.MaxDeliveryCount.ToString())
-                .WithEnvironment("AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING", serviceBusConfig.EnableDeadLettering.ToString())
-                .WithEnvironment("AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP", serviceBusConfig.AutoPurgeOnStartup.ToString())
-                .WithEnvironment("AZURE_SERVICEBUS_USE_CONTROL_QUEUES", serviceBusConfig.UseControlQueues.ToString());
-
-            // Add parameters for secrets
+            // Secrets ainda precisam ser configurados via parameters
             if (serviceBusConfig.ConnectionStringParameter != null)
-                project.WithParameterEnv("AZURE_SERVICEBUS_CONNECTIONSTRING", serviceBusConfig.ConnectionStringParameter);
+            {
+                project.WithParameterEnv("SERVICEBUS_CONNECTION", serviceBusConfig.ConnectionStringParameter);
+                project.WithParameterEnv("AzureWebJobsServiceBus", serviceBusConfig.ConnectionStringParameter);
+            }
         }
 
         private static void ConfigureCacheEnvironment(
@@ -268,18 +256,16 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         {
             var cacheConfig = registry.GetCacheConfig(builder.Configuration);
 
-            // Seleciona o nome da instância baseado no tipo de projeto
+            // Apenas configurações específicas por projeto
             var instanceName = cacheConfig.GetInstanceNameForProject(projectType);
+            project.WithEnvironment("CACHE_INSTANCE_NAME", instanceName);
 
-            project
-                .WithEnvironment("CACHE_HOST", cacheConfig.Host)
-                .WithEnvironment("CACHE_PORT", cacheConfig.Port.ToString())
-                .WithEnvironment("CACHE_INSTANCE_NAME", instanceName)
-                .WithEnvironment("CACHE_SECURE", cacheConfig.Secure.ToString());
-
-            // Add parameters for secrets
+            // Secrets ainda precisam ser configurados via parameters
             if (cacheConfig.PasswordParameter != null)
                 project.WithParameterEnv("CACHE_PASSWORD", cacheConfig.PasswordParameter);
+
+            // Nota: Outras configurações (Host, Port, Secure) são automaticamente 
+            // disponibilizadas pelo IConfiguration do Aspire via .env/appsettings
         }
 
         private static void ConfigureGrafanaCloudEnvironment(
@@ -290,13 +276,10 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
         {
             var grafanaConfig = registry.GetGrafanaCloudConfig(builder.Configuration);
 
-            // Configura variáveis de ambiente específicas do OpenTelemetry e Grafana Cloud
-            project
-                .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", grafanaConfig.OtelExporterOtlpEndpoint)
-                .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", grafanaConfig.OtelExporterOtlpProtocol)
-                .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", GetGrafanaOtelResourceAttributesForProject(projectType, grafanaConfig));
+            // Apenas configurações específicas por projeto
+            project.WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", GetGrafanaOtelResourceAttributesForProject(projectType, grafanaConfig));
 
-            // Add parameters for secrets
+            // Secrets ainda precisam ser configurados via parameters
             if (grafanaConfig.GrafanaLogsApiTokenParameter != null)
                 project.WithParameterEnv("GRAFANA_LOGS_API_TOKEN", grafanaConfig.GrafanaLogsApiTokenParameter);
 
@@ -305,6 +288,9 @@ namespace TC.CloudGames.AppHost.Aspire.Startup
 
             if (grafanaConfig.OtelExporterOtlpHeadersParameter != null)
                 project.WithParameterEnv("OTEL_EXPORTER_OTLP_HEADERS", grafanaConfig.OtelExporterOtlpHeadersParameter);
+
+            // Nota: Outras configurações (Endpoint, Protocol) são automaticamente 
+            // disponibilizadas pelo IConfiguration do Aspire via .env/appsettings
         }
 
         /// <summary>
