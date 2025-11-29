@@ -1,25 +1,45 @@
 <#
 .SYNOPSIS
-  Para todos os port-forwards ativos do kubectl.
+  Para port-forwards ativos do kubectl.
 .DESCRIPTION
-  Identifica e encerra todos os processos kubectl port-forward em execução.
+  Identifica e encerra processos kubectl port-forward em execução.
+  Permite encerrar por nome do serviço ou por PID específico.
   
 .PARAMETER Service
-  Opcional: Especifica qual serviço parar (argocd, grafana, ou all)
+  Opcional: Especifica qual serviço parar (argocd, grafana, ou all). Default: all.
   
+.PARAMETER Id
+  Opcional: PID específico para matar (útil para processos travados/zumbis).
+
 .EXAMPLE
   .\stop-port-forward.ps1
   .\stop-port-forward.ps1 argocd
-  .\stop-port-forward.ps1 grafana
+  .\stop-port-forward.ps1 -Id 12345
 #>
 
+[CmdletBinding(DefaultParameterSetName="ByService")]
 param(
-    [Parameter(Position = 0)]
+    [Parameter(ParameterSetName="ByService", Position = 0)]
     [ValidateSet("argocd", "grafana", "all")]
-    [string]$Service = "all"
+    [string]$Service = "all",
+
+    [Parameter(ParameterSetName="ById", Mandatory=$true)]
+    [int]$Id
 )
 
 Write-Host "`n=== Stopping Port-Forwards ===" -ForegroundColor Cyan
+
+if ($PSCmdlet.ParameterSetName -eq "ById") {
+    try {
+        $proc = Get-Process -Id $Id -ErrorAction Stop
+        Write-Host "🛑 Parando processo PID: $($proc.Id) ($($proc.ProcessName))..." -ForegroundColor Yellow
+        Stop-Process -Id $proc.Id -Force
+        Write-Host "✅ Processo encerrado com sucesso." -ForegroundColor Green
+    } catch {
+        Write-Host "❌ Erro ao parar PID ${Id}: $_" -ForegroundColor Red
+    }
+    exit
+}
 
 # Buscar processos kubectl com port-forward
 $kubectlProcesses = Get-Process -Name kubectl -ErrorAction SilentlyContinue

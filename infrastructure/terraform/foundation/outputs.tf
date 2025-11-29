@@ -81,18 +81,6 @@ output "log_analytics_info" {
 }
 
 # =============================================================================
-# Container App Environment
-# =============================================================================
-
-output "container_app_environment_info" {
-  description = "Container App Environment details"
-  value = {
-    name = module.container_app_environment.container_app_environment_name
-    id   = module.container_app_environment.container_app_environment_id
-  }
-}
-
-# =============================================================================
 # Key Vault
 # =============================================================================
 
@@ -146,93 +134,27 @@ output "function_app_service_plan_info" {
 }
 
 # =============================================================================
-# Users API Container App
-# =============================================================================
-
-output "users_api_container_app_info" {
-  description = "Users API Container App details"
-  value = {
-    name               = module.users_api_container_app.container_app_name
-    id                 = module.users_api_container_app.container_app_id
-    fqdn               = module.users_api_container_app.container_app_fqdn
-    system_identity_id = module.users_api_container_app.system_assigned_identity_principal_id
-  }
-}
-
-# =============================================================================
-# Games API Container App
-# =============================================================================
-
-output "games_api_container_app_info" {
-  description = "Games API Container App details"
-  value = {
-    name               = module.games_api_container_app.container_app_name
-    id                 = module.games_api_container_app.container_app_id
-    fqdn               = module.games_api_container_app.container_app_fqdn
-    system_identity_id = module.games_api_container_app.system_assigned_identity_principal_id
-  }
-}
-
-# =============================================================================
-# Payments API Container App
-# =============================================================================
-
-output "payments_api_container_app_info" {
-  description = "Payments API Container App details"
-  value = {
-    name               = module.payments_api_container_app.container_app_name
-    id                 = module.payments_api_container_app.container_app_id
-    fqdn               = module.payments_api_container_app.container_app_fqdn
-    system_identity_id = module.payments_api_container_app.system_assigned_identity_principal_id
-  }
-}
-
-# =============================================================================
-# Container Apps Role Assignments (for dependency management)
-# =============================================================================
-
-output "container_apps_role_assignments" {
-  description = "Role assignments for all Container Apps (useful for dependencies)"
-  value = {
-    users_api = {
-      key_vault_secrets_user = module.users_api_container_app.role_assignment_key_vault_secrets_user_id
-      acr_pull               = module.users_api_container_app.role_assignment_acr_pull_id
-    }
-    games_api = {
-      key_vault_secrets_user = module.games_api_container_app.role_assignment_key_vault_secrets_user_id
-      acr_pull               = module.games_api_container_app.role_assignment_acr_pull_id
-    }
-    payments_api = {
-      key_vault_secrets_user = module.payments_api_container_app.role_assignment_key_vault_secrets_user_id
-      acr_pull               = module.payments_api_container_app.role_assignment_acr_pull_id
-    }
-  }
-}
-
-# =============================================================================
 # Aggregated Resource Map (useful for pipelines)
 # =============================================================================
 
 output "all_resources" {
   description = "Aggregated resource names for quick reference"
   value = {
-    resource_group             = module.resource_group.name
-    acr_name                   = module.acr.acr_name
-    acr_login_server           = module.acr.acr_login_server
-    postgres_server            = module.postgres.postgres_server_name
-    postgres_fqdn              = module.postgres.postgres_server_fqdn
-    redis_name                 = module.redis.redis_name
-    redis_host                 = module.redis.redis_hostname
-    log_analytics_name         = module.logs.log_analytics_name
-    servicebus_ns              = module.servicebus.namespace_name
-    servicebus_topics          = module.servicebus.topic_names
-    function_app               = module.function_app.function_app_name
-    users_api_container_app    = module.users_api_container_app.container_app_name
-    games_api_container_app    = module.games_api_container_app.container_app_name
-    payments_api_container_app = module.payments_api_container_app.container_app_name
-    container_app_environment  = module.container_app_environment.container_app_environment_name
-    key_vault                  = module.key_vault.key_vault_name
-    location                   = module.resource_group.location
+    resource_group     = module.resource_group.name
+    acr_name           = module.acr.acr_name
+    acr_login_server   = module.acr.acr_login_server
+    postgres_server    = module.postgres.postgres_server_name
+    postgres_fqdn      = module.postgres.postgres_server_fqdn
+    redis_name         = module.redis.redis_name
+    redis_host         = module.redis.redis_hostname
+    log_analytics_name = module.logs.log_analytics_name
+    servicebus_ns      = module.servicebus.namespace_name
+    servicebus_topics  = module.servicebus.topic_names
+    function_app       = module.function_app.function_app_name
+    key_vault          = module.key_vault.key_vault_name
+    aks_cluster        = module.aks.cluster_name
+    vnet_name          = module.vnet.vnet_name
+    location           = module.resource_group.location
   }
 }
 
@@ -250,6 +172,8 @@ output "connection_info" {
     redis_port           = module.redis.redis_ssl_port
     servicebus_namespace = module.servicebus.namespace_name
     servicebus_topics    = module.servicebus.topic_names
+    aks_cluster          = module.aks.cluster_name
+    aks_fqdn             = module.aks.cluster_fqdn
   }
 }
 
@@ -263,7 +187,7 @@ output "deployment_summary" {
     environment          = local.environment
     location             = module.resource_group.location
     resource_group       = module.resource_group.name
-    total_resources      = 12 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + container_app_env + key_vault + users_api + games_api + payments_api
+    total_resources      = 13 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + key_vault + vnet + aks + apim + 2 role_assignments
     deployment_timestamp = timestamp()
   }
 }
@@ -288,7 +212,7 @@ output "deployment_performance_summary" {
     # Basic deployment info
     environment         = var.environment
     terraform_workspace = terraform.workspace
-    resource_count      = 12 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + container_app_env + key_vault + users_api + games_api + payments_api
+    resource_count      = 13 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + key_vault + vnet + aks + apim + 2 role_assignments
     deployment_method   = "Pure Terraform via Terraform Cloud"
 
     # Deployment metadata
@@ -297,14 +221,14 @@ output "deployment_performance_summary" {
 
     # Performance targets
     performance_targets = {
-      excellent  = "< 5 minutes"
-      good       = "5-10 minutes"
-      acceptable = "10-15 minutes"
-      slow       = "> 15 minutes"
+      excellent  = "< 8 minutes"
+      good       = "8-12 minutes"
+      acceptable = "12-18 minutes"
+      slow       = "> 18 minutes"
     }
 
     # Note about accurate timing
-    timing_note = "Actual deployment duration measured by GitHub Actions pipeline with start/end timestamps"
+    timing_note = "Actual deployment duration measured by GitHub Actions pipeline with start/end timestamps. AKS creation adds ~5-10 minutes to total time."
   }
 }
 
@@ -338,3 +262,103 @@ output "apim_info" {
 #     }
 #   }
 # }
+
+# =============================================================================
+# Virtual Network
+# =============================================================================
+
+output "vnet_info" {
+  description = "Virtual Network details"
+  value = {
+    id            = module.vnet.vnet_id
+    name          = module.vnet.vnet_name
+    address_space = module.vnet.vnet_address_space
+    aks_subnet_id = module.vnet.aks_subnet_id
+  }
+}
+
+# =============================================================================
+# AKS Cluster
+# =============================================================================
+
+output "aks_info" {
+  description = "Azure Kubernetes Service (AKS) cluster details"
+  value = {
+    id                  = module.aks.cluster_id
+    name                = module.aks.cluster_name
+    fqdn                = module.aks.cluster_fqdn
+    kubernetes_version  = module.aks.kubernetes_version
+    node_resource_group = module.aks.node_resource_group
+    oidc_issuer_url     = module.aks.oidc_issuer_url
+    kubelet_identity = {
+      client_id = module.aks.kubelet_identity.client_id
+      object_id = module.aks.kubelet_identity.object_id
+    }
+  }
+}
+
+output "aks_kube_config_raw" {
+  description = "Raw kubeconfig for kubectl (use: az aks get-credentials instead)"
+  value       = module.aks.kube_config_raw
+  sensitive   = true
+}
+
+output "aks_get_credentials_command" {
+  description = "Command to configure kubectl with AKS credentials"
+  value       = "az aks get-credentials --resource-group ${module.resource_group.name} --name ${module.aks.cluster_name}"
+}
+
+# =============================================================================
+# ArgoCD
+# =============================================================================
+# COMMENTED OUT: ArgoCD outputs require the argocd module to be deployed
+# =============================================================================
+# ArgoCD Outputs
+# =============================================================================
+
+output "argocd_info" {
+  description = "ArgoCD deployment details"
+  value = {
+    namespace              = module.argocd.argocd_namespace
+    server_url             = module.argocd.argocd_server_url
+    server_ip              = module.argocd.argocd_server_ip
+    admin_username         = module.argocd.admin_username
+    helm_release_name      = module.argocd.helm_release_name
+    helm_release_version   = module.argocd.helm_release_version
+    port_forward_command   = module.argocd.kubectl_port_forward_command
+    cli_login_command_hint = module.argocd.argocd_cli_login_command
+  }
+}
+
+output "argocd_server_url" {
+  description = "ArgoCD server external URL (LoadBalancer IP)"
+  value       = module.argocd.argocd_server_url
+}
+
+output "argocd_admin_username" {
+  description = "ArgoCD admin username"
+  value       = "admin"
+}
+
+# =============================================================================
+# Grafana Agent Outputs
+# =============================================================================
+
+output "grafana_agent_enabled" {
+  description = "Whether Grafana Agent is enabled"
+  value       = var.enable_grafana_agent
+}
+
+output "grafana_agent_info" {
+  description = "Grafana Agent deployment details"
+  value = var.enable_grafana_agent ? {
+    namespace            = module.grafana_agent[0].namespace
+    helm_release_name    = module.grafana_agent[0].helm_release_name
+    helm_release_version = module.grafana_agent[0].helm_release_version
+    helm_release_status  = module.grafana_agent[0].helm_release_status
+    prometheus_url       = module.grafana_agent[0].grafana_cloud_prometheus_url
+    loki_url             = module.grafana_agent[0].grafana_cloud_loki_url
+    kubectl_command      = "kubectl get pods -n ${module.grafana_agent[0].namespace}"
+  } : null
+}
+

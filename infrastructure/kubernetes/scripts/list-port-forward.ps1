@@ -51,6 +51,7 @@ foreach ($proc in $kubectlProcesses) {
             Write-Host "   Serviço: $service" -ForegroundColor White
             Write-Host "   Porta:   http://localhost:$port" -ForegroundColor Cyan
             Write-Host "   PID:     $($proc.Id)" -ForegroundColor Gray
+            Write-Host "   Início:  $($proc.StartTime)" -ForegroundColor Gray
             Write-Host "   Uptime:  $uptimeStr" -ForegroundColor Gray
             Write-Host ""
         }

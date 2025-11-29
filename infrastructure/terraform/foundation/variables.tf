@@ -86,6 +86,92 @@ variable "use_keyvault_secrets" {
 }
 
 # =============================================================================
+# AKS (Azure Kubernetes Service) Configuration
+# =============================================================================
+
+variable "kubernetes_version" {
+  description = "Kubernetes version for the AKS cluster"
+  type        = string
+  default     = "1.33"
+
+  validation {
+    condition     = can(regex("^1\\.(29|30|31|32|33)$", var.kubernetes_version))
+    error_message = "Kubernetes version must be 1.29, 1.30, 1.31, 1.32, or 1.33 (LTS)"
+  }
+}
+
+# System Node Pool (B2s - minimum for Azure, hosts system + application workloads)
+variable "aks_system_node_count" {
+  description = "Number of nodes in the AKS system node pool"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.aks_system_node_count >= 1 && var.aks_system_node_count <= 10
+    error_message = "AKS system node count must be between 1 and 10"
+  }
+}
+
+variable "aks_system_node_vm_size" {
+  description = "VM size for AKS system node pool (B2s = 2 vCPU, 4 GB RAM - minimum for AKS, also hosts workloads)"
+  type        = string
+  default     = "Standard_B2s"
+}
+
+variable "aks_enable_auto_scaling" {
+  description = "Enable auto-scaling for AKS system node pool (scales nodes based on workload demand for cost optimization)"
+  type        = bool
+  default     = true
+}
+
+variable "aks_system_node_min_count" {
+  description = "Minimum number of nodes when auto-scaling is enabled (1 is minimum for system pool)"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.aks_system_node_min_count >= 1 && var.aks_system_node_min_count <= 10
+    error_message = "AKS minimum node count must be between 1 and 10"
+  }
+}
+
+variable "aks_system_node_max_count" {
+  description = "Maximum number of nodes when auto-scaling is enabled (scales up during high load)"
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.aks_system_node_max_count >= 1 && var.aks_system_node_max_count <= 100
+    error_message = "AKS maximum node count must be between 1 and 100"
+  }
+}
+
+variable "aks_admin_group_object_ids" {
+  description = "List of Azure AD group object IDs that will have admin access to the AKS cluster"
+  type        = list(string)
+  default     = []
+}
+
+
+# =============================================================================
+# ArgoCD Configuration
+# =============================================================================
+# COMMENTED OUT: ArgoCD variable will be used in second phase deployment
+# Uncomment when ready to deploy ArgoCD module
+
+variable "argocd_admin_password" {
+  description = "ArgoCD admin password (minimum 8 characters) - Optional for now"
+  type        = string
+  sensitive   = true
+  default     = "ChangeMe123!" # Temporary default
+
+  validation {
+    condition     = length(var.argocd_admin_password) >= 8
+    error_message = "ArgoCD admin password must be at least 8 characters long"
+  }
+}
+
+# =============================================================================
 # ELASTICSEARCH Variables
 # =============================================================================
 variable "elasticsearch_game_endpoint" {
@@ -197,4 +283,59 @@ variable "apis" {
   default = {}
 }
 
+# =============================================================================
+# Grafana Cloud Configuration
+# =============================================================================
+# These variables are used to configure the Grafana Agent to send metrics
+# from the AKS cluster to Grafana Cloud.
+# 
+# To get these values:
+# 1. Go to https://grafana.com and login to your Grafana Cloud account
+# 2. Navigate to Connections → Add new connection → Prometheus
+# 3. Copy the Remote Write Endpoint URL, Username, and generate an API Key
+# 
+# Add these as sensitive variables in Terraform Cloud workspace.
 
+variable "grafana_cloud_prometheus_url" {
+  description = "Grafana Cloud Prometheus remote write URL (e.g., https://prometheus-prod-01-eu-west-0.grafana.net)"
+  type        = string
+  default     = ""
+}
+
+variable "grafana_cloud_prometheus_username" {
+  description = "Grafana Cloud Prometheus username (Instance ID, e.g., 123456)"
+  type        = string
+  default     = ""
+}
+
+variable "grafana_cloud_prometheus_api_key" {
+  description = "Grafana Cloud Prometheus API key (starts with glc_)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "grafana_cloud_loki_url" {
+  description = "Grafana Cloud Loki URL for logs (optional, e.g., https://logs-prod-eu-west-0.grafana.net)"
+  type        = string
+  default     = ""
+}
+
+variable "grafana_cloud_loki_username" {
+  description = "Grafana Cloud Loki username (optional, usually same as Prometheus username)"
+  type        = string
+  default     = ""
+}
+
+variable "grafana_cloud_loki_api_key" {
+  description = "Grafana Cloud Loki API key (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "enable_grafana_agent" {
+  description = "Enable Grafana Agent for monitoring (requires Grafana Cloud credentials)"
+  type        = bool
+  default     = false
+}

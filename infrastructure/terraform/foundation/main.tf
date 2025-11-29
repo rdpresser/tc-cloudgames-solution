@@ -1,8 +1,20 @@
-provider "azurerm" {
-  features {}
-}
-
 data "azurerm_client_config" "current" {}
+
+# =============================================================================
+# Data Source: AKS Cluster for ArgoCD Provider Configuration
+# =============================================================================
+# This data source is used by Helm and Kubernetes providers to fetch AKS credentials.
+# The count ensures it only runs when AKS module creates a cluster.
+data "azurerm_kubernetes_cluster" "aks_for_argocd" {
+  count = 1
+
+  name                = module.aks.cluster_name
+  resource_group_name = module.resource_group.name
+
+  depends_on = [
+    module.aks
+  ]
+}
 
 # =============================================================================
 # Deployment Timing - Start Timestamp
@@ -100,6 +112,154 @@ module "redis" {
 }
 
 # =============================================================================
+# Virtual Network Module (for AKS)
+# =============================================================================
+module "vnet" {
+  source              = "../modules/virtual_network"
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  # Default: 10.240.0.0/16 for VNet, 10.240.0.0/22 for AKS subnet
+  # Can be overridden via variables if needed
+
+  depends_on = [
+    module.resource_group
+  ]
+}
+
+# =============================================================================
+# AKS Cluster Module
+# =============================================================================
+module "aks" {
+  source              = "../modules/aks_cluster"
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  kubernetes_version  = var.kubernetes_version
+
+  # Network configuration
+  vnet_subnet_id = module.vnet.aks_subnet_id
+
+  # Monitoring
+  log_analytics_workspace_id = module.logs.log_analytics_workspace_id
+
+  # System node pool configuration (optimized for dev/test with autoscaling)
+  system_node_count     = var.aks_system_node_count
+  system_node_vm_size   = var.aks_system_node_vm_size
+  enable_auto_scaling   = var.aks_enable_auto_scaling
+  system_node_min_count = var.aks_system_node_min_count
+  system_node_max_count = var.aks_system_node_max_count
+
+  # RBAC configuration
+  admin_group_object_ids = var.aks_admin_group_object_ids
+
+  tags = local.common_tags
+
+  depends_on = [
+    module.resource_group,
+    module.vnet,
+    module.logs
+  ]
+}
+
+# =============================================================================
+# ACR Pull Permission for AKS
+# =============================================================================
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  principal_id         = module.aks.kubelet_identity.object_id
+  role_definition_name = "AcrPull"
+  scope                = module.acr.acr_id
+
+  depends_on = [
+    module.aks,
+    module.acr
+  ]
+}
+
+# =============================================================================
+# ArgoCD Installation (GitOps Platform)
+# =============================================================================
+# =============================================================================
+# ArgoCD Module - GitOps
+# =============================================================================
+# ArgoCD is installed via Helm after AKS cluster is created.
+# Uses data source to fetch AKS credentials dynamically.
+# Make sure to set argocd_admin_password in Terraform Cloud variables.
+
+module "argocd" {
+  source = "../modules/argocd"
+
+  cluster_name        = module.aks.cluster_name
+  resource_group_name = module.resource_group.name
+  admin_password      = var.argocd_admin_password
+
+  labels = merge(
+    local.common_tags,
+    {
+      "app.kubernetes.io/name"     = "argocd"
+      "app.kubernetes.io/instance" = "argocd"
+    }
+  )
+
+  depends_on = [
+    module.aks,
+    azurerm_role_assignment.aks_acr_pull
+  ]
+}
+
+# =============================================================================
+# Grafana Agent Module - Send Metrics to Grafana Cloud
+# =============================================================================
+# This module installs Grafana Agent on AKS to collect and send metrics
+# to Grafana Cloud. Enable by setting enable_grafana_agent = true and
+# providing Grafana Cloud credentials in Terraform Cloud variables.
+#
+# Required Terraform Cloud variables:
+# - grafana_cloud_prometheus_url
+# - grafana_cloud_prometheus_username
+# - grafana_cloud_prometheus_api_key (sensitive)
+#
+# Optional (for logs):
+# - grafana_cloud_loki_url
+# - grafana_cloud_loki_username
+# - grafana_cloud_loki_api_key (sensitive)
+
+module "grafana_agent" {
+  count  = var.enable_grafana_agent ? 1 : 0
+  source = "../modules/grafana_agent"
+
+  cluster_name        = module.aks.cluster_name
+  resource_group_name = module.resource_group.name
+
+  # Prometheus configuration
+  grafana_cloud_prometheus_url      = var.grafana_cloud_prometheus_url
+  grafana_cloud_prometheus_username = var.grafana_cloud_prometheus_username
+  grafana_cloud_prometheus_api_key  = var.grafana_cloud_prometheus_api_key
+
+  # Loki configuration (optional)
+  grafana_cloud_loki_url      = var.grafana_cloud_loki_url
+  grafana_cloud_loki_username = var.grafana_cloud_loki_username
+  grafana_cloud_loki_api_key  = var.grafana_cloud_loki_api_key
+
+  labels = merge(
+    local.common_tags,
+    {
+      "app.kubernetes.io/name"     = "grafana-agent"
+      "app.kubernetes.io/instance" = "grafana-agent"
+      "app.kubernetes.io/part-of"  = "observability"
+    }
+  )
+
+  depends_on = [
+    module.aks,
+    module.argocd,
+    azurerm_role_assignment.aks_acr_pull
+  ]
+}
+
+# =============================================================================
 # Log Analytics Workspace Module
 # =============================================================================
 module "logs" {
@@ -111,23 +271,6 @@ module "logs" {
 
   depends_on = [
     module.resource_group
-  ]
-}
-
-# =============================================================================
-# Container App Environment Module
-# =============================================================================
-module "container_app_environment" {
-  source                     = "../modules/container_app_env"
-  name_prefix                = local.full_name
-  location                   = module.resource_group.location
-  resource_group_name        = module.resource_group.name
-  log_analytics_workspace_id = module.logs.log_analytics_workspace_id
-  tags                       = local.common_tags
-
-  depends_on = [
-    module.resource_group,
-    module.logs
   ]
 }
 
@@ -331,141 +474,6 @@ module "function_app" {
     module.logs,
     module.key_vault,
     module.servicebus
-  ]
-}
-
-# =============================================================================
-# Container Apps (Single-Shot) - RBAC propagation wait aumentado para 90s
-# =============================================================================
-module "users_api_container_app" {
-  source = "../modules/container_app_single_shot"
-
-  name_prefix                  = local.full_name
-  service_name                 = "users-api"
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  location                     = module.resource_group.location
-
-  container_image_acr       = "${module.acr.acr_login_server}/users-api:latest"
-  container_registry_server = module.acr.acr_login_server
-  container_registry_id     = module.acr.acr_id
-
-  key_vault_name = module.key_vault.key_vault_name
-  key_vault_id   = module.key_vault.key_vault_id
-  key_vault_uri  = module.key_vault.key_vault_uri
-
-  tags = local.common_tags
-
-  # Environment variables and secret refs are configured via GitHub Actions pipeline
-
-  rbac_propagation_wait_seconds = 300 # 5 minutos para garantir propagação
-
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault,
-    module.postgres,
-    module.redis,
-    module.servicebus
-  ]
-}
-
-module "games_api_container_app" {
-  source = "../modules/container_app_single_shot"
-
-  name_prefix                  = local.full_name
-  service_name                 = "games-api"
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  location                     = module.resource_group.location
-
-  container_image_acr       = "${module.acr.acr_login_server}/games-api:latest"
-  container_registry_server = module.acr.acr_login_server
-  container_registry_id     = module.acr.acr_id
-
-  key_vault_name = module.key_vault.key_vault_name
-  key_vault_id   = module.key_vault.key_vault_id
-  key_vault_uri  = module.key_vault.key_vault_uri
-
-  tags = local.common_tags
-
-  # Environment variables and secret refs are configured via GitHub Actions pipeline
-
-  rbac_propagation_wait_seconds = 300 # 5 minutos para garantir propagação
-
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault,
-    module.postgres
-  ]
-}
-
-module "payments_api_container_app" {
-  source = "../modules/container_app_single_shot"
-
-  name_prefix                  = local.full_name
-  service_name                 = "payms-api"
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  location                     = module.resource_group.location
-
-  container_image_acr       = "${module.acr.acr_login_server}/payments-api:latest"
-  container_registry_server = module.acr.acr_login_server
-  container_registry_id     = module.acr.acr_id
-
-  key_vault_name = module.key_vault.key_vault_name
-  key_vault_id   = module.key_vault.key_vault_id
-  key_vault_uri  = module.key_vault.key_vault_uri
-
-  tags = local.common_tags
-
-  # Environment variables and secret refs are configured via GitHub Actions pipeline
-  # using azure/container-apps-deploy-action@v2 with secretref pattern
-
-  rbac_propagation_wait_seconds = 300 # 5 minutos para garantir propagação
-
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault,
-    module.postgres
-  ]
-}
-
-# =============================================================================
-# Service Bus RBAC: Azure Service Bus Data Owner para Container Apps
-# =============================================================================
-resource "azurerm_role_assignment" "users_api_servicebus_owner" {
-  principal_id         = module.users_api_container_app.system_assigned_identity_principal_id
-  role_definition_name = "Azure Service Bus Data Owner"
-  scope                = module.servicebus.namespace_id
-
-  depends_on = [
-    module.servicebus,
-    module.users_api_container_app
-  ]
-}
-
-resource "azurerm_role_assignment" "games_api_servicebus_owner" {
-  principal_id         = module.games_api_container_app.system_assigned_identity_principal_id
-  role_definition_name = "Azure Service Bus Data Owner"
-  scope                = module.servicebus.namespace_id
-
-  depends_on = [
-    module.servicebus,
-    module.games_api_container_app
-  ]
-}
-
-resource "azurerm_role_assignment" "payments_api_servicebus_owner" {
-  principal_id         = module.payments_api_container_app.system_assigned_identity_principal_id
-  role_definition_name = "Azure Service Bus Data Owner"
-  scope                = module.servicebus.namespace_id
-
-  depends_on = [
-    module.servicebus,
-    module.payments_api_container_app
   ]
 }
 

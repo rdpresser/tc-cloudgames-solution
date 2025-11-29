@@ -31,6 +31,14 @@ foreach ($cmd in @("k3d","kubectl","helm","docker")) {
     }
 }
 
+# === 0.1) Parar port-forwards existentes ===
+Write-Host "=== 0.1) Parando port-forwards existentes para liberar portas ==="
+if (Test-Path ".\stop-port-forward.ps1") {
+    .\stop-port-forward.ps1 all
+} else {
+    Write-Host "Aviso: stop-port-forward.ps1 não encontrado. Certifique-se de que as portas 8080 e 3000 estão livres." -ForegroundColor Yellow
+}
+
 # === 1) Criar registry se necessário ===
 Write-Host "=== 1) Verificando registry local ($registryName`:$registryPort) ==="
 $regList = k3d registry list
@@ -63,35 +71,100 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+Write-Host "Aguardando cluster ficar pronto..." -ForegroundColor Cyan
+Start-Sleep -Seconds 15
+
 # Ajusta contexto kubectl
 kubectl config use-context "k3d-$clusterName"
+
+# Fix para WSL2: substituir host.docker.internal por 127.0.0.1
+Write-Host "Ajustando kubeconfig para usar 127.0.0.1..." -ForegroundColor Cyan
+$serverUrl = kubectl config view -o json | ConvertFrom-Json | 
+    ForEach-Object { $_.clusters | Where-Object { $_.name -eq "k3d-$clusterName" } } | 
+    ForEach-Object { $_.cluster.server }
+
+if ($serverUrl -match "host.docker.internal:(\d+)") {
+    $port = $matches[1]
+    kubectl config set-cluster "k3d-$clusterName" --server="https://127.0.0.1:$port" | Out-Null
+    Write-Host "✅ Kubeconfig ajustado para https://127.0.0.1:$port" -ForegroundColor Green
+}
+
+# Validar conectividade com API do cluster (retry com timeout)
+Write-Host "Validando conectividade com API do Kubernetes..." -ForegroundColor Cyan
+$apiReady = $false
+for ($i=0; $i -lt 30; $i++) {
+    try {
+        kubectl cluster-info 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            $apiReady = $true
+            Write-Host "✅ API do Kubernetes acessível" -ForegroundColor Green
+            break
+        }
+    } catch {}
+    Write-Host "   Tentativa $($i+1)/30: API ainda não está pronta..." -ForegroundColor Gray
+    Start-Sleep -Seconds 5
+}
+
+if (-not $apiReady) {
+    Write-Host "❌ ERRO: API do Kubernetes não respondeu após 2.5 minutos" -ForegroundColor Red
+    Write-Host "   Tente os seguintes passos:" -ForegroundColor Yellow
+    Write-Host "   1. Reinicie o Docker Desktop" -ForegroundColor Yellow
+    Write-Host "   2. Execute: k3d cluster delete $clusterName" -ForegroundColor Yellow
+    Write-Host "   3. Execute este script novamente" -ForegroundColor Yellow
+    exit 1
+}
 
 # === 4) Criar namespaces básicos ===
 Write-Host "=== 4) Criando namespaces: argocd, monitoring, keda, users ==="
 foreach ($ns in @("argocd","monitoring","keda","users")) {
-    kubectl create namespace $ns --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace $ns --dry-run=client -o yaml | kubectl apply --validate=false -f -
 }
 
 # === 5) Instalar Argo CD via Helm ===
 Write-Host "=== 5) Instalando Argo CD ==="
+
+# Validar cluster antes de instalar
+kubectl get nodes | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Cluster não está acessível. Abortando." -ForegroundColor Red
+    exit 1
+}
+
 helm repo add argo https://argoproj.github.io/argo-helm 2>$null
 helm repo update
 helm upgrade --install argocd argo/argo-cd -n argocd `
     --create-namespace `
     --set server.service.type=LoadBalancer `
-    --set server.ingress.enabled=false
+    --set server.ingress.enabled=false `
+    --set configs.params."server\.insecure"=true
 
 Write-Host "Aguardando pods do ArgoCD estarem prontos..."
 Start-Sleep -Seconds 10
 
 # === 6) Instalar KEDA ===
 Write-Host "=== 6) Instalando KEDA ==="
+
+# Validar cluster antes de instalar
+kubectl get nodes | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Cluster não está acessível. Abortando." -ForegroundColor Red
+    exit 1
+}
+
 helm repo add kedacore https://kedacore.github.io/charts 2>$null
 helm repo update
 helm upgrade --install keda kedacore/keda -n keda --create-namespace
 
 # === 7) Instalar Prometheus + Grafana (kube-prometheus-stack) ===
 Write-Host "=== 7) Instalando kube-prometheus-stack (Prometheus + Grafana) ==="
+
+# Validar cluster antes de instalar
+kubectl get nodes | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Cluster não está acessível. Abortando." -ForegroundColor Red
+    exit 1
+}
+
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 2>$null
 helm repo add grafana https://grafana.github.io/helm-charts 2>$null
 helm repo update
@@ -133,35 +206,55 @@ Write-Host "Grafana admin password: $grafanaAdminCurrent"
 
 # === 9) Alterar senha do Argo CD ===
 Write-Host "=== 9) Ajustando senha do ArgoCD para $argocdAdminNewPassword ==="
-# Garantir que argocd CLI exista (instalar via choco se necessário)
-if (-not (Get-Command argocd -ErrorAction SilentlyContinue)) {
-    Write-Host "argocd CLI não encontrado. Instalando via choco (requer admin)..."
-    choco install argocd -y
-    RefreshEnv
-}
 # Port-forward argocd-server localmente
 Write-Host "Fazendo port-forward do argocd-server para 8080 (background)..."
-$pfArgocd = Start-Process -FilePath kubectl -ArgumentList "port-forward svc/argocd-server -n argocd 8080:443" -WindowStyle Hidden -PassThru
-Start-Sleep -Seconds 5
+$pfArgocd = Start-Process -FilePath kubectl -ArgumentList "port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0" -WindowStyle Hidden -PassThru
+Write-Host "Aguardando port-forward ficar disponível..."
+Start-Sleep -Seconds 8
 
-# Login com senha inicial
+# Verificar se port-forward está acessível
+$pfReady = $false
+for ($i=0; $i -lt 10; $i++) {
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:8080" -Method Head -TimeoutSec 2 -ErrorAction Stop
+        $pfReady = $true
+        Write-Host "✅ Port-forward acessível via localhost:8080" -ForegroundColor Green
+        break
+    } catch {
+        Start-Sleep -Seconds 2
+    }
+}
+if (-not $pfReady) {
+    Write-Host "⚠️  Aviso: Port-forward pode não estar totalmente pronto. Tentando mesmo assim..." -ForegroundColor Yellow
+}
+
+# Alterar senha via API REST (mais confiável que CLI)
 $loginOk = $false
 try {
-    & argocd login localhost:8080 --insecure --username admin --password $argocdInitialPassword | Out-Null
-    & argocd account update-password --account admin --current-password $argocdInitialPassword --new-password $argocdAdminNewPassword | Out-Null
+    # Obter token de sessão
+    $loginBody = @{ username = "admin"; password = $argocdInitialPassword } | ConvertTo-Json
+    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/v1/session" -Method Post -Body $loginBody -ContentType "application/json" -ErrorAction Stop
+    $token = $loginResponse.token
+    
+    # Atualizar senha
+    $updateBody = @{ currentPassword = $argocdInitialPassword; newPassword = $argocdAdminNewPassword } | ConvertTo-Json
+    $headers = @{ "Authorization" = "Bearer $token"; "Content-Type" = "application/json" }
+    Invoke-RestMethod -Uri "http://localhost:8080/api/v1/account/password" -Method Put -Headers $headers -Body $updateBody -ErrorAction Stop | Out-Null
+    
     $loginOk = $true
+    Write-Host "✅ Senha do ArgoCD alterada com sucesso para: $argocdAdminNewPassword" -ForegroundColor Green
 } catch {
-    Write-Host "Falha ao alterar senha do ArgoCD via argocd CLI. Tente manualmente." -ForegroundColor Yellow
+    Write-Host "⚠️  Falha ao alterar senha do ArgoCD: $_" -ForegroundColor Yellow
+    Write-Host "   Você pode alterar manualmente via UI em http://localhost:8080" -ForegroundColor Yellow
     $loginOk = $false
 }
 # kill port-forward
 Stop-Process -Id $pfArgocd.Id -ErrorAction SilentlyContinue
-if ($loginOk) { Write-Host "Senha do ArgoCD alterada com sucesso para: $argocdAdminNewPassword" -ForegroundColor Green }
 
 # === 10) Criar usuário Grafana via API ===
 Write-Host "=== 10) Criando usuário Grafana $grafanaNewUser ==="
 # Port-forward grafana svc para localhost:3000
-$pfGraf = Start-Process -FilePath kubectl -ArgumentList "port-forward svc/kube-prom-stack-grafana -n monitoring 3000:80" -WindowStyle Hidden -PassThru
+$pfGraf = Start-Process -FilePath kubectl -ArgumentList "port-forward svc/kube-prom-stack-grafana -n monitoring 3000:80 --address 0.0.0.0" -WindowStyle Hidden -PassThru
 Start-Sleep -Seconds 5
 $grafanaApi = "http://localhost:3000"
 # create user

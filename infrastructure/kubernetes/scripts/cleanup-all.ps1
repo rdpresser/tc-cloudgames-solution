@@ -7,6 +7,23 @@
 $clusters = @("dev")
 $registryName = "k3d-registry.local"
 
+# 0) Parar port-forwards (CRITICAL: Liberar portas 8080/3000)
+Write-Host "=== 0) Parando port-forwards ==="
+if (Test-Path ".\stop-port-forward.ps1") {
+    .\stop-port-forward.ps1 all
+} else {
+    Write-Host "Script stop-port-forward.ps1 não encontrado. Tentando matar kubectl port-forward manualmente..."
+    Get-Process kubectl -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)").CommandLine
+            if ($cmd -match "port-forward") {
+                Stop-Process -Id $_.Id -Force
+                Write-Host "Processo kubectl port-forward ($($_.Id)) finalizado."
+            }
+        } catch {}
+    }
+}
+
 # 1) Stop & remove headlamp container (se existir)
 Write-Host "Removendo Headlamp container se existir..."
 docker ps -a --filter "name=headlamp" --format "{{.ID}}\t{{.Names}}" | ForEach-Object {

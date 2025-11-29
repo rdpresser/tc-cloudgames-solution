@@ -1,0 +1,21 @@
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fortune-app
+  namespace: argocd
+spec:
+  project: fortune-app
+  source:
+    repoURL: "https://github.com/rdpresser/fortune-cookie.git"
+    targetRevision: main
+    path: "k8s-manifests"     # pasta do seu repo onde estão os manifests
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
