@@ -1,6 +1,5 @@
 resources:
-  - common/configmap-azure-servicebus.yaml
-  - common/secret-azure-servicebus.yaml
+  - common
   - user
   - games
   - payments
