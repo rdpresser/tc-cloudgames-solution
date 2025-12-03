@@ -14,7 +14,7 @@ images:
     newTag: dev
 
 configMapGenerator:
-  - name: azure-servicebus-config-dev
+  - name: azure-servicebus-config
     behavior: merge
     literals:
       - userQueue=user-events-dev
@@ -23,7 +23,7 @@ configMapGenerator:
 
 secretGenerator:
   - name: azure-servicebus-secret
-    behavior: replace
+    behavior: merge
     literals:
       - AZURE_SERVICEBUS_CONNECTION_STRING=Endpoint=sb://<namespace-dev>.servicebus.windows.net/;SharedAccessKeyName=<keyName>;SharedAccessKey=<key>
 
