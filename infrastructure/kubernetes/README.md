@@ -99,7 +99,7 @@ Após executar `.\k3d-manager.ps1 port-forward all`:
 cd infrastructure\kubernetes\scripts
 .\k3d-manager.ps1 create              # Cria cluster
 .\k3d-manager.ps1 port-forward all    # Ativa serviços
-# Acesse: http://localhost:8080 (ArgoCD)
+# Acesse: http://localhost:8090 (ArgoCD)
 ```
 
 ### Após reiniciar o computador

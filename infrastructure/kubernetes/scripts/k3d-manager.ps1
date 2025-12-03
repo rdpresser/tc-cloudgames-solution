@@ -113,7 +113,7 @@ function Show-Help {
     Write-Host ""
     
     Write-Host "🔗 ACESSO AOS SERVIÇOS:" -ForegroundColor $Colors.Title
-    Write-Host "  ArgoCD:   http://localhost:8080  (admin / Argo@123)" -ForegroundColor $Colors.Info
+    Write-Host "  ArgoCD:   http://localhost:8090  (admin / Argo@123)" -ForegroundColor $Colors.Info
     Write-Host "  Grafana:  http://localhost:3000  (rdpresser / rdpresser@123)" -ForegroundColor $Colors.Info
     Write-Host "  Headlamp: http://localhost:4466" -ForegroundColor $Colors.Info
     Write-Host ""

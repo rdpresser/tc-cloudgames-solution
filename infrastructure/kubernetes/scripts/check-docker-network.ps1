@@ -79,7 +79,7 @@ if ($memory) {
 
 # 6) Verificar portas necessárias
 Write-Host "`n6️⃣ Verificando portas necessárias..." -ForegroundColor Cyan
-$ports = @(80, 443, 8080, 3000)
+$ports = @(80, 443, 8090, 3000)
 $portsInUse = @()
 
 foreach ($port in $ports) {
@@ -91,7 +91,7 @@ foreach ($port in $ports) {
 
 if ($portsInUse.Count -gt 0) {
     Write-Host "   ⚠️  Portas em uso: $($portsInUse -join ', ')" -ForegroundColor Yellow
-    Write-Host "   Execute .\stop-port-forward.ps1 para liberar portas 8080/3000" -ForegroundColor Gray
+    Write-Host "   Execute .\stop-port-forward.ps1 para liberar portas 8090/3000" -ForegroundColor Gray
 } else {
     Write-Host "   ✅ Todas as portas necessárias estão livres" -ForegroundColor Green
 }

@@ -36,7 +36,7 @@ Write-Host "=== 0.1) Parando port-forwards existentes para liberar portas ==="
 if (Test-Path ".\stop-port-forward.ps1") {
     .\stop-port-forward.ps1 all
 } else {
-    Write-Host "Aviso: stop-port-forward.ps1 não encontrado. Certifique-se de que as portas 8080 e 3000 estão livres." -ForegroundColor Yellow
+    Write-Host "Aviso: stop-port-forward.ps1 não encontrado. Certifique-se de que as portas 8090 e 3000 estão livres." -ForegroundColor Yellow
 }
 
 # === 1) Criar registry se necessário ===
@@ -207,8 +207,8 @@ Write-Host "Grafana admin password: $grafanaAdminCurrent"
 # === 9) Alterar senha do Argo CD ===
 Write-Host "=== 9) Ajustando senha do ArgoCD para $argocdAdminNewPassword ==="
 # Port-forward argocd-server localmente
-Write-Host "Fazendo port-forward do argocd-server para 8080 (background)..."
-$pfArgocd = Start-Process -FilePath kubectl -ArgumentList "port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0" -WindowStyle Hidden -PassThru
+Write-Host "Fazendo port-forward do argocd-server para 8090 (background)..."
+$pfArgocd = Start-Process -FilePath kubectl -ArgumentList "port-forward svc/argocd-server -n argocd 8090:443 --address 0.0.0.0" -WindowStyle Hidden -PassThru
 Write-Host "Aguardando port-forward ficar disponível..."
 Start-Sleep -Seconds 8
 
@@ -216,9 +216,9 @@ Start-Sleep -Seconds 8
 $pfReady = $false
 for ($i=0; $i -lt 10; $i++) {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:8080" -Method Head -TimeoutSec 2 -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "http://localhost:8090" -Method Head -TimeoutSec 2 -ErrorAction Stop
         $pfReady = $true
-        Write-Host "✅ Port-forward acessível via localhost:8080" -ForegroundColor Green
+        Write-Host "✅ Port-forward acessível via localhost:8090" -ForegroundColor Green
         break
     } catch {
         Start-Sleep -Seconds 2
@@ -233,19 +233,19 @@ $loginOk = $false
 try {
     # Obter token de sessão
     $loginBody = @{ username = "admin"; password = $argocdInitialPassword } | ConvertTo-Json
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/v1/session" -Method Post -Body $loginBody -ContentType "application/json" -ErrorAction Stop
+    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8090/api/v1/session" -Method Post -Body $loginBody -ContentType "application/json" -ErrorAction Stop
     $token = $loginResponse.token
     
     # Atualizar senha
     $updateBody = @{ currentPassword = $argocdInitialPassword; newPassword = $argocdAdminNewPassword } | ConvertTo-Json
     $headers = @{ "Authorization" = "Bearer $token"; "Content-Type" = "application/json" }
-    Invoke-RestMethod -Uri "http://localhost:8080/api/v1/account/password" -Method Put -Headers $headers -Body $updateBody -ErrorAction Stop | Out-Null
+    Invoke-RestMethod -Uri "http://localhost:8090/api/v1/account/password" -Method Put -Headers $headers -Body $updateBody -ErrorAction Stop | Out-Null
     
     $loginOk = $true
     Write-Host "✅ Senha do ArgoCD alterada com sucesso para: $argocdAdminNewPassword" -ForegroundColor Green
 } catch {
     Write-Host "⚠️  Falha ao alterar senha do ArgoCD: $_" -ForegroundColor Yellow
-    Write-Host "   Você pode alterar manualmente via UI em http://localhost:8080" -ForegroundColor Yellow
+    Write-Host "   Você pode alterar manualmente via UI em http://localhost:8090" -ForegroundColor Yellow
     $loginOk = $false
 }
 # kill port-forward

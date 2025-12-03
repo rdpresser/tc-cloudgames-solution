@@ -6,7 +6,7 @@
   Executa em background sem prender o terminal.
   
   Serviços disponíveis:
-  - argocd: http://localhost:8080 (redireciona para porta 443 do ArgoCD - HTTP Insecure)
+  - argocd: http://localhost:8090 (redireciona para porta 443 do ArgoCD - HTTP Insecure)
   - grafana: http://localhost:3000 (redireciona para porta 80 do Grafana)
   - all: Inicia ambos os port-forwards
   
@@ -136,7 +136,7 @@ $processes = @()
 # Iniciar port-forwards conforme solicitado
 switch ($Service) {
     "argocd" {
-        $proc = Start-PortForward "argocd-server" "argocd" 8080 443 $kubectlPath
+        $proc = Start-PortForward "argocd-server" "argocd" 8090 443 $kubectlPath
         if ($proc) { $processes += $proc }
     }
     "grafana" {
@@ -144,7 +144,7 @@ switch ($Service) {
         if ($proc) { $processes += $proc }
     }
     "all" {
-        $proc1 = Start-PortForward "argocd-server" "argocd" 8080 443 $kubectlPath
+        $proc1 = Start-PortForward "argocd-server" "argocd" 8090 443 $kubectlPath
         if ($proc1) { $processes += $proc1 }
         
         $proc2 = Start-PortForward "kube-prom-stack-grafana" "monitoring" 3000 80 $kubectlPath
@@ -160,7 +160,7 @@ if ($processes.Count -eq 0) {
 Write-Host "`n" -NoNewline
 Write-Host "📌 Port-forwards ativos:" -ForegroundColor Cyan
 if ($Service -eq "argocd" -or $Service -eq "all") {
-    Write-Host "   🔐 ArgoCD:  http://localhost:8080" -ForegroundColor Green
+    Write-Host "   🔐 ArgoCD:  http://localhost:8090" -ForegroundColor Green
 }
 if ($Service -eq "grafana" -or $Service -eq "all") {
     Write-Host "   📊 Grafana: http://localhost:3000" -ForegroundColor Green

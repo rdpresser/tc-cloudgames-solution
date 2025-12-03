@@ -1,0 +1,12 @@
+resources:
+  - common/configmap-azure-servicebus.yaml
+  - common/secret-azure-servicebus.yaml
+  - user/kustomization.yaml
+  - games/kustomization.yaml
+  - payments/kustomization.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: cloudgames
+
+# Allow cross-namespace app definitions via overlays
+namespace: default

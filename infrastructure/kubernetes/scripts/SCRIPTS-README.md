@@ -194,7 +194,7 @@
 ```
 
 **Portas:**
-- 🔐 **ArgoCD**: `http://localhost:8080` (HTTP insecure)
+- 🔐 **ArgoCD**: `http://localhost:8090` (HTTP insecure)
 - 📊 **Grafana**: `http://localhost:3000` → kube-prom-stack-grafana:80
 
 **Características:**
@@ -250,7 +250,7 @@
 
 🔗 Port-Forward Ativo:
    Serviço: argocd-server
-   Porta:   http://localhost:8080
+   Porta:   http://localhost:8090
    PID:     12345
    Uptime:  00:15:32
 
@@ -273,7 +273,7 @@
 - Valida resolução de `host.docker.internal`
 - Identifica modo de backend (WSL2/Hyper-V)
 - Verifica recursos disponíveis (CPU/RAM)
-- Checa portas necessárias (80, 443, 8080, 3000)
+- Checa portas necessárias (80, 443, 8090, 3000)
 
 **Uso:**
 ```powershell
@@ -419,7 +419,7 @@
 .\port-forward.ps1 all
 
 # 3. Acessar serviços no browser
-# - ArgoCD:  http://localhost:8080  (admin / Argo@123)
+# - ArgoCD:  http://localhost:8090  (admin / Argo@123)
 # - Grafana: http://localhost:3000  (rdpresser / rdpresser@123)
 ```
 
@@ -434,7 +434,7 @@
 .\port-forward.ps1 all
 
 # 4. Acessar serviços no browser
-# - ArgoCD:  http://localhost:8080  (admin / Argo@123)
+# - ArgoCD:  http://localhost:8090  (admin / Argo@123)
 # - Grafana: http://localhost:3000  (rdpresser / rdpresser@123)
 ```
 
@@ -454,7 +454,7 @@
 ## 🔐 Credenciais Padrão
 
 ### ArgoCD
-- **URL**: http://localhost:8080 (HTTP)
+- **URL**: http://localhost:8090 (HTTP)
 - **Usuário**: `admin`
 - **Senha**: `Argo@123`
 
@@ -502,7 +502,7 @@ O script `create-all-from-zero.ps1` cria um cluster com:
 ```
 
 ### ⚠️ Port-forward cria processos duplicados
-**Problema**: Múltiplos processos kubectl na porta 8080/3000.
+**Problema**: Múltiplos processos kubectl na porta 8090/3000.
 
 **Causa**: Shim do Chocolatey criando processos duplicados.
 
@@ -530,7 +530,7 @@ k3d cluster delete dev
 ### Port-forward não inicia
 ```powershell
 # Verificar se porta já está em uso
-netstat -ano | findstr "8080"
+netstat -ano | findstr "8090"
 netstat -ano | findstr "3000"
 
 # Parar processos existentes

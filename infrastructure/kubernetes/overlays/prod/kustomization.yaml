@@ -1,0 +1,38 @@
+resources:
+  - ../base
+
+commonLabels:
+  environment: prod
+
+images:
+  - name: localhost:5000/user-api
+    newTag: 1.0.0
+  - name: localhost:5000/games-api
+    newTag: 1.0.0
+  - name: localhost:5000/payments-api
+    newTag: 1.0.0
+
+patches:
+  - target:
+      kind: Deployment
+      name: user-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Deployment
+      name: games-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Deployment
+      name: payments-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+namespace: cloudgames

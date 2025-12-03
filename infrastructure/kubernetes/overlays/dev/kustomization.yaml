@@ -1,0 +1,29 @@
+resources:
+  - ../base
+
+commonLabels:
+  environment: dev
+
+images:
+  - name: localhost:5000/user-api
+    newTag: dev
+  - name: localhost:5000/games-api
+    newTag: dev
+  - name: localhost:5000/payments-api
+    newTag: dev
+
+configMapGenerator:
+  - name: azure-servicebus-config-dev
+    behavior: merge
+    literals:
+      - userQueue=user-events-dev
+      - gamesQueue=games-events-dev
+      - paymentsQueue=payments-events-dev
+
+secretGenerator:
+  - name: azure-servicebus-secret
+    behavior: replace
+    literals:
+      - AZURE_SERVICEBUS_CONNECTION_STRING=Endpoint=sb://<namespace-dev>.servicebus.windows.net/;SharedAccessKeyName=<keyName>;SharedAccessKey=<key>
+
+namespace: cloudgames-dev

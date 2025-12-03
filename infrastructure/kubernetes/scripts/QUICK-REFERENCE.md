@@ -26,7 +26,7 @@
 
 | Serviço | URL | Credenciais |
 |---------|-----|-------------|
-| ArgoCD | http://localhost:8080 | admin / Argo@123 |
+| ArgoCD | http://localhost:8090 | admin / Argo@123 |
 | Grafana | http://localhost:3000 | rdpresser / rdpresser@123 |
 | Headlamp | http://localhost:4466 | - |
 

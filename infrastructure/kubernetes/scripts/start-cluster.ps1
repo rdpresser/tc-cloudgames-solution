@@ -130,7 +130,7 @@ if ($ready) {
 
 Write-Host "`n💡 Próximos passos:" -ForegroundColor Cyan
 Write-Host "   1. Execute: .\port-forward.ps1 all" -ForegroundColor White
-Write-Host "   2. Acesse ArgoCD: http://localhost:8080" -ForegroundColor White
+Write-Host "   2. Acesse ArgoCD: http://localhost:8090" -ForegroundColor White
 Write-Host "   3. Acesse Grafana: http://localhost:3000" -ForegroundColor White
 Write-Host ""
 

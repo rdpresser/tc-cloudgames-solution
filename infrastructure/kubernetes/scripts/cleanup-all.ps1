@@ -7,7 +7,7 @@
 $clusters = @("dev")
 $registryName = "k3d-registry.local"
 
-# 0) Parar port-forwards (CRITICAL: Liberar portas 8080/3000)
+# 0) Parar port-forwards (CRITICAL: Liberar portas 8090/3000)
 Write-Host "=== 0) Parando port-forwards ==="
 if (Test-Path ".\stop-port-forward.ps1") {
     .\stop-port-forward.ps1 all
