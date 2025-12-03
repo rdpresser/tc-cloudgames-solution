@@ -1,8 +1,9 @@
 resources:
-  - ../base
+  - ../../base
 
-commonLabels:
-  environment: dev
+labels:
+  - pairs:
+      environment: dev
 
 images:
   - name: localhost:5000/user-api

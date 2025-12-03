@@ -4,5 +4,6 @@ resources:
   - ingress.yaml
   - hpa.yaml
 
-commonLabels:
-  app.kubernetes.io/component: user
+labels:
+  - pairs:
+      app.kubernetes.io/component: user

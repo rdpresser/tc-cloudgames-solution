@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: payments
+  namespace: argocd
+spec:
+  description: AppProject for payments-app in dev
+  sourceRepos:
+    - https://github.com/rdpresser/tc-cloudgames-solution.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: cloudgames-dev
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  syncWindows: []
