@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  labels:
+    app.kubernetes.io/name: payments-api
+    app.kubernetes.io/component: payments
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: payments-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: payments-api
+        app.kubernetes.io/component: payments
+    spec:
+      containers:
+        - name: payments-api
+          image: localhost:5000/payments-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AZURE_SERVICEBUS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: azure-servicebus-secret
+                  key: AZURE_SERVICEBUS_CONNECTION_STRING
+            - name: PAYMENTS_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: azure-servicebus-config
+                  key: paymentsQueue
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080

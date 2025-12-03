@@ -1,0 +1,3 @@
+resources:
+  - configmap-azure-servicebus.yaml
+  - secret-azure-servicebus.yaml
