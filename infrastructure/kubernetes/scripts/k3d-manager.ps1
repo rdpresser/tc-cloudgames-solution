@@ -1,50 +1,50 @@
 <#
 .SYNOPSIS
-  K3D Manager - Orquestrador central para gerenciamento do cluster k3d local.
-  
+  K3D Manager - Central orchestrator for local k3d cluster management.
+
 .DESCRIPTION
-  Script principal que centraliza e facilita o acesso a todos os scripts de gerenciamento
-  do cluster k3d. Fornece um menu interativo e suporte a linha de comando.
-  
+  Main script that centralizes and facilitates access to all k3d cluster
+  management scripts. Provides an interactive menu and command line support.
+
 .PARAMETER Command
-  Comando a ser executado. Use --help para ver lista completa.
-  
+  Command to execute. Use --help to see the full list.
+
 .PARAMETER Service
-  Serviço específico (usado com port-forward/stop-port-forward).
-  
+  Specific service (used with port-forward/stop-port-forward).
+
 .PARAMETER Id
-  PID específico (usado com stop-port-forward).
-  
+  Specific PID (used with stop-port-forward).
+
 .EXAMPLE
   .\k3d-manager.ps1
-  # Abre menu interativo
-  
+  # Opens interactive menu
+
 .EXAMPLE
   .\k3d-manager.ps1 --help
-  # Mostra todos os comandos disponíveis
-  
+  # Shows all available commands
+
 .EXAMPLE
   .\k3d-manager.ps1 create
-  # Cria cluster do zero
-  
+  # Creates cluster from scratch
+
 .EXAMPLE
   .\k3d-manager.ps1 port-forward argocd
-  # Inicia port-forward apenas para ArgoCD
+  # Starts port-forward only for ArgoCD
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
     [string]$Command,
-    
+
     [Parameter(Position = 1)]
     [string]$Service,
-    
+
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$RemainingArgs
 )
 
-# Cores e formatação
+# Colors and formatting
 $script:Colors = @{
     Title = "Cyan"
     Success = "Green"
@@ -58,61 +58,78 @@ function Show-Header {
     Write-Host ""
     Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
     Write-Host "║          🚀 K3D Cluster Manager v1.0                      ║" -ForegroundColor $Colors.Title
-    Write-Host "║          Gerenciador de Cluster Local Kubernetes          ║" -ForegroundColor $Colors.Title
+    Write-Host "║          Local Kubernetes Cluster Manager                 ║" -ForegroundColor $Colors.Title
     Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Title
     Write-Host ""
 }
 
 function Show-Help {
     Show-Header
-    
-    Write-Host "📖 COMANDOS DISPONÍVEIS:" -ForegroundColor $Colors.Title
+
+    Write-Host "📖 AVAILABLE COMMANDS:" -ForegroundColor $Colors.Title
     Write-Host ""
-    
-    Write-Host "  🔧 GERENCIAMENTO DE CLUSTER:" -ForegroundColor $Colors.Info
+
+    Write-Host "  🔧 CLUSTER MANAGEMENT:" -ForegroundColor $Colors.Info
     Write-Host "    create              " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Cria/recria cluster completo do zero" -ForegroundColor $Colors.Muted
+    Write-Host "Creates/recreates complete cluster from scratch" -ForegroundColor $Colors.Muted
     Write-Host "    start               " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Inicia cluster após reboot do computador" -ForegroundColor $Colors.Muted
+    Write-Host "Starts cluster after computer reboot" -ForegroundColor $Colors.Muted
     Write-Host "    cleanup             " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Remove cluster, registry e recursos" -ForegroundColor $Colors.Muted
+    Write-Host "Removes cluster, registry and resources" -ForegroundColor $Colors.Muted
     Write-Host ""
-    
+
     Write-Host "  🔌 PORT-FORWARD:" -ForegroundColor $Colors.Info
     Write-Host "    port-forward [svc]  " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Inicia port-forwards (all/argocd/grafana)" -ForegroundColor $Colors.Muted
+    Write-Host "Starts port-forwards (all/argocd/grafana)" -ForegroundColor $Colors.Muted
     Write-Host "    stop [svc]          " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Para port-forwards (all/argocd/grafana)" -ForegroundColor $Colors.Muted
+    Write-Host "Stops port-forwards (all/argocd/grafana)" -ForegroundColor $Colors.Muted
     Write-Host "    list                " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Lista port-forwards ativos" -ForegroundColor $Colors.Muted
+    Write-Host "Lists active port-forwards" -ForegroundColor $Colors.Muted
     Write-Host ""
-    
+
     Write-Host "  🐳 DOCKER & NETWORK:" -ForegroundColor $Colors.Info
     Write-Host "    check               " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Verifica conectividade de rede do Docker" -ForegroundColor $Colors.Muted
+    Write-Host "Checks Docker network connectivity" -ForegroundColor $Colors.Muted
     Write-Host "    headlamp            " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Inicia Headlamp UI (porta 4466)" -ForegroundColor $Colors.Muted
+    Write-Host "Starts Headlamp UI (port 4466)" -ForegroundColor $Colors.Muted
     Write-Host ""
-    
-    Write-Host "  ℹ️  INFORMAÇÃO:" -ForegroundColor $Colors.Info
+
+    Write-Host "  🔐 AZURE INTEGRATION:" -ForegroundColor $Colors.Info
+    Write-Host "    external-secrets    " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Configures External Secrets with Azure Key Vault" -ForegroundColor $Colors.Muted
+    Write-Host "    secrets [opts]      " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Lists/searches secrets (-SecretName, -Key, -Decode)" -ForegroundColor $Colors.Muted
+    Write-Host ""
+
+    Write-Host "  📦 BUILD & DEPLOY:" -ForegroundColor $Colors.Info
+    Write-Host "    build [api]         " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Build and push Docker images (all/user/games/payments)" -ForegroundColor $Colors.Muted
+    Write-Host "    bootstrap [env]     " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Bootstrap ArgoCD applications (dev/prod)" -ForegroundColor $Colors.Muted
+    Write-Host ""
+
+    Write-Host "  ℹ️  INFORMATION:" -ForegroundColor $Colors.Info
     Write-Host "    status              " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Mostra status completo do cluster" -ForegroundColor $Colors.Muted
+    Write-Host "Shows complete cluster status" -ForegroundColor $Colors.Muted
     Write-Host "    help                " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Mostra esta ajuda" -ForegroundColor $Colors.Muted
+    Write-Host "Shows this help" -ForegroundColor $Colors.Muted
     Write-Host "    menu                " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Abre menu interativo" -ForegroundColor $Colors.Muted
+    Write-Host "Opens interactive menu" -ForegroundColor $Colors.Muted
     Write-Host ""
-    
-    Write-Host "📝 EXEMPLOS:" -ForegroundColor $Colors.Title
+
+    Write-Host "📝 EXAMPLES:" -ForegroundColor $Colors.Title
     Write-Host "  .\k3d-manager.ps1 create" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 start" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 port-forward all" -ForegroundColor $Colors.Muted
-    Write-Host "  .\k3d-manager.ps1 port-forward argocd" -ForegroundColor $Colors.Muted
-    Write-Host "  .\k3d-manager.ps1 stop argocd" -ForegroundColor $Colors.Muted
-    Write-Host "  .\k3d-manager.ps1 status" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 external-secrets" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 build" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 build user" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 bootstrap" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 secrets" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 secrets -Key db-password" -ForegroundColor $Colors.Muted
     Write-Host ""
-    
-    Write-Host "🔗 ACESSO AOS SERVIÇOS:" -ForegroundColor $Colors.Title
+
+    Write-Host "🔗 SERVICE ACCESS:" -ForegroundColor $Colors.Title
     Write-Host "  ArgoCD:   http://localhost:8090  (admin / Argo@123)" -ForegroundColor $Colors.Info
     Write-Host "  Grafana:  http://localhost:3000  (rdpresser / rdpresser@123)" -ForegroundColor $Colors.Info
     Write-Host "  Headlamp: http://localhost:4466" -ForegroundColor $Colors.Info
@@ -121,94 +138,98 @@ function Show-Help {
 
 function Show-Status {
     Show-Header
-    Write-Host "📊 STATUS DO CLUSTER K3D" -ForegroundColor $Colors.Title
+    Write-Host "📊 K3D CLUSTER STATUS" -ForegroundColor $Colors.Title
     Write-Host ""
     
     # Docker
     Write-Host "🐳 Docker Desktop:" -ForegroundColor $Colors.Info
     try {
         docker version | Out-Null
-        Write-Host "   ✅ Rodando" -ForegroundColor $Colors.Success
+        Write-Host "   ✅ Running" -ForegroundColor $Colors.Success
     } catch {
-        Write-Host "   ❌ Não está rodando" -ForegroundColor $Colors.Error
+        Write-Host "   ❌ Not running" -ForegroundColor $Colors.Error
         return
     }
-    
+
     # Cluster k3d
-    Write-Host "`n📦 Cluster K3D:" -ForegroundColor $Colors.Info
+    Write-Host "`n📦 K3D Cluster:" -ForegroundColor $Colors.Info
     $clusters = k3d cluster list 2>&1 | Out-String
     if ($clusters -match "dev") {
-        Write-Host "   ✅ Cluster 'dev' encontrado" -ForegroundColor $Colors.Success
-        
+        Write-Host "   ✅ Cluster 'dev' found" -ForegroundColor $Colors.Success
+
         # Containers
         $containers = docker ps --filter "name=k3d-dev" --format "{{.Names}}\t{{.Status}}"
         $running = ($containers | Measure-Object).Count
-        Write-Host "   📦 Containers rodando: $running" -ForegroundColor $Colors.Info
+        Write-Host "   📦 Containers running: $running" -ForegroundColor $Colors.Info
     } else {
-        Write-Host "   ❌ Cluster 'dev' não encontrado" -ForegroundColor $Colors.Error
-        Write-Host "   💡 Execute: .\k3d-manager.ps1 create" -ForegroundColor $Colors.Warning
+        Write-Host "   ❌ Cluster 'dev' not found" -ForegroundColor $Colors.Error
+        Write-Host "   💡 Run: .\k3d-manager.ps1 create" -ForegroundColor $Colors.Warning
         return
     }
-    
+
     # Kubectl
     Write-Host "`n⚙️  Kubernetes API:" -ForegroundColor $Colors.Info
     try {
         kubectl cluster-info 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "   ✅ API acessível" -ForegroundColor $Colors.Success
-            
+            Write-Host "   ✅ API accessible" -ForegroundColor $Colors.Success
+
             # Nodes
             $nodes = kubectl get nodes --no-headers 2>$null
             if ($nodes) {
                 $nodeCount = ($nodes | Measure-Object).Count
-                Write-Host "   📍 Nodes prontos: $nodeCount" -ForegroundColor $Colors.Info
+                Write-Host "   📍 Nodes ready: $nodeCount" -ForegroundColor $Colors.Info
             }
         } else {
-            Write-Host "   ⚠️  API não respondendo" -ForegroundColor $Colors.Warning
+            Write-Host "   ⚠️  API not responding" -ForegroundColor $Colors.Warning
         }
     } catch {
-        Write-Host "   ❌ Não foi possível conectar à API" -ForegroundColor $Colors.Error
+        Write-Host "   ❌ Could not connect to API" -ForegroundColor $Colors.Error
     }
-    
+
     # Port-forwards
     Write-Host "`n🔌 Port-Forwards:" -ForegroundColor $Colors.Info
     $kubectlProcs = Get-Process -Name kubectl -ErrorAction SilentlyContinue | Where-Object {
         $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
         $cmdLine -like "*port-forward*"
     }
-    
+
     if ($kubectlProcs) {
-        Write-Host "   ✅ Ativos: $($kubectlProcs.Count)" -ForegroundColor $Colors.Success
-        Write-Host "   💡 Execute: .\k3d-manager.ps1 list" -ForegroundColor $Colors.Info
+        Write-Host "   ✅ Active: $($kubectlProcs.Count)" -ForegroundColor $Colors.Success
+        Write-Host "   💡 Run: .\k3d-manager.ps1 list" -ForegroundColor $Colors.Info
     } else {
-        Write-Host "   ⚠️  Nenhum port-forward ativo" -ForegroundColor $Colors.Warning
-        Write-Host "   💡 Execute: .\k3d-manager.ps1 port-forward all" -ForegroundColor $Colors.Info
+        Write-Host "   ⚠️  No active port-forwards" -ForegroundColor $Colors.Warning
+        Write-Host "   💡 Run: .\k3d-manager.ps1 port-forward all" -ForegroundColor $Colors.Info
     }
-    
+
     Write-Host ""
 }
 
 function Show-Menu {
     while ($true) {
         Show-Header
-        Write-Host "📋 MENU PRINCIPAL" -ForegroundColor $Colors.Title
+        Write-Host "📋 MAIN MENU" -ForegroundColor $Colors.Title
         Write-Host ""
-        Write-Host "  [1] 🔧 Criar cluster do zero" -ForegroundColor $Colors.Info
-        Write-Host "  [2] 🚀 Iniciar cluster (após reboot)" -ForegroundColor $Colors.Info
-        Write-Host "  [3] 🔌 Port-forward (todos)" -ForegroundColor $Colors.Info
+        Write-Host "  [1] 🔧 Create cluster from scratch" -ForegroundColor $Colors.Info
+        Write-Host "  [2] 🚀 Start cluster (after reboot)" -ForegroundColor $Colors.Info
+        Write-Host "  [3] 🔌 Port-forward (all)" -ForegroundColor $Colors.Info
         Write-Host "  [4] 🔌 Port-forward (ArgoCD)" -ForegroundColor $Colors.Info
         Write-Host "  [5] 🔌 Port-forward (Grafana)" -ForegroundColor $Colors.Info
-        Write-Host "  [6] 🛑 Parar port-forwards" -ForegroundColor $Colors.Info
-        Write-Host "  [7] 📋 Listar port-forwards" -ForegroundColor $Colors.Info
-        Write-Host "  [8] 🐳 Verificar Docker" -ForegroundColor $Colors.Info
-        Write-Host "  [9] 📊 Status do cluster" -ForegroundColor $Colors.Info
-        Write-Host " [10] 🎨 Iniciar Headlamp UI" -ForegroundColor $Colors.Info
-        Write-Host " [11] 🗑️  Limpar tudo (cleanup)" -ForegroundColor $Colors.Info
-        Write-Host "  [0] ❌ Sair" -ForegroundColor $Colors.Error
+        Write-Host "  [6] 🛑 Stop port-forwards" -ForegroundColor $Colors.Info
+        Write-Host "  [7] 📋 List port-forwards" -ForegroundColor $Colors.Info
+        Write-Host "  [8] 🐳 Check Docker" -ForegroundColor $Colors.Info
+        Write-Host "  [9] 📊 Cluster status" -ForegroundColor $Colors.Info
+        Write-Host " [10] 🎨 Start Headlamp UI" -ForegroundColor $Colors.Info
+        Write-Host " [11] 🔐 Configure External Secrets (Azure Key Vault)" -ForegroundColor $Colors.Info
+        Write-Host " [12] 🔑 List/Search Secrets" -ForegroundColor $Colors.Info
+        Write-Host " [13] 🐳 Build & Push Docker Images" -ForegroundColor $Colors.Info
+        Write-Host " [14] 🚀 Bootstrap ArgoCD Applications" -ForegroundColor $Colors.Info
+        Write-Host " [15] 🗑️  Cleanup all" -ForegroundColor $Colors.Info
+        Write-Host "  [0] ❌ Exit" -ForegroundColor $Colors.Error
         Write-Host ""
-        
-        $choice = Read-Host "Escolha uma opção"
-        
+
+        $choice = Read-Host "Choose an option"
+
         switch ($choice) {
             "1" { Invoke-Command "create" }
             "2" { Invoke-Command "start" }
@@ -220,46 +241,50 @@ function Show-Menu {
             "8" { Invoke-Command "check" }
             "9" { Invoke-Command "status" }
             "10" { Invoke-Command "headlamp" }
-            "11" { Invoke-Command "cleanup" }
-            "0" { 
-                Write-Host "`n👋 Até logo!" -ForegroundColor $Colors.Success
-                exit 0 
+            "11" { Invoke-Command "external-secrets" }
+            "12" { Invoke-Command "secrets" }
+            "13" { Invoke-Command "build" }
+            "14" { Invoke-Command "bootstrap" }
+            "15" { Invoke-Command "cleanup" }
+            "0" {
+                Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
+                exit 0
             }
             default {
-                Write-Host "`n❌ Opção inválida!" -ForegroundColor $Colors.Error
+                Write-Host "`n❌ Invalid option!" -ForegroundColor $Colors.Error
                 Start-Sleep -Seconds 2
             }
         }
-        
-        Write-Host "`nPressione qualquer tecla para continuar..." -ForegroundColor $Colors.Muted
+
+        Write-Host "`nPress any key to continue..." -ForegroundColor $Colors.Muted
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     }
 }
 
 function Invoke-Command($cmd, $arg1 = "", $arg2 = "") {
     $scriptPath = $PSScriptRoot
-    
+
     switch ($cmd.ToLower()) {
         "create" {
-            Write-Host "`n🔧 Criando cluster do zero..." -ForegroundColor $Colors.Info
+            Write-Host "`n🔧 Creating cluster from scratch..." -ForegroundColor $Colors.Info
             & "$scriptPath\create-all-from-zero.ps1"
         }
         "start" {
-            Write-Host "`n🚀 Iniciando cluster..." -ForegroundColor $Colors.Info
+            Write-Host "`n🚀 Starting cluster..." -ForegroundColor $Colors.Info
             & "$scriptPath\start-cluster.ps1"
         }
         "cleanup" {
-            Write-Host "`n🗑️  Limpando recursos..." -ForegroundColor $Colors.Warning
+            Write-Host "`n🗑️  Cleaning up resources..." -ForegroundColor $Colors.Warning
             & "$scriptPath\cleanup-all.ps1"
         }
         "port-forward" {
             $svc = if ($arg1) { $arg1 } else { "all" }
-            Write-Host "`n🔌 Iniciando port-forward ($svc)..." -ForegroundColor $Colors.Info
+            Write-Host "`n🔌 Starting port-forward ($svc)..." -ForegroundColor $Colors.Info
             & "$scriptPath\port-forward.ps1" $svc
         }
         { $_ -in "stop", "stop-port-forward" } {
             $svc = if ($arg1) { $arg1 } else { "all" }
-            Write-Host "`n🛑 Parando port-forwards ($svc)..." -ForegroundColor $Colors.Info
+            Write-Host "`n🛑 Stopping port-forwards ($svc)..." -ForegroundColor $Colors.Info
             if ($arg1 -match '^\d+$') {
                 & "$scriptPath\stop-port-forward.ps1" -Id $arg1
             } else {
@@ -267,16 +292,38 @@ function Invoke-Command($cmd, $arg1 = "", $arg2 = "") {
             }
         }
         { $_ -in "list", "list-port-forward" } {
-            Write-Host "`n📋 Listando port-forwards..." -ForegroundColor $Colors.Info
+            Write-Host "`n📋 Listing port-forwards..." -ForegroundColor $Colors.Info
             & "$scriptPath\list-port-forward.ps1"
         }
         { $_ -in "check", "check-docker" } {
-            Write-Host "`n🐳 Verificando Docker..." -ForegroundColor $Colors.Info
+            Write-Host "`n🐳 Checking Docker..." -ForegroundColor $Colors.Info
             & "$scriptPath\check-docker-network.ps1"
         }
         "headlamp" {
-            Write-Host "`n🎨 Iniciando Headlamp..." -ForegroundColor $Colors.Info
+            Write-Host "`n🎨 Starting Headlamp..." -ForegroundColor $Colors.Info
             & "$scriptPath\start-headlamp-docker.ps1"
+        }
+        "external-secrets" {
+            Write-Host "`n🔐 Configuring External Secrets with Azure Key Vault..." -ForegroundColor $Colors.Info
+            & "$scriptPath\setup-external-secrets.ps1"
+        }
+        { $_ -in "secrets", "list-secrets" } {
+            Write-Host "`n🔑 Listing secrets..." -ForegroundColor $Colors.Info
+            # Pass remaining arguments to the script
+            $secretsArgs = @()
+            if ($arg1) { $secretsArgs += $arg1 }
+            if ($arg2) { $secretsArgs += $arg2 }
+            & "$scriptPath\list-secrets.ps1" @secretsArgs
+        }
+        { $_ -in "build", "build-push" } {
+            Write-Host "`n🐳 Building and pushing Docker images..." -ForegroundColor $Colors.Info
+            $api = if ($arg1) { $arg1 } else { "all" }
+            & "$scriptPath\build-push-images.ps1" -Api $api -Restart
+        }
+        "bootstrap" {
+            Write-Host "`n🚀 Bootstrapping ArgoCD applications..." -ForegroundColor $Colors.Info
+            $env = if ($arg1) { $arg1 } else { "dev" }
+            & "$scriptPath\bootstrap-argocd-apps.ps1" -Environment $env
         }
         "status" {
             Show-Status
@@ -288,8 +335,8 @@ function Invoke-Command($cmd, $arg1 = "", $arg2 = "") {
             Show-Menu
         }
         default {
-            Write-Host "`n❌ Comando desconhecido: $cmd" -ForegroundColor $Colors.Error
-            Write-Host "Execute com --help para ver comandos disponíveis." -ForegroundColor $Colors.Muted
+            Write-Host "`n❌ Unknown command: $cmd" -ForegroundColor $Colors.Error
+            Write-Host "Run with --help to see available commands." -ForegroundColor $Colors.Muted
             exit 1
         }
     }
@@ -297,7 +344,7 @@ function Invoke-Command($cmd, $arg1 = "", $arg2 = "") {
 
 # Main execution
 if (-not $Command) {
-    # Sem parâmetros: abre menu interativo
+    # No parameters: open interactive menu
     Show-Menu
 } elseif ($Command -in @("help", "--help", "-h", "/?")) {
     Show-Help

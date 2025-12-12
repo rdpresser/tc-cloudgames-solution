@@ -1,15 +1,15 @@
 <#
 .SYNOPSIS
-  Para port-forwards ativos do kubectl.
+  Stops active kubectl port-forwards.
 .DESCRIPTION
-  Identifica e encerra processos kubectl port-forward em execução.
-  Permite encerrar por nome do serviço ou por PID específico.
-  
+  Identifies and terminates running kubectl port-forward processes.
+  Allows termination by service name or specific PID.
+
 .PARAMETER Service
-  Opcional: Especifica qual serviço parar (argocd, grafana, ou all). Default: all.
-  
+  Optional: Specifies which service to stop (argocd, grafana, or all). Default: all.
+
 .PARAMETER Id
-  Opcional: PID específico para matar (útil para processos travados/zumbis).
+  Optional: Specific PID to kill (useful for stuck/zombie processes).
 
 .EXAMPLE
   .\stop-port-forward.ps1
@@ -32,20 +32,20 @@ Write-Host "`n=== Stopping Port-Forwards ===" -ForegroundColor Cyan
 if ($PSCmdlet.ParameterSetName -eq "ById") {
     try {
         $proc = Get-Process -Id $Id -ErrorAction Stop
-        Write-Host "🛑 Parando processo PID: $($proc.Id) ($($proc.ProcessName))..." -ForegroundColor Yellow
+        Write-Host "🛑 Stopping process PID: $($proc.Id) ($($proc.ProcessName))..." -ForegroundColor Yellow
         Stop-Process -Id $proc.Id -Force
-        Write-Host "✅ Processo encerrado com sucesso." -ForegroundColor Green
+        Write-Host "✅ Process terminated successfully." -ForegroundColor Green
     } catch {
-        Write-Host "❌ Erro ao parar PID ${Id}: $_" -ForegroundColor Red
+        Write-Host "❌ Error stopping PID ${Id}: $_" -ForegroundColor Red
     }
     exit
 }
 
-# Buscar processos kubectl com port-forward
+# Find kubectl processes with port-forward
 $kubectlProcesses = Get-Process -Name kubectl -ErrorAction SilentlyContinue
 
 if (-not $kubectlProcesses) {
-    Write-Host "✅ Nenhum port-forward ativo encontrado" -ForegroundColor Green
+    Write-Host "✅ No active port-forward found" -ForegroundColor Green
     exit 0
 }
 
@@ -53,13 +53,13 @@ $stopped = 0
 
 foreach ($proc in $kubectlProcesses) {
     try {
-        # Tentar obter a linha de comando do processo
+        # Try to get the process command line
         $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($proc.Id)").CommandLine
-        
-        # Verificar se é um port-forward
+
+        # Check if it's a port-forward
         if ($cmdLine -like "*port-forward*") {
             $shouldStop = $false
-            
+
             switch ($Service) {
                 "argocd" {
                     if ($cmdLine -like "*argocd-server*") {
@@ -75,23 +75,23 @@ foreach ($proc in $kubectlProcesses) {
                     $shouldStop = $true
                 }
             }
-            
+
             if ($shouldStop) {
-                Write-Host "🛑 Parando port-forward (PID: $($proc.Id))..." -ForegroundColor Yellow
+                Write-Host "🛑 Stopping port-forward (PID: $($proc.Id))..." -ForegroundColor Yellow
                 Stop-Process -Id $proc.Id -Force
                 $stopped++
             }
         }
     } catch {
-        # Ignorar erros ao acessar informações do processo
+        # Ignore errors when accessing process information
         continue
     }
 }
 
 if ($stopped -gt 0) {
-    Write-Host "✅ $stopped port-forward(s) parado(s)" -ForegroundColor Green
+    Write-Host "✅ $stopped port-forward(s) stopped" -ForegroundColor Green
 } else {
-    Write-Host "ℹ️  Nenhum port-forward correspondente encontrado" -ForegroundColor Cyan
+    Write-Host "ℹ️  No matching port-forward found" -ForegroundColor Cyan
 }
 
 Write-Host ""

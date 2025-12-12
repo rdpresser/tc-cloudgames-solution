@@ -1,18 +1,18 @@
 <#
 .SYNOPSIS
-  Inicia port-forward para ArgoCD e/ou Grafana em modo background (detached).
+  Starts port-forward for ArgoCD and/or Grafana in background (detached) mode.
 .DESCRIPTION
-  Script para facilitar acesso aos serviços do cluster k3d via port-forward.
-  Executa em background sem prender o terminal.
-  
-  Serviços disponíveis:
-  - argocd: http://localhost:8090 (redireciona para porta 443 do ArgoCD - HTTP Insecure)
-  - grafana: http://localhost:3000 (redireciona para porta 80 do Grafana)
-  - all: Inicia ambos os port-forwards
-  
+  Script to facilitate access to k3d cluster services via port-forward.
+  Runs in background without blocking the terminal.
+
+  Available services:
+  - argocd: http://localhost:8090 (redirects to ArgoCD port 443 - HTTP Insecure)
+  - grafana: http://localhost:3000 (redirects to Grafana port 80)
+  - all: Starts both port-forwards
+
 .PARAMETER Service
-  Serviço para port-forward: argocd, grafana, ou all
-  
+  Service for port-forward: argocd, grafana, or all
+
 .EXAMPLE
   .\port-forward.ps1 argocd
   .\port-forward.ps1 grafana
@@ -26,33 +26,33 @@ param(
     [string]$Service = "all"
 )
 
-# Função para verificar se port-forward já está rodando
+# Function to check if port-forward is already running
 function Test-PortForwardRunning($port, $serviceName) {
-    # Primeiro verificar se a porta está em uso
+    # First check if port is in use
     $connections = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
     if ($connections.Count -eq 0) {
         return $false
     }
-    
-    # Verificar se é um kubectl port-forward para este serviço específico
+
+    # Check if it's a kubectl port-forward for this specific service
     $kubectlProcs = Get-Process -Name kubectl -ErrorAction SilentlyContinue
     if (-not $kubectlProcs) {
-        # Porta em uso mas não é kubectl - considerar como livre para nossos propósitos
+        # Port in use but not kubectl - consider as free for our purposes
         return $false
     }
-    
+
     foreach ($proc in $kubectlProcs) {
         try {
             $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($proc.Id)").CommandLine
-            # Verificar se é port-forward E tem o serviço específico E usa a porta local correta
-            if ($cmdLine -and 
-                $cmdLine -like "*port-forward*" -and 
-                $cmdLine -like "*svc/$serviceName*" -and 
+            # Check if it's port-forward AND has the specific service AND uses the correct local port
+            if ($cmdLine -and
+                $cmdLine -like "*port-forward*" -and
+                $cmdLine -like "*svc/$serviceName*" -and
                 $cmdLine -match "(\d+):") {
-                
+
                 $localPort = $matches[1]
                 if ($localPort -eq $port) {
-                    Write-Host "   ℹ️  Encontrado processo existente: PID $($proc.Id)" -ForegroundColor Gray
+                    Write-Host "   ℹ️  Found existing process: PID $($proc.Id)" -ForegroundColor Gray
                     return $true
                 }
             }
@@ -60,80 +60,80 @@ function Test-PortForwardRunning($port, $serviceName) {
             continue
         }
     }
-    
+
     return $false
 }
 
-# Função para iniciar port-forward em background
+# Function to start port-forward in background
 function Start-PortForward($serviceName, $namespace, $port, $targetPort, $kubectlPath) {
     $portNumber = $port
-    
-    # Verificar se já existe port-forward para este serviço nesta porta
+
+    # Check if port-forward already exists for this service on this port
     if (Test-PortForwardRunning $portNumber $serviceName) {
-        Write-Host "⚠️  Port-forward para $serviceName já está rodando na porta $portNumber" -ForegroundColor Yellow
+        Write-Host "⚠️  Port-forward for $serviceName is already running on port $portNumber" -ForegroundColor Yellow
         return $null
     }
-    
-    Write-Host "🚀 Iniciando port-forward para $serviceName..." -ForegroundColor Cyan
-    Write-Host "   📡 Acessível em: http://localhost:$port" -ForegroundColor Green
-    Write-Host "   🔧 Usando: $kubectlPath" -ForegroundColor Gray
-    
-    # Iniciar processo em background usando caminho completo do kubectl
+
+    Write-Host "🚀 Starting port-forward for $serviceName..." -ForegroundColor Cyan
+    Write-Host "   📡 Accessible at: http://localhost:$port" -ForegroundColor Green
+    Write-Host "   🔧 Using: $kubectlPath" -ForegroundColor Gray
+
+    # Start process in background using full kubectl path
     $process = Start-Process -FilePath $kubectlPath `
         -ArgumentList "port-forward", "svc/$serviceName", "-n", "$namespace", "${port}:${targetPort}", "--address", "0.0.0.0" `
         -WindowStyle Hidden `
         -PassThru
-    
-    Write-Host "   ⏳ Processo iniciado: PID $($process.Id)" -ForegroundColor Gray
-    
-    # Aguardar um momento para garantir que o port-forward está ativo
+
+    Write-Host "   ⏳ Process started: PID $($process.Id)" -ForegroundColor Gray
+
+    # Wait a moment to ensure port-forward is active
     Start-Sleep -Seconds 3
-    
-    # Verificar se o processo ainda está rodando
+
+    # Check if process is still running
     if ($process.HasExited) {
-        Write-Host "❌ Falha ao iniciar port-forward para $serviceName" -ForegroundColor Red
-        Write-Host "   O processo terminou imediatamente. Verifique se o serviço existe no cluster." -ForegroundColor Yellow
+        Write-Host "❌ Failed to start port-forward for $serviceName" -ForegroundColor Red
+        Write-Host "   The process terminated immediately. Check if the service exists in the cluster." -ForegroundColor Yellow
         return $null
     }
-    
-    # Validar se a porta realmente está escutando
+
+    # Validate if the port is actually listening
     $portCheck = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
     if (-not $portCheck) {
-        Write-Host "❌ Port-forward iniciou mas a porta $port não está escutando" -ForegroundColor Red
+        Write-Host "❌ Port-forward started but port $port is not listening" -ForegroundColor Red
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
         return $null
     }
-    
-    Write-Host "✅ Port-forward para $serviceName iniciado (PID: $($process.Id))" -ForegroundColor Green
+
+    Write-Host "✅ Port-forward for $serviceName started (PID: $($process.Id))" -ForegroundColor Green
     return $process
 }
 
-# Verificar se kubectl está disponível
+# Check if kubectl is available
 if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ ERRO: kubectl não encontrado no PATH" -ForegroundColor Red
+    Write-Host "❌ ERROR: kubectl not found in PATH" -ForegroundColor Red
     exit 1
 }
 
-# Obter o caminho completo do kubectl
-# Se for um shim do Chocolatey, usar o executável real
+# Get the full kubectl path
+# If it's a Chocolatey shim, use the real executable
 $kubectlCmd = Get-Command kubectl
 $kubectlPath = $kubectlCmd.Source
 
-# Verificar se é um shim do Chocolatey e usar o executável real
+# Check if it's a Chocolatey shim and use the real executable
 if ($kubectlPath -like "*chocolatey\bin\kubectl.exe") {
     $realPath = "C:\ProgramData\chocolatey\lib\kubernetes-cli\tools\kubernetes\client\bin\kubectl.exe"
     if (Test-Path $realPath) {
         $kubectlPath = $realPath
-        Write-Host "ℹ️  Usando kubectl real (não o shim): $kubectlPath" -ForegroundColor Gray
+        Write-Host "ℹ️  Using real kubectl (not the shim): $kubectlPath" -ForegroundColor Gray
     }
 }
 
 Write-Host "`n=== Port-Forward Manager ===" -ForegroundColor Cyan
-Write-Host "Modo: $Service`n" -ForegroundColor White
+Write-Host "Mode: $Service`n" -ForegroundColor White
 
 $processes = @()
 
-# Iniciar port-forwards conforme solicitado
+# Start port-forwards as requested
 switch ($Service) {
     "argocd" {
         $proc = Start-PortForward "argocd-server" "argocd" 8090 443 $kubectlPath
@@ -146,19 +146,19 @@ switch ($Service) {
     "all" {
         $proc1 = Start-PortForward "argocd-server" "argocd" 8090 443 $kubectlPath
         if ($proc1) { $processes += $proc1 }
-        
+
         $proc2 = Start-PortForward "kube-prom-stack-grafana" "monitoring" 3000 80 $kubectlPath
         if ($proc2) { $processes += $proc2 }
     }
 }
 
 if ($processes.Count -eq 0) {
-    Write-Host "`n⚠️  Nenhum port-forward foi iniciado" -ForegroundColor Yellow
+    Write-Host "`n⚠️  No port-forward was started" -ForegroundColor Yellow
     exit 1
 }
 
 Write-Host "`n" -NoNewline
-Write-Host "📌 Port-forwards ativos:" -ForegroundColor Cyan
+Write-Host "📌 Active port-forwards:" -ForegroundColor Cyan
 if ($Service -eq "argocd" -or $Service -eq "all") {
     Write-Host "   🔐 ArgoCD:  http://localhost:8090" -ForegroundColor Green
 }
@@ -166,4 +166,4 @@ if ($Service -eq "grafana" -or $Service -eq "all") {
     Write-Host "   📊 Grafana: http://localhost:3000" -ForegroundColor Green
 }
 
-Write-Host "`n💡 Para parar os port-forwards, execute: .\stop-port-forward.ps1`n" -ForegroundColor Yellow
+Write-Host "`n💡 To stop port-forwards, run: .\stop-port-forward.ps1`n" -ForegroundColor Yellow

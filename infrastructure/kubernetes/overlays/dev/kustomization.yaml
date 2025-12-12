@@ -1,5 +1,6 @@
 resources:
   - ../../base
+  - cluster-secret-store-patch.yaml
 
 labels:
   - pairs:
@@ -12,19 +13,5 @@ images:
     newTag: dev
   - name: localhost:5000/payments-api
     newTag: dev
-
-configMapGenerator:
-  - name: azure-servicebus-config
-    behavior: merge
-    literals:
-      - userQueue=user-events-dev
-      - gamesQueue=games-events-dev
-      - paymentsQueue=payments-events-dev
-
-secretGenerator:
-  - name: azure-servicebus-secret
-    behavior: merge
-    literals:
-      - AZURE_SERVICEBUS_CONNECTION_STRING=Endpoint=sb://<namespace-dev>.servicebus.windows.net/;SharedAccessKeyName=<keyName>;SharedAccessKey=<key>
 
 namespace: cloudgames-dev

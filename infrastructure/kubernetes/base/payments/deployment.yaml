@@ -26,17 +26,15 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+          envFrom:
+            - secretRef:
+                name: payments-api-secrets
           env:
-            - name: AZURE_SERVICEBUS_CONNECTION_STRING
-              valueFrom:
-                secretKeyRef:
-                  name: azure-servicebus-secret
-                  key: AZURE_SERVICEBUS_CONNECTION_STRING
-            - name: PAYMENTS_QUEUE
-              valueFrom:
-                configMapKeyRef:
-                  name: azure-servicebus-config
-                  key: paymentsQueue
+            # Static environment variables
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
           startupProbe:
             httpGet:
               path: /health

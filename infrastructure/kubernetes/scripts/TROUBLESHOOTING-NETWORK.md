@@ -1,117 +1,117 @@
-# 🔧 Problema: Cluster K3D não conecta após criação
+# 🔧 Problem: K3D Cluster doesn't connect after creation
 
-## ❌ Sintoma
-- Cluster k3d é criado com sucesso
-- Comando `kubectl get nodes` falha com erro:
+## ❌ Symptom
+- k3d cluster is created successfully
+- Command `kubectl get nodes` fails with error:
   ```
   dial tcp 192.168.0.25:XXXXX: connectex: A connection attempt failed...
   ```
-- Erro ocorre com `host.docker.internal`
+- Error occurs with `host.docker.internal`
 
-## 🔍 Causa
-Problema de resolução DNS do Windows com WSL2 após muito tempo ligado ou com mudanças de rede.
+## 🔍 Cause
+Windows DNS resolution issue with WSL2 after being on for a long time or with network changes.
 
-## ✅ Solução Rápida
+## ✅ Quick Solution
 
-### Opção 1: Reiniciar WSL2 (Recomendado)
+### Option 1: Restart WSL2 (Recommended)
 ```powershell
-# 1. Feche TODOS os terminais/VS Code que usam WSL
+# 1. Close ALL terminals/VS Code that use WSL
 
-# 2. Abra PowerShell como Administrador e execute:
+# 2. Open PowerShell as Administrator and run:
 wsl --shutdown
 
-# 3. Aguarde 10 segundos
+# 3. Wait 10 seconds
 
-# 4. Abra Docker Desktop e aguarde iniciar completamente
+# 4. Open Docker Desktop and wait for it to fully start
 
-# 5. Execute o diagnóstico:
+# 5. Run the diagnostic:
 .\check-docker-network.ps1
 
-# 6. Se tudo OK, recrie o cluster:
+# 6. If all OK, recreate the cluster:
 .\create-all-from-zero.ps1
 ```
 
-### Opção 2: Reiniciar Docker Desktop
+### Option 2: Restart Docker Desktop
 ```powershell
-# 1. Clique com botão direito no ícone do Docker Desktop (system tray)
-# 2. Selecione "Restart Docker Desktop"
-# 3. Aguarde iniciar completamente
-# 4. Execute:
+# 1. Right-click on Docker Desktop icon (system tray)
+# 2. Select "Restart Docker Desktop"
+# 3. Wait for it to fully start
+# 4. Run:
 .\create-all-from-zero.ps1
 ```
 
-### Opção 3: Reiniciar Windows (Se opções 1 e 2 falharem)
+### Option 3: Restart Windows (If options 1 and 2 fail)
 ```powershell
-# Simplesmente reinicie o computador
-# Após reiniciar:
-.\start-cluster.ps1  # Se o cluster já existia
-# OU
-.\create-all-from-zero.ps1  # Se precisa criar novo
+# Simply restart the computer
+# After restart:
+.\start-cluster.ps1  # If cluster already existed
+# OR
+.\create-all-from-zero.ps1  # If you need to create new
 ```
 
-## 🛡️ Prevenção
+## 🛡️ Prevention
 
-### Criar Cluster Corretamente desde o início:
+### Create Cluster Correctly from the beginning:
 ```powershell
-# 1. Reinicie Docker Desktop OU execute wsl --shutdown
-# 2. Aguarde Docker estar completamente pronto
-# 3. Execute diagnóstico:
+# 1. Restart Docker Desktop OR run wsl --shutdown
+# 2. Wait for Docker to be completely ready
+# 3. Run diagnostic:
 .\check-docker-network.ps1
 
-# 4. Se tudo OK, crie o cluster:
+# 4. If all OK, create the cluster:
 .\create-all-from-zero.ps1
 ```
 
-## 🔧 Correção Manual (Se script falhar)
+## 🔧 Manual Fix (If script fails)
 
-Se o script criar o cluster mas kubectl não conectar:
+If the script creates the cluster but kubectl doesn't connect:
 
 ```powershell
-# 1. Obter a porta do cluster
+# 1. Get the cluster port
 $port = (docker port k3d-dev-serverlb 6443/tcp).Split(':')[-1]
 
-# 2. Atualizar kubeconfig
+# 2. Update kubeconfig
 kubectl config set-cluster k3d-dev --server="https://127.0.0.1:$port"
 
-# 3. Testar
+# 3. Test
 kubectl get nodes
 ```
 
-## 📝 Notas Técnicas
+## 📝 Technical Notes
 
-- O k3d usa `host.docker.internal` por padrão no Windows
-- WSL2 às vezes falha ao resolver este hostname corretamente
-- Usar `127.0.0.1` resolve o problema
-- O script `create-all-from-zero.ps1` agora faz isso automaticamente
+- k3d uses `host.docker.internal` by default on Windows
+- WSL2 sometimes fails to resolve this hostname correctly
+- Using `127.0.0.1` fixes the issue
+- The `create-all-from-zero.ps1` script now does this automatically
 
-## ⚠️ Se NADA funcionar:
+## ⚠️ If NOTHING works:
 
 ```powershell
-# Limpeza completa:
+# Complete cleanup:
 .\cleanup-all.ps1
 k3d registry delete registry.local
 docker system prune -a --volumes -f
 
-# Reiniciar WSL:
+# Restart WSL:
 wsl --shutdown
 
-# Reiniciar Docker Desktop
+# Restart Docker Desktop
 
-# Aguardar 1-2 minutos
+# Wait 1-2 minutes
 
-# Recriar tudo:
+# Recreate everything:
 .\create-all-from-zero.ps1
 ```
 
-## 🆘 Logs Úteis
+## 🆘 Useful Logs
 
 ```powershell
-# Ver logs do servidor k3d:
+# View k3d server logs:
 docker logs k3d-dev-server-0
 
-# Ver logs do serverlb:
+# View serverlb logs:
 docker logs k3d-dev-serverlb
 
-# Testar conectividade direta:
+# Test direct connectivity:
 docker exec -it k3d-dev-server-0 kubectl get nodes
 ```

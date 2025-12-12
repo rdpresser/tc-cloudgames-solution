@@ -1,21 +1,21 @@
 <#
 .SYNOPSIS
-  Lista todos os port-forwards ativos e suas portas.
+  Lists all active port-forwards and their ports.
 .DESCRIPTION
-  Mostra informações sobre processos kubectl port-forward em execução,
-  incluindo PID, portas e tempo de execução.
+  Shows information about running kubectl port-forward processes,
+  including PID, ports, and uptime.
 .EXAMPLE
   .\list-port-forward.ps1
 #>
 
-Write-Host "`n=== Port-Forwards Ativos ===" -ForegroundColor Cyan
+Write-Host "`n=== Active Port-Forwards ===" -ForegroundColor Cyan
 Write-Host ""
 
-# Buscar processos kubectl com port-forward
+# Find kubectl processes with port-forward
 $kubectlProcesses = Get-Process -Name kubectl -ErrorAction SilentlyContinue
 
 if (-not $kubectlProcesses) {
-    Write-Host "ℹ️  Nenhum port-forward ativo" -ForegroundColor Yellow
+    Write-Host "ℹ️  No active port-forward" -ForegroundColor Yellow
     Write-Host ""
     exit 0
 }
@@ -24,47 +24,47 @@ $found = $false
 
 foreach ($proc in $kubectlProcesses) {
     try {
-        # Tentar obter a linha de comando do processo
+        # Try to get the process command line
         $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($proc.Id)").CommandLine
-        
-        # Verificar se é um port-forward
+
+        # Check if it's a port-forward
         if ($cmdLine -like "*port-forward*") {
             $found = $true
-            
-            # Extrair informações
+
+            # Extract information
             $service = "Unknown"
             $port = "Unknown"
-            
+
             if ($cmdLine -match "svc/([^\s]+)") {
                 $service = $matches[1]
             }
-            
+
             if ($cmdLine -match "(\d+):\d+") {
                 $port = $matches[1]
             }
-            
-            # Calcular tempo de execução
+
+            # Calculate uptime
             $uptime = (Get-Date) - $proc.StartTime
             $uptimeStr = "{0:hh\:mm\:ss}" -f $uptime
-            
-            Write-Host "🔗 Port-Forward Ativo:" -ForegroundColor Green
-            Write-Host "   Serviço: $service" -ForegroundColor White
-            Write-Host "   Porta:   http://localhost:$port" -ForegroundColor Cyan
+
+            Write-Host "🔗 Active Port-Forward:" -ForegroundColor Green
+            Write-Host "   Service: $service" -ForegroundColor White
+            Write-Host "   Port:    http://localhost:$port" -ForegroundColor Cyan
             Write-Host "   PID:     $($proc.Id)" -ForegroundColor Gray
-            Write-Host "   Início:  $($proc.StartTime)" -ForegroundColor Gray
+            Write-Host "   Started: $($proc.StartTime)" -ForegroundColor Gray
             Write-Host "   Uptime:  $uptimeStr" -ForegroundColor Gray
             Write-Host ""
         }
     } catch {
-        # Ignorar erros ao acessar informações do processo
+        # Ignore errors when accessing process information
         continue
     }
 }
 
 if (-not $found) {
-    Write-Host "ℹ️  Nenhum port-forward ativo" -ForegroundColor Yellow
+    Write-Host "ℹ️  No active port-forward" -ForegroundColor Yellow
     Write-Host ""
 }
 
-Write-Host "💡 Use '.\stop-port-forward.ps1' para parar os port-forwards" -ForegroundColor Yellow
+Write-Host "💡 Use '.\stop-port-forward.ps1' to stop port-forwards" -ForegroundColor Yellow
 Write-Host ""

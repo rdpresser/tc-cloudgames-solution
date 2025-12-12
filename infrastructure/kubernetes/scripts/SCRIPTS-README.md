@@ -19,31 +19,71 @@
 ```
 
 ## 🎯 Recommended Flow
-```powershell
-# First time
-.\k3d-manager.ps1 create
-.\k3d-manager.ps1 port-forward all
-.\k3d-manager.ps1 headlamp   # optional UI
 
-# After reboot
+### Complete Setup (First Time)
+```powershell
+# 1. Create cluster (ArgoCD, KEDA, Prometheus, Grafana)
+.\k3d-manager.ps1 create
+
+# 2. Configure External Secrets (Azure Key Vault integration)
+.\k3d-manager.ps1 external-secrets
+
+# 3. Bootstrap ArgoCD applications
+.\k3d-manager.ps1 bootstrap
+
+# 4. Start port-forwards
+.\k3d-manager.ps1 port-forward all
+
+# 5. (Optional) Start Headlamp UI
+.\k3d-manager.ps1 headlamp
+```
+
+### After Reboot
+```powershell
 .\k3d-manager.ps1 start
 .\k3d-manager.ps1 port-forward all
+```
 
-# Status
+### Status & Monitoring
+```powershell
 .\k3d-manager.ps1 status
 .\k3d-manager.ps1 list
+.\k3d-manager.ps1 secrets
 ```
 
 ## 📦 Scripts Overview
-- `k3d-manager.ps1` (main): menu + CLI, wraps all scripts (create, start, cleanup, port-forward, stop, list, check, headlamp, status, help/menu).
-- `create-all-from-zero.ps1`: full cluster build (registry, cluster, Argo CD, KEDA, Prometheus+Grafana, sets Argo CD password `Argo@123`, Grafana user `rdpresser/rdpresser@123`).
-- `start-cluster.ps1`: start existing cluster after reboot (checks Docker, sets kube context, waits core pods).
-- `port-forward.ps1`: start port-forwards (Argo CD 8090->443, Grafana 3000->80) in background with duplicate checks.
-- `stop-port-forward.ps1`: stop specific or all port-forward processes.
-- `list-port-forward.ps1`: list active port-forwards.
-- `cleanup-all.ps1`: remove everything (cluster + registry).
-- `check-docker-network.ps1`: diagnose Docker/network issues.
-- `start-headlamp-docker.ps1`: start Headlamp UI container.
+
+### Core Scripts
+| Script | Description |
+|--------|-------------|
+| `k3d-manager.ps1` | Main entry point - interactive menu + CLI |
+| `create-all-from-zero.ps1` | Full cluster build (registry, ArgoCD, KEDA, Prometheus+Grafana) |
+| `start-cluster.ps1` | Start existing cluster after reboot |
+| `cleanup-all.ps1` | Remove everything (cluster + registry) |
+
+### Port-Forward Scripts
+| Script | Description |
+|--------|-------------|
+| `port-forward.ps1` | Start port-forwards (ArgoCD 8090, Grafana 3000) |
+| `stop-port-forward.ps1` | Stop specific or all port-forwards |
+| `list-port-forward.ps1` | List active port-forwards |
+
+### Azure Integration
+| Script | Description |
+|--------|-------------|
+| `setup-external-secrets.ps1` | Configure External Secrets Operator with Azure Key Vault |
+| `list-secrets.ps1` | List, search, and inspect Kubernetes secrets |
+
+### Deployment
+| Script | Description |
+|--------|-------------|
+| `bootstrap-argocd-apps.ps1` | Bootstrap ArgoCD applications (dev/prod) |
+
+### Utilities
+| Script | Description |
+|--------|-------------|
+| `check-docker-network.ps1` | Diagnose Docker/network issues |
+| `start-headlamp-docker.ps1` | Start Headlamp UI container |
 
 ## 🔗 Services
 | Service  | URL                   | Credentials |
@@ -99,10 +139,10 @@ kubectl rollout restart deployment payments-api -n cloudgames-dev
 .\stop-port-forward.ps1
 .\stop-port-forward.ps1 all
 
-# Parar apenas ArgoCD
+# Stop only ArgoCD
 .\stop-port-forward.ps1 argocd
 
-# Parar apenas Grafana
+# Stop only Grafana
 .\stop-port-forward.ps1 grafana
 ```
 
@@ -110,31 +150,31 @@ kubectl rollout restart deployment payments-api -n cloudgames-dev
 
 ### 4️⃣ **`list-port-forward.ps1`** 📋
 
-**Função**: Lista port-forwards em execução com detalhes.
+**Function**: Lists running port-forwards with details.
 
-**O que faz:**
-- Mostra todos os processos kubectl port-forward ativos
-- Exibe PID, serviço, porta e tempo de execução (uptime)
-- Útil para monitoramento e troubleshooting
+**What it does:**
+- Shows all active kubectl port-forward processes
+- Displays PID, service, port and uptime
+- Useful for monitoring and troubleshooting
 
-**Uso:**
+**Usage:**
 ```powershell
 .\list-port-forward.ps1
 ```
 
-**Saída exemplo:**
+**Example output:**
 ```
-=== Port-Forwards Ativos ===
+=== Active Port-Forwards ===
 
-🔗 Port-Forward Ativo:
-   Serviço: argocd-server
-   Porta:   http://localhost:8090
+🔗 Active Port-Forward:
+   Service: argocd-server
+   Port:    http://localhost:8090
    PID:     12345
    Uptime:  00:15:32
 
-🔗 Port-Forward Ativo:
-   Serviço: kube-prom-stack-grafana
-   Porta:   http://localhost:3000
+🔗 Active Port-Forward:
+   Service: kube-prom-stack-grafana
+   Port:    http://localhost:3000
    PID:     12346
    Uptime:  00:15:30
 ```
@@ -143,365 +183,402 @@ kubectl rollout restart deployment payments-api -n cloudgames-dev
 
 ### 4.1️⃣ **`check-docker-network.ps1`** 🔍
 
-**Função**: Diagnostica problemas de rede do Docker antes de criar cluster.
+**Function**: Diagnoses Docker network issues before creating cluster.
 
-**O que faz:**
-- Verifica se Docker está rodando
-- Testa conectividade de containers
-- Valida resolução de `host.docker.internal`
-- Identifica modo de backend (WSL2/Hyper-V)
-- Verifica recursos disponíveis (CPU/RAM)
-- Checa portas necessárias (80, 443, 8090, 3000)
+**What it does:**
+- Checks if Docker is running
+- Tests container connectivity
+- Validates `host.docker.internal` resolution
+- Identifies backend mode (WSL2/Hyper-V)
+- Checks available resources (CPU/RAM)
+- Checks required ports (80, 443, 8090, 3000)
 
-**Uso:**
+**Usage:**
 ```powershell
 .\check-docker-network.ps1
-# ou via manager
+# or via manager
 .\k3d-manager.ps1 check
 ```
 
-**Quando usar:**
-- ✅ Antes de criar o cluster pela primeira vez
-- ✅ Após problemas de conectividade
-- ✅ Quando kubectl não conecta ao cluster
-- ✅ Após mudanças no Docker Desktop
+**When to use:**
+- ✅ Before creating the cluster for the first time
+- ✅ After connectivity issues
+- ✅ When kubectl doesn't connect to the cluster
+- ✅ After Docker Desktop changes
 
 ---
 
 ### 4.2️⃣ **`start-headlamp-docker.ps1`** 🎨
 
-**Função**: Inicia Headlamp Kubernetes UI em container Docker.
+**Function**: Starts Headlamp Kubernetes UI in Docker container.
 
-**O que faz:**
-- Gera kubeconfig temporário compatível
-- Remove container anterior se existir
-- Inicia Headlamp na porta 4466
-- Configura acesso ao cluster k3d
+**What it does:**
+- Generates compatible temporary kubeconfig
+- Removes previous container if exists
+- Starts Headlamp on port 4466
+- Configures access to k3d cluster
 
-**Uso:**
+**Usage:**
 ```powershell
 .\start-headlamp-docker.ps1
-# ou via manager
+# or via manager
 .\k3d-manager.ps1 headlamp
 ```
 
-**Acesso:**
+**Access:**
 - **URL**: http://localhost:4466
-- Interface gráfica para gerenciar o cluster k3d
+- Graphical interface to manage the k3d cluster
 
-**Características:**
-- ✅ UI moderna para Kubernetes
-- ✅ Visualização de recursos
-- ✅ Logs e métricas
-- ✅ Gerenciamento simplificado
+**Features:**
+- ✅ Modern Kubernetes UI
+- ✅ Resource visualization
+- ✅ Logs and metrics
+- ✅ Simplified management
+
+---
+
+### 4.3️⃣ **`list-secrets.ps1`** 🔑
+
+**Function**: Lists and searches Kubernetes secrets synced from Azure Key Vault.
+
+**What it does:**
+- Lists all secrets in application namespaces
+- Filters by secret name or key
+- Shows ExternalSecrets sync status
+- Optionally decodes secret values (with masking for sensitive data)
+
+**Usage:**
+```powershell
+# List all secrets in cloudgames-dev
+.\list-secrets.ps1
+.\k3d-manager.ps1 secrets
+
+# Filter by secret name
+.\list-secrets.ps1 -SecretName "user*"
+
+# Search for specific key
+.\list-secrets.ps1 -Key "db-password"
+
+# Show decoded values (careful!)
+.\list-secrets.ps1 -SecretName "user-api-secrets" -Decode
+
+# Search all namespaces
+.\list-secrets.ps1 -Namespace all
+```
+
+**Example Output:**
+```
+📦 Namespace: cloudgames-dev
+------------------------------------------------------------
+   🔐 user-api-secrets (Type: Opaque, Keys: 27)
+      • db-host
+      • db-port
+      • db-password
+      ...
+
+📊 ExternalSecrets Sync Status:
+   ✅ user-api-secrets - Status: SecretSynced
+   ✅ games-api-secrets - Status: SecretSynced
+   ✅ payments-api-secrets - Status: SecretSynced
+```
+
+---
+
+### 4.4️⃣ **`bootstrap-argocd-apps.ps1`** 🚀
+
+**Function**: Bootstraps ArgoCD applications for GitOps deployment.
+
+**What it does:**
+- Verifies prerequisites (cluster, ArgoCD, External Secrets)
+- Applies bootstrap manifest to ArgoCD
+- Optionally waits for applications to sync
+- Shows deployment status
+
+**Usage:**
+```powershell
+# Bootstrap dev environment (default)
+.\bootstrap-argocd-apps.ps1
+.\k3d-manager.ps1 bootstrap
+
+# Bootstrap specific environment
+.\bootstrap-argocd-apps.ps1 -Environment dev
+.\bootstrap-argocd-apps.ps1 -Environment prod
+
+# Dry run (show what would be applied)
+.\bootstrap-argocd-apps.ps1 -DryRun
+
+# Wait for sync completion
+.\bootstrap-argocd-apps.ps1 -Wait
+```
+
+**Prerequisites:**
+- ✅ Cluster running (`.\k3d-manager.ps1 create`)
+- ✅ External Secrets configured (`.\k3d-manager.ps1 external-secrets`)
 
 ---
 
 ### 5️⃣ **`cleanup-all.ps1`** 🗑️
 
-**Função**: Remove completamente o cluster e recursos.
+**Function**: Completely removes the cluster and resources.
 
-**O que faz:**
-- Para todos os port-forwards
-- Remove container Headlamp
-- Deleta cluster k3d
-- Remove registry local (opcional)
+**What it does:**
+- Stops all port-forwards
+- Removes Headlamp container
+- Deletes k3d cluster
+- Removes local registry (optional)
 
-**Uso:**
+**Usage:**
 ```powershell
 .\cleanup-all.ps1
-# ou via manager
+# or via manager
 .\k3d-manager.ps1 cleanup
 ```
 
-**Quando usar:**
-- ✅ Para começar do zero
-- ✅ Liberar recursos do sistema
-- ✅ Resolver problemas persistentes
-- ⚠️ ATENÇÃO: Remove todos os dados do cluster
+**When to use:**
+- ✅ To start from scratch
+- ✅ Free system resources
+- ✅ Resolve persistent issues
+- ⚠️ WARNING: Removes all cluster data
 
 ---
 
-## 🎯 Workflow Típico
+## 🎯 Typical Workflow
 
-### 🆕 Primeira vez:
+### 🆕 First time:
 ```powershell
-# Opção 1: Via manager (recomendado)
+# Option 1: Via manager (recommended)
 .\k3d-manager.ps1
-# Escolha opção 1 (Criar cluster)
-# Depois opção 3 (Port-forward todos)
+# Choose option 1 (Create cluster)
+# Then option 3 (Port-forward all)
 
-# Opção 2: Via linha de comando
+# Option 2: Via command line
 .\k3d-manager.ps1 create
 .\k3d-manager.ps1 port-forward all
 
-# Opção 3: Scripts diretos
+# Option 3: Direct scripts
 .\create-all-from-zero.ps1
 .\port-forward.ps1 all
 ```
 
-### 🔄 Após reiniciar o computador:
+### 🔄 After restarting the computer:
 ```powershell
-# Via manager (recomendado)
+# Via manager (recommended)
 .\k3d-manager.ps1
-# Escolha opção 2 (Iniciar cluster)
-# Depois opção 3 (Port-forward todos)
+# Choose option 2 (Start cluster)
+# Then option 3 (Port-forward all)
 
-# Via linha de comando
+# Via command line
 .\k3d-manager.ps1 start
 .\k3d-manager.ps1 port-forward all
 
-# Scripts diretos
+# Direct scripts
 .\start-cluster.ps1
 .\port-forward.ps1 all
 ```
 
-### 📊 Durante o desenvolvimento:
+### 📊 During development:
 ```powershell
-# Verificar status
+# Check status
 .\k3d-manager.ps1 status
 
-# Listar port-forwards
+# List port-forwards
 .\k3d-manager.ps1 list
 
-# Iniciar Headlamp UI
+# Start Headlamp UI
 .\k3d-manager.ps1 headlamp
 
-# Parar port-forwards
+# Stop port-forwards
 .\k3d-manager.ps1 stop all
 ```
 
 ### 🔧 Troubleshooting:
 ```powershell
-# Verificar Docker
+# Check Docker
 .\k3d-manager.ps1 check
 
-# Ver status completo
+# View full status
 .\k3d-manager.ps1 status
 
-# Recriar cluster do zero
+# Recreate cluster from scratch
 .\k3d-manager.ps1 cleanup
 .\k3d-manager.ps1 create
 ```
 
 ---
 
-## 🎯 Workflow Típico
-
-### 🆕 Primeira vez:
-```powershell
-# 1. Criar cluster completo
-.\create-all-from-zero.ps1
-
-# 2. Iniciar port-forwards em background
-.\port-forward.ps1 all
-
-# 3. Acessar serviços no browser
-# - ArgoCD:  http://localhost:8090  (admin / Argo@123)
-# - Grafana: http://localhost:3000  (rdpresser / rdpresser@123)
-```
-
-### 🔄 Após reiniciar o computador:
-```powershell
-# 1. Iniciar Docker Desktop (espere ficar pronto)
-
-# 2. Iniciar o cluster k3d
-.\start-cluster.ps1
-
-# 3. Iniciar port-forwards
-.\port-forward.ps1 all
-
-# 4. Acessar serviços no browser
-# - ArgoCD:  http://localhost:8090  (admin / Argo@123)
-# - Grafana: http://localhost:3000  (rdpresser / rdpresser@123)
-```
-
-### 📊 Durante o desenvolvimento:
-```powershell
-# Verificar status dos port-forwards
-.\list-port-forward.ps1
-
-# Trabalhar no cluster sem terminal preso...
-
-# Parar port-forwards quando terminar
-.\stop-port-forward.ps1 all
-```
-
----
-
-## 🔐 Credenciais Padrão
+## 🔐 Default Credentials
 
 ### ArgoCD
 - **URL**: http://localhost:8090 (HTTP)
-- **Usuário**: `admin`
-- **Senha**: `Argo@123`
+- **User**: `admin`
+- **Password**: `Argo@123`
 
 ### Grafana
 - **URL**: http://localhost:3000
 - **Admin**: `admin` / `Grafana@123`
-- **Usuário**: `rdpresser` / `rdpresser@123` (Admin role)
+- **User**: `rdpresser` / `rdpresser@123` (Admin role)
 
 ### Headlamp
 - **URL**: http://localhost:4466
-- Usa kubeconfig local automaticamente
+- Uses local kubeconfig automatically
 
 ---
 
-## ⚙️ Configuração do Cluster
+## ⚙️ Cluster Configuration
 
-O script `create-all-from-zero.ps1` cria um cluster com:
+The `create-all-from-zero.ps1` script creates a cluster with:
 
-| Componente | Configuração |
-|-----------|--------------|
+| Component | Configuration |
+|-----------|---------------|
 | **Cluster Name** | `dev` |
 | **Registry** | `localhost:5000` |
 | **Servers** | 1 node (8GB RAM) |
-| **Agents** | 2 nodes (8GB RAM cada) |
-| **Portas** | 80:80, 443:443 |
+| **Agents** | 2 nodes (8GB RAM each) |
+| **Ports** | 80:80, 443:443 |
 | **Namespaces** | argocd, monitoring, keda, users |
 
 ---
 
 ## 🛠️ Troubleshooting
 
-### ⚠️ Após reiniciar o computador o cluster não funciona
-**Problema**: Port-forwards falham, kubectl não conecta, serviços inacessíveis.
+### ⚠️ After restarting the computer the cluster doesn't work
+**Problem**: Port-forwards fail, kubectl doesn't connect, services inaccessible.
 
-**Causa**: Containers k3d param quando o Docker Desktop é reiniciado.
+**Cause**: k3d containers stop when Docker Desktop is restarted.
 
-**Solução**:
+**Solution**:
 ```powershell
-# 1. Inicie Docker Desktop e aguarde
-# 2. Execute:
+# 1. Start Docker Desktop and wait
+# 2. Run:
 .\start-cluster.ps1
 
-# 3. Depois faça port-forward:
+# 3. Then port-forward:
 .\port-forward.ps1 all
 ```
 
-### ⚠️ Port-forward cria processos duplicados
-**Problema**: Múltiplos processos kubectl na porta 8090/3000.
+### ⚠️ Port-forward creates duplicate processes
+**Problem**: Multiple kubectl processes on port 8090/3000.
 
-**Causa**: Shim do Chocolatey criando processos duplicados.
+**Cause**: Chocolatey shim creating duplicate processes.
 
-**Solução**: O script agora detecta e usa o executável real do kubectl automaticamente.
+**Solution**: The script now detects and uses the real kubectl executable automatically.
 
 ```powershell
-# Se ainda ocorrer:
+# If it still occurs:
 .\k3d-manager.ps1 stop all
 .\k3d-manager.ps1 list
 .\k3d-manager.ps1 port-forward all
 ```
 
-### Registry já existe
-O script detecta e reutiliza registry existente automaticamente.
+### Registry already exists
+The script detects and reuses existing registry automatically.
 
-### Cluster não deleta
+### Cluster won't delete
 ```powershell
-# Forçar deleção manual
+# Force manual deletion
 k3d cluster delete dev
 
-# Depois executar o script
+# Then run the script
 .\create-all-from-zero.ps1
 ```
 
-### Port-forward não inicia
+### Port-forward won't start
 ```powershell
-# Verificar se porta já está em uso
+# Check if port is already in use
 netstat -ano | findstr "8090"
 netstat -ano | findstr "3000"
 
-# Parar processos existentes
+# Stop existing processes
 .\stop-port-forward.ps1 all
 
-# Tentar novamente
+# Try again
 .\port-forward.ps1 all
 ```
 
-### Port-forward não conecta ou perde conexão
+### Port-forward doesn't connect or loses connection
 ```powershell
-# Verificar se pods estão rodando
+# Check if pods are running
 kubectl get pods -n argocd
 kubectl get pods -n monitoring
 
-# Reiniciar port-forwards
+# Restart port-forwards
 .\stop-port-forward.ps1 all
 .\port-forward.ps1 all
 ```
 
-### Problemas de memória
-Edite as variáveis no início do `create-all-from-zero.ps1`:
+### Memory issues
+Edit the variables at the beginning of `create-all-from-zero.ps1`:
 ```powershell
-$memoryPerNode = "8g"  # Ajuste conforme necessário
-$agentMemory = "8g"    # Ajuste conforme necessário
+$memoryPerNode = "8g"  # Adjust as needed
+$agentMemory = "8g"    # Adjust as needed
 ```
 
 ---
 
-## 📝 Notas Importantes
+## 📝 Important Notes
 
-1. **K3D Manager**: Use `.\k3d-manager.ps1` como ponto de entrada principal
-2. **Menu Interativo**: Execute sem parâmetros para menu visual
-3. **Linha de Comando**: Todos os comandos suportam execução direta
-4. **Idempotência**: Scripts podem ser executados múltiplas vezes com segurança
-5. **Senhas**: Configuráveis no início do `create-all-from-zero.ps1`
-6. **Persistência**: Grafana usa PersistentVolume de 5Gi
-7. **Registry**: Compartilhado entre recriações do cluster
-8. **Port-forwards**: Processos executam em background (WindowStyle Hidden)
-9. **Headlamp**: Interface gráfica alternativa para gerenciar o cluster
-10. **Status**: Use `.\k3d-manager.ps1 status` para visão geral rápida
+1. **K3D Manager**: Use `.\k3d-manager.ps1` as the main entry point
+2. **Interactive Menu**: Run without parameters for visual menu
+3. **Command Line**: All commands support direct execution
+4. **Idempotency**: Scripts can be run multiple times safely
+5. **Passwords**: Configurable at the beginning of `create-all-from-zero.ps1`
+6. **Persistence**: Grafana uses 5Gi PersistentVolume
+7. **Registry**: Shared between cluster recreations
+8. **Port-forwards**: Processes run in background (WindowStyle Hidden)
+9. **Headlamp**: Alternative graphical interface to manage the cluster
+10. **Status**: Use `.\k3d-manager.ps1 status` for quick overview
 
 ---
 
-## 🗑️ Scripts Removidos/Deprecated
+## 🗑️ Removed/Deprecated Scripts
 
-| Script | Status | Motivo | Alternativa |
+| Script | Status | Reason | Alternative |
 |--------|--------|--------|-------------|
-| `restore-after-delete.ps1` | ❌ REMOVIDO | Idêntico ao create-all-from-zero.ps1 | Use `create-all-from-zero.ps1` |
-| `PORT-FORWARD-README.md` | ❌ REMOVIDO | Documentação consolidada | Veja seções acima neste README |
+| `restore-after-delete.ps1` | ❌ REMOVED | Identical to create-all-from-zero.ps1 | Use `create-all-from-zero.ps1` |
+| `PORT-FORWARD-README.md` | ❌ REMOVED | Documentation consolidated | See sections above in this README |
 
 ---
 
-## 💡 Dicas
+## 💡 Tips
 
-### Usar o K3D Manager (Recomendado)
+### Using K3D Manager (Recommended)
 
 ```powershell
-# Criar alias permanente no PowerShell Profile
+# Create permanent alias in PowerShell Profile
 notepad $PROFILE
 
-# Adicionar ao arquivo:
+# Add to file:
 Set-Alias k3d "C:\Projects\tc-cloudgames-solution\infrastructure\kubernetes\scripts\k3d-manager.ps1"
 
-# Salvar e recarregar:
+# Save and reload:
 . $PROFILE
 
-# Uso simplificado:
-k3d                    # Menu interativo
-k3d status            # Status do cluster
-k3d create            # Criar cluster
-k3d start             # Iniciar cluster
+# Simplified usage:
+k3d                    # Interactive menu
+k3d status            # Cluster status
+k3d create            # Create cluster
+k3d start             # Start cluster
 k3d port-forward all  # Port-forwards
-k3d headlamp          # Iniciar Headlamp
+k3d headlamp          # Start Headlamp
 ```
 
-### Criar alias no PowerShell Profile (Scripts Individuais)
+### Create alias in PowerShell Profile (Individual Scripts)
 
 ```powershell
-# Adicionar ao $PROFILE
+# Add to $PROFILE
 Set-Alias k3d-reset "C:\...\create-all-from-zero.ps1"
 Set-Alias pf "C:\...\port-forward.ps1"
 Set-Alias pf-stop "C:\...\stop-port-forward.ps1"
 Set-Alias pf-list "C:\...\list-port-forward.ps1"
 
-# Uso
+# Usage
 k3d-reset
 pf all
 pf-list
 pf-stop all
 ```
 
-### Ver logs de um serviço
+### View service logs
 
 ```powershell
 # ArgoCD
@@ -511,9 +588,9 @@ kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server
 kubectl logs -n monitoring -l app.kubernetes.io/name=grafana
 ```
 
-### Acessar Prometheus
+### Access Prometheus
 
 ```powershell
 kubectl port-forward -n monitoring svc/kube-prom-stack-prometheus 9090:9090
-# Acesse: http://localhost:9090
+# Access: http://localhost:9090
 ```
