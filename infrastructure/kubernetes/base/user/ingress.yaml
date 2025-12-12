@@ -4,9 +4,8 @@ metadata:
   name: user-api
   labels:
     app.kubernetes.io/name: user-api
-  annotations:
-    kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
     - host: cloudgames.local
       http:
