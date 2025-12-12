@@ -16,11 +16,16 @@ spec:
         app.kubernetes.io/name: games-api
         app.kubernetes.io/component: games
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: games-api
           image: localhost:5000/games-api:latest
           ports:
             - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           env:
             - name: AZURE_SERVICEBUS_CONNECTION_STRING
               valueFrom:
@@ -32,14 +37,23 @@ spec:
                 configMapKeyRef:
                   name: azure-servicebus-config
                   key: gamesQueue
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
+            periodSeconds: 15
           resources:
             requests:
               cpu: 200m
