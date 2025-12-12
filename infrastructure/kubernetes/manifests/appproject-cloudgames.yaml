@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: cloudgames
+  namespace: argocd
+spec:
+  description: CloudGames microservices project
+  # Allow deployment to cloudgames-* namespaces
+  destinations:
+    - namespace: cloudgames-dev
+      server: "https://kubernetes.default.svc"
+    - namespace: cloudgames-prod
+      server: "https://kubernetes.default.svc"
+  # Source repositories
+  sourceRepos:
+    - "https://github.com/rdpresser/tc-cloudgames-solution.git"
+  # Allow all cluster-scoped and namespaced resources
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

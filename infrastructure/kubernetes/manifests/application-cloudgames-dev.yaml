@@ -1,10 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: payments-app
+  name: cloudgames-dev
   namespace: argocd
+  labels:
+    environment: dev
 spec:
-  project: payments
+  project: cloudgames
   source:
     repoURL: "https://github.com/rdpresser/tc-cloudgames-solution.git"
     targetRevision: feature/phase_04
@@ -18,3 +20,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  # Ignore differences in image tags - allow CI/CD to update them
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/spec/containers/0/image

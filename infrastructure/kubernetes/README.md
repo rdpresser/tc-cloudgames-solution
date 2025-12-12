@@ -49,6 +49,55 @@ kubectl rollout restart deployment games-api    -n cloudgames-dev
 kubectl rollout restart deployment payments-api -n cloudgames-dev
 ```
 
+## 🎯 Deploy Applications via ArgoCD
+
+After building and pushing images, deploy your applications using the **App of Apps** pattern:
+
+```powershell
+# Apply the bootstrap Application (creates all AppProjects and Applications)
+kubectl apply -f manifests/application-bootstrap.yaml
+
+# Verify ArgoCD Applications
+kubectl get applications -n argocd
+
+# Expected output:
+# NAME        SYNC STATUS   HEALTH STATUS
+# bootstrap   Synced        Healthy
+# user-api    Synced        Healthy
+# games-api   Synced        Healthy
+# payments-api Synced       Healthy
+
+# Check application pods
+kubectl get pods -n cloudgames-dev
+```
+
+### ArgoCD CLI (Alternative)
+```powershell
+# Login to ArgoCD
+argocd login localhost:8090 --username admin --password Argo@123 --insecure
+
+# Create bootstrap application (app-of-apps pattern)
+argocd app create bootstrap --file manifests/application-bootstrap.yaml
+
+# Sync bootstrap (it deploys the unified cloudgames-dev Application)
+argocd app sync bootstrap
+
+# Watch sync status (single Application manages all 3 services)
+argocd app list
+argocd app get cloudgames-dev
+```
+
+### ArgoCD Web UI
+1. Access: http://localhost:8090
+2. Login: `admin` / `Argo@123`
+3. Sync the **bootstrap** Application
+4. The **cloudgames-dev** Application will be created and deploy all microservices
+5. Auto-sync on Git push enabled (branch: `feature/phase_04`)
+
+**Note**: The architecture uses a **unified Application** (`cloudgames-dev`) that manages all 3 microservices (user-api, games-api, payments-api) via the `overlays/dev` Kustomize path. This eliminates redundancy and conflicts from having separate Applications pointing to the same overlay.
+
+---
+
 ## 🎯 Main Commands (via Manager)
 ```powershell
 .\k3d-manager.ps1              # Interactive menu
