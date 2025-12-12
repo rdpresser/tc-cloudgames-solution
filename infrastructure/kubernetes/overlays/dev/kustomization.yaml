@@ -6,11 +6,11 @@ labels:
       environment: dev
 
 images:
-  - name: k3d-registry.local:5000/user-api
+  - name: localhost:5000/user-api
     newTag: dev
-  - name: k3d-registry.local:5000/games-api
+  - name: localhost:5000/games-api
     newTag: dev
-  - name: k3d-registry.local:5000/payments-api
+  - name: localhost:5000/payments-api
     newTag: dev
 
 configMapGenerator:

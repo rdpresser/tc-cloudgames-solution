@@ -9,7 +9,7 @@
 
 # === Configurações ===
 $clusterName = "dev"
-$registryName = "k3d-registry.local"
+$registryName = "localhost"
 $registryPort = 5000
 $serverCount = 1
 $agentCount = 2

@@ -89,7 +89,7 @@ kubectl get nodes
 ```powershell
 # Limpeza completa:
 .\cleanup-all.ps1
-k3d registry delete k3d-registry.local
+k3d registry delete registry.local
 docker system prune -a --volumes -f
 
 # Reiniciar WSL:

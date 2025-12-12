@@ -1,223 +1,101 @@
-# 🚀 Scripts de Gerenciamento do Cluster K3D
+# 🚀 K3D Cluster Management Scripts
 
-> **💡 NOVO!** Use o **K3D Manager** para facilitar o gerenciamento do cluster local.  
-> Menu interativo + linha de comando em um único lugar!
+> Use **k3d-manager.ps1** for all common tasks (interactive menu + CLI).
 
 ## ⚡ Quick Start
-
 ```powershell
-# 1️⃣ Menu interativo (recomendado para iniciantes)
+# Interactive menu
 .\k3d-manager.ps1
 
-# 2️⃣ Ver ajuda completa
+# Help
 .\k3d-manager.ps1 --help
 
-# 3️⃣ Comandos diretos (para usuários avançados)
-.\k3d-manager.ps1 status              # Status do cluster
-.\k3d-manager.ps1 create              # Criar cluster do zero
-.\k3d-manager.ps1 start               # Iniciar após reboot
-.\k3d-manager.ps1 port-forward all    # Port-forwards
-.\k3d-manager.ps1 headlamp            # UI gráfica
-```
-
-## 🎯 Fluxo Recomendado
-
-### 🆕 Primeira vez configurando:
-```powershell
-.\k3d-manager.ps1 create              # Cria cluster completo
-.\k3d-manager.ps1 port-forward all    # Ativa port-forwards
-.\k3d-manager.ps1 headlamp            # (Opcional) UI gráfica
-```
-
-### 🔄 Após reiniciar o computador:
-```powershell
-.\k3d-manager.ps1 start               # Inicia cluster
-.\k3d-manager.ps1 port-forward all    # Ativa port-forwards
-```
-
-### 📊 Verificar status:
-```powershell
-.\k3d-manager.ps1 status              # Status completo
-.\k3d-manager.ps1 list                # Port-forwards ativos
-```
-
----
-
-## 🎯 Quick Start
-
-### Gerenciador Principal (Recomendado)
-```powershell
-# Menu interativo
-.\k3d-manager.ps1
-
-# Ajuda e lista de comandos
-.\k3d-manager.ps1 --help
-
-# Execução direta de comandos
+# Direct commands
+.\k3d-manager.ps1 status
 .\k3d-manager.ps1 create
 .\k3d-manager.ps1 start
 .\k3d-manager.ps1 port-forward all
+.\k3d-manager.ps1 headlamp
+```
+
+## 🎯 Recommended Flow
+```powershell
+# First time
+.\k3d-manager.ps1 create
+.\k3d-manager.ps1 port-forward all
+.\k3d-manager.ps1 headlamp   # optional UI
+
+# After reboot
+.\k3d-manager.ps1 start
+.\k3d-manager.ps1 port-forward all
+
+# Status
 .\k3d-manager.ps1 status
+.\k3d-manager.ps1 list
 ```
 
----
+## 📦 Scripts Overview
+- `k3d-manager.ps1` (main): menu + CLI, wraps all scripts (create, start, cleanup, port-forward, stop, list, check, headlamp, status, help/menu).
+- `create-all-from-zero.ps1`: full cluster build (registry, cluster, Argo CD, KEDA, Prometheus+Grafana, sets Argo CD password `Argo@123`, Grafana user `rdpresser/rdpresser@123`).
+- `start-cluster.ps1`: start existing cluster after reboot (checks Docker, sets kube context, waits core pods).
+- `port-forward.ps1`: start port-forwards (Argo CD 8090->443, Grafana 3000->80) in background with duplicate checks.
+- `stop-port-forward.ps1`: stop specific or all port-forward processes.
+- `list-port-forward.ps1`: list active port-forwards.
+- `cleanup-all.ps1`: remove everything (cluster + registry).
+- `check-docker-network.ps1`: diagnose Docker/network issues.
+- `start-headlamp-docker.ps1`: start Headlamp UI container.
 
-## 📦 Scripts Disponíveis
+## 🔗 Services
+| Service  | URL                   | Credentials |
+|----------|-----------------------|-------------|
+| Argo CD  | http://localhost:8090 | admin / Argo@123 |
+| Grafana  | http://localhost:3000 | rdpresser / rdpresser@123 |
+| Headlamp | http://localhost:4466 | kubeconfig |
 
-### 0️⃣ **`k3d-manager.ps1`** 🎯 (PRINCIPAL - Novo!)
-
-**Função**: Orquestrador central que gerencia todos os scripts.
-
-**O que faz:**
-- ✅ Menu interativo para fácil navegação
-- ✅ Suporte a linha de comando
-- ✅ Status consolidado do cluster
-- ✅ Executa qualquer script de forma centralizada
-- ✅ Ajuda integrada com --help
-
-**Uso:**
+## 🏗️ Build & Push Images (k3d registry) {#build-push-images}
 ```powershell
-# Menu interativo (padrão)
-.\k3d-manager.ps1
+cd C:\Projects\tc-cloudgames-solution
 
-# Linha de comando
-.\k3d-manager.ps1 create              # Criar cluster
-.\k3d-manager.ps1 start               # Iniciar cluster
-.\k3d-manager.ps1 port-forward all    # Port-forwards
-.\k3d-manager.ps1 stop argocd         # Parar port-forward
-.\k3d-manager.ps1 list                # Listar port-forwards
-.\k3d-manager.ps1 check               # Verificar Docker
-.\k3d-manager.ps1 status              # Status do cluster
-.\k3d-manager.ps1 headlamp            # Iniciar Headlamp
-.\k3d-manager.ps1 cleanup             # Limpar tudo
+# Build
+docker build -t user-api:dev     -f services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\Dockerfile .
+docker build -t games-api:dev    -f services\games\src\Adapters\Inbound\TC.CloudGames.Games.Api\Dockerfile .
+docker build -t payments-api:dev -f services\payments\src\Adapters\Inbound\TC.CloudGames.Payments.Api\Dockerfile .
+
+# Tag for k3d registry
+docker tag user-api:dev     localhost:5000/user-api:dev
+docker tag games-api:dev    localhost:5000/games-api:dev
+docker tag payments-api:dev localhost:5000/payments-api:dev
+
+# Push
+docker push localhost:5000/user-api:dev
+docker push localhost:5000/games-api:dev
+docker push localhost:5000/payments-api:dev
 ```
 
-**Comandos disponíveis:**
-- `create` - Cria/recria cluster completo
-- `start` - Inicia cluster após reboot
-- `cleanup` - Remove cluster e recursos
-- `port-forward [svc]` - Inicia port-forwards
-- `stop [svc]` - Para port-forwards
-- `list` - Lista port-forwards ativos
-- `check` - Verifica Docker/rede
-- `headlamp` - Inicia Headlamp UI
-- `status` - Mostra status completo
-- `help` - Mostra ajuda
-- `menu` - Abre menu interativo
-
----
-
-### 1️⃣ **`create-all-from-zero.ps1`** ⭐ (Principal)
-
-**Função**: Cria/recria o ambiente completo do cluster k3d com todos os componentes.
-
-**O que faz:**
-- ✅ Verifica dependências (kubectl, helm, k3d, docker)
-- ✅ Cria registry local (se não existir)
-- ✅ Deleta cluster existente (se houver)
-- ✅ Cria novo cluster k3d (1 server + 2 agents, 8GB cada)
-- ✅ Instala ArgoCD
-- ✅ Instala KEDA
-- ✅ Instala Prometheus + Grafana (kube-prometheus-stack)
-- ✅ Configura senha do ArgoCD para `Argo@123`
-- ✅ Cria usuário Grafana `rdpresser` / `rdpresser@123`
-
-**Uso:**
+### Alternate: Import images (no registry pull)
 ```powershell
-.\create-all-from-zero.ps1
+k3d image import user-api:dev games-api:dev payments-api:dev -c dev
+kubectl rollout restart deployment user-api     -n cloudgames-dev
+kubectl rollout restart deployment games-api    -n cloudgames-dev
+kubectl rollout restart deployment payments-api -n cloudgames-dev
 ```
 
-**Quando usar:**
-- ✅ Primeira vez configurando o ambiente
-- ✅ Resetar tudo para estado limpo
-- ✅ Após problemas no cluster
-- ✅ Mudança de configuração de recursos
+## 🛠️ Troubleshooting
+- Port-forward issues: `./k3d-manager.ps1 stop all` then `./k3d-manager.ps1 port-forward all`
+- Cluster stopped after reboot: `./k3d-manager.ps1 start`
+- Docker/network issues: `./k3d-manager.ps1 check`
+- Full reset: `./k3d-manager.ps1 cleanup` then recreate
 
----
+## 💡 Tips
+- Add alias in PowerShell profile: `Set-Alias k3d "C:\Projects\tc-cloudgames-solution\infrastructure\kubernetes\scripts\k3d-manager.ps1"`
+- Use `k3d` to open menu, `k3d status`, `k3d create`, `k3d port-forward all`.
 
-### 1.1️⃣ **`start-cluster.ps1`** 🚀 (Após Reboot)
+## 🔗 Related Guides
 
-**Função**: Inicia o cluster k3d após reiniciar o computador.
+- **Grafana Cloud Integration (AKS)**: For production AKS monitoring, see [Grafana Agent Setup](../../terraform/modules/grafana_agent/README.md).
+  - [Why Azure Monitor + Grafana Agent](../../terraform/modules/grafana_agent/README.md#executive-summary)
+  - [Obtain Grafana Cloud Credentials](../../terraform/modules/grafana_agent/README.md#credentials)
 
-**O que faz:**
-- ✅ Verifica se Docker está rodando
-- ✅ Lista clusters k3d existentes
-- ✅ Inicia containers do cluster "dev"
-- ✅ Configura contexto kubectl
-- ✅ Aguarda pods principais ficarem prontos
-- ✅ Mostra instruções de próximos passos
-
-**Uso:**
-```powershell
-.\start-cluster.ps1
-```
-
-**Quando usar:**
-- ✅ **SEMPRE após reiniciar o computador**
-- ✅ Quando Docker Desktop foi reiniciado
-- ✅ Quando cluster está parado mas não deletado
-- ⚠️ **EXECUTAR ANTES de fazer port-forward**
-
-**Fluxo após reboot:**
-```powershell
-# 1. Inicie o Docker Desktop e aguarde estar pronto
-# 2. Execute:
-.\start-cluster.ps1
-
-# 3. Depois execute:
-.\port-forward.ps1 all
-```
-
----
-
-### 2️⃣ **`port-forward.ps1`** 🔌
-
-**Função**: Inicia port-forwards em modo background (detached).
-
-**O que faz:**
-- Inicia processos kubectl port-forward em background
-- Não bloqueia o terminal (modo detached, similar ao `docker run -d`)
-- Verifica se port-forward já está ativo antes de iniciar
-- Suporta iniciar ArgoCD, Grafana ou ambos
-
-**Uso:**
-```powershell
-# Ambos os serviços (padrão)
-.\port-forward.ps1
-.\port-forward.ps1 all
-
-# Apenas ArgoCD
-.\port-forward.ps1 argocd
-
-# Apenas Grafana
-.\port-forward.ps1 grafana
-```
-
-**Portas:**
-- 🔐 **ArgoCD**: `http://localhost:8090` (HTTP insecure)
-- 📊 **Grafana**: `http://localhost:3000` → kube-prom-stack-grafana:80
-
-**Características:**
-- ✅ Modo detached (WindowStyle Hidden)
-- ✅ Verificação de duplicatas (detecta port-forwards já ativos)
-- ✅ Validação de portas (verifica disponibilidade)
-- ✅ Feedback visual colorido
-- ✅ Processos persistem após fechar terminal
-
----
-
-### 3️⃣ **`stop-port-forward.ps1`** 🛑
-
-**Função**: Para port-forwards ativos.
-
-**O que faz:**
-- Identifica processos kubectl port-forward em execução
-- Encerra processos específicos ou todos
-- Busca por PID e linha de comando
-
-**Uso:**
-```powershell
-# Parar todos os port-forwards
 .\stop-port-forward.ps1
 .\stop-port-forward.ps1 all
 
@@ -476,7 +354,7 @@ O script `create-all-from-zero.ps1` cria um cluster com:
 | Componente | Configuração |
 |-----------|--------------|
 | **Cluster Name** | `dev` |
-| **Registry** | `k3d-registry.local:5000` |
+| **Registry** | `localhost:5000` |
 | **Servers** | 1 node (8GB RAM) |
 | **Agents** | 2 nodes (8GB RAM cada) |
 | **Portas** | 80:80, 443:443 |

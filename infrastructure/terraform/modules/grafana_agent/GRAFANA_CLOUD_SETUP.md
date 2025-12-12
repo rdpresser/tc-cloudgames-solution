@@ -1,102 +1,20 @@
-# Integração AKS com Grafana Cloud
+# AKS Integration with Grafana Cloud (Consolidated)
 
-Este guia explica como conectar seu cluster AKS ao Grafana Cloud para monitoramento centralizado.
+This document has been consolidated into the single source of truth:
 
-## 📊 Arquitetura de Monitoramento
+`infrastructure/terraform/modules/grafana_agent/README.md`
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  AKS Cluster                                            │
-│                                                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
-│  │ Your Pods│  │ Kube API │  │  Nodes   │             │
-│  │  Metrics │  │  Metrics │  │  Metrics │             │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘             │
-│       │             │             │                     │
-│       └─────────────┴─────────────┘                     │
-│                     │                                   │
-│            ┌────────▼────────┐                         │
-│            │  Grafana Agent  │                         │
-│            │   (DaemonSet)   │                         │
-│            └────────┬────────┘                         │
-└─────────────────────┼───────────────────────────────────┘
-                      │ HTTPS (Remote Write)
-                      ▼
-         ┌────────────────────────┐
-         │   Grafana Cloud        │
-         │                        │
-         │  • Prometheus (Metrics)│
-         │  • Loki (Logs)         │
-         │  • Dashboards          │
-         └────────────────────────┘
-```
+Jump directly to relevant sections:
+- Credentials → [Prometheus/Loki URL, Username, API Key](README.md#credentials)
+- Terraform Variables → [Workspace variable names](README.md#terraform-variables)
+- Setup → [Module wiring, providers, outputs](README.md#terraform-setup)
+- Verification → [Pods, logs, Grafana queries](README.md#verification)
+- Dashboards → [Import recommended dashboards](README.md#dashboards)
+- Troubleshooting → [Common issues](README.md#troubleshooting)
 
-## 🚀 Passo a Passo: Obter Credenciais do Grafana Cloud
-
-### 1️⃣ **Acessar Grafana Cloud**
-
-1. Acesse: https://grafana.com/auth/sign-in
-2. Faça login com sua conta
-3. Selecione sua Stack (ex: `yourcompany.grafana.net`)
-
-### 2️⃣ **Obter Credenciais do Prometheus**
-
-#### Via Grafana Cloud Portal:
-
-1. No menu lateral, clique em **"Connections"** → **"Add new connection"**
-2. Procure por **"Hosted Prometheus metrics"** ou **"Prometheus"**
-3. Clique em **"Configure"**
-4. Você verá as credenciais:
-
-```
-Remote Write Endpoint:
-https://prometheus-prod-XX-XX-X.grafana.net/api/prom/push
-
-Username / Instance ID:
-123456
-
-Password / API Key:
-glc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-#### Via CLI (Alternative):
-
-1. Acesse **"My Account"** → **"API Keys"**
-2. Clique em **"Create API Key"**
-3. Configure:
-   - **Name**: `aks-metrics-writer`
-   - **Role**: `MetricsPublisher`
-   - **Expiration**: 1 year (or never)
-4. Clique em **"Add API Key"**
-5. **COPIE A CHAVE IMEDIATAMENTE** (você não conseguirá ver novamente!)
-
-### 3️⃣ **Obter URL e Username do Prometheus**
-
-#### Encontrar URL e Username:
-
-1. Vá para **"Administration"** → **"Settings"**
-2. Na seção **"Grafana Cloud"**, você verá:
-
-```yaml
-Prometheus:
-  URL: https://prometheus-prod-01-eu-west-0.grafana.net
-  User: 123456
-  
-Loki:
-  URL: https://logs-prod-eu-west-0.grafana.net
-  User: 123456
-```
-
-**OU**
-
-1. Vá para **"Connections"** → **"Data sources"**
-2. Clique em **"Prometheus"** (ou **"grafanacloud-yourstack-prom"**)
-3. Na configuração, você verá:
-   - **URL**: `https://prometheus-prod-XX-XX-X.grafana.net`
-   - Scroll até **"Basic Auth Details"**:
-     - **User**: `123456` (seu Instance ID)
-
-### 4️⃣ **Adicionar Variáveis no Terraform Cloud**
+Reason for change:
+- Avoid duplicated and overlapping instructions
+- Keep one definitive, English-only guide with anchors
 
 Agora você precisa adicionar essas credenciais como variáveis no Terraform Cloud:
 

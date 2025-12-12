@@ -5,7 +5,7 @@
 
 # Lista de clusters a remover (ajuste se tiver outros)
 $clusters = @("dev")
-$registryName = "k3d-registry.local"
+$registryName = "localhost"
 
 # 0) Parar port-forwards (CRITICAL: Liberar portas 8090/3000)
 Write-Host "=== 0) Parando port-forwards ==="

@@ -1,70 +1,61 @@
-# ⚡ K3D Manager - Referência Rápida
+# ⚡ K3D Manager - Quick Reference
 
-## 🎯 Comando Principal
-
+## 🎯 Main Command
 ```powershell
 .\k3d-manager.ps1
 ```
 
-## 📋 Todos os Comandos
+## 📋 Commands
+| Command | Description | Example |
+|---------|-------------|---------|
+| `create` | Create cluster from scratch | `.\k3d-manager.ps1 create` |
+| `start` | Start cluster (after reboot) | `.\k3d-manager.ps1 start` |
+| `cleanup` | Remove everything | `.\k3d-manager.ps1 cleanup` |
+| `port-forward [svc]` | Start port-forwards | `.\k3d-manager.ps1 port-forward all` |
+| `stop [svc]` | Stop port-forwards | `.\k3d-manager.ps1 stop argocd` |
+| `list` | List active port-forwards | `.\k3d-manager.ps1 list` |
+| `check` | Check Docker/network | `.\k3d-manager.ps1 check` |
+| `headlamp` | Start Headlamp UI | `.\k3d-manager.ps1 headlamp` |
+| `status` | Full status | `.\k3d-manager.ps1 status` |
+| `help` | Help | `.\k3d-manager.ps1 --help` |
+| `menu` | Interactive menu | `.\k3d-manager.ps1` |
 
-| Comando | Descrição | Exemplo |
-|---------|-----------|---------|
-| `create` | Cria cluster do zero | `.\k3d-manager.ps1 create` |
-| `start` | Inicia cluster (após reboot) | `.\k3d-manager.ps1 start` |
-| `cleanup` | Remove tudo | `.\k3d-manager.ps1 cleanup` |
-| `port-forward [svc]` | Inicia port-forwards | `.\k3d-manager.ps1 port-forward all` |
-| `stop [svc]` | Para port-forwards | `.\k3d-manager.ps1 stop argocd` |
-| `list` | Lista port-forwards | `.\k3d-manager.ps1 list` |
-| `check` | Verifica Docker/rede | `.\k3d-manager.ps1 check` |
-| `headlamp` | Inicia Headlamp UI | `.\k3d-manager.ps1 headlamp` |
-| `status` | Status completo | `.\k3d-manager.ps1 status` |
-| `help` | Ajuda | `.\k3d-manager.ps1 --help` |
-| `menu` | Menu interativo | `.\k3d-manager.ps1` |
-
-## 🔗 URLs dos Serviços
-
-| Serviço | URL | Credenciais |
+## 🔗 Service URLs
+| Service | URL | Credentials |
 |---------|-----|-------------|
-| ArgoCD | http://localhost:8090 | admin / Argo@123 |
+| Argo CD | http://localhost:8090 | admin / Argo@123 |
 | Grafana | http://localhost:3000 | rdpresser / rdpresser@123 |
-| Headlamp | http://localhost:4466 | - |
+| Headlamp | http://localhost:4466 | kubeconfig |
 
-## 🚀 Workflows Rápidos
-
-### Primeira Vez
+## 🚀 Quick Workflows
 ```powershell
+# First time
 .\k3d-manager.ps1 create
 .\k3d-manager.ps1 port-forward all
-```
 
-### Após Reboot
-```powershell
+# After reboot
 .\k3d-manager.ps1 start
 .\k3d-manager.ps1 port-forward all
-```
 
-### Troubleshooting
-```powershell
+# Troubleshooting
 .\k3d-manager.ps1 status
 .\k3d-manager.ps1 check
 .\k3d-manager.ps1 cleanup
 .\k3d-manager.ps1 create
 ```
 
-## 💡 Alias Recomendado
-
+## 💡 Recommended Alias
 ```powershell
-# Adicionar ao $PROFILE
+# Add to $PROFILE
 Set-Alias k3d "C:\Projects\tc-cloudgames-solution\infrastructure\kubernetes\scripts\k3d-manager.ps1"
 
-# Recarregar
+# Reload
 . $PROFILE
 
-# Uso
-k3d                # Menu
-k3d status         # Status
-k3d create         # Criar
-k3d start          # Iniciar
+# Use
+k3d                   # Menu
+k3d status            # Status
+k3d create            # Create
+k3d start             # Start
 k3d port-forward all  # Port-forwards
 ```
