@@ -1,5 +1,6 @@
-# Patch to set ASPNETCORE_ENVIRONMENT to Development for local k3d cluster
-# This allows the application to use Connection String authentication instead of MSI
+# Patch to set environment variables for local k3d cluster
+# - ASPNETCORE_ENVIRONMENT=Development: allows the application to use Connection String authentication instead of MSI
+# - MESSAGE_BROKER_TYPE=AzureServiceBus: tells the application to use Azure Service Bus instead of RabbitMQ
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,6 +13,8 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Development"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -25,6 +28,8 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Development"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,4 +43,6 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Development"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
 
