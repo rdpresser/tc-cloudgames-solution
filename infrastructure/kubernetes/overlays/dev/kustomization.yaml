@@ -15,3 +15,6 @@ images:
     newTag: dev
 
 namespace: cloudgames-dev
+
+patches:
+  - path: deployment-env-patch.yaml
