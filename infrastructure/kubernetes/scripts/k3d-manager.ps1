@@ -90,6 +90,8 @@ function Show-Help {
     Write-Host "  🐳 DOCKER & NETWORK:" -ForegroundColor $Colors.Info
     Write-Host "    check               " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Checks Docker network connectivity" -ForegroundColor $Colors.Muted
+    Write-Host "    update-hosts        " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Update hosts file (requires Admin) - adds argocd.local, cloudgames.local" -ForegroundColor $Colors.Muted
     Write-Host "    headlamp            " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Starts Headlamp UI (port 4466)" -ForegroundColor $Colors.Muted
     Write-Host ""
@@ -120,19 +122,26 @@ function Show-Help {
     Write-Host "📝 EXAMPLES:" -ForegroundColor $Colors.Title
     Write-Host "  .\k3d-manager.ps1 create" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 start" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 update-hosts" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 port-forward all" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 external-secrets" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 build" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 build user" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 bootstrap" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 reset-argocd" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 secrets" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 secrets -Key db-password" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "🔗 SERVICE ACCESS:" -ForegroundColor $Colors.Title
-    Write-Host "  ArgoCD:   http://localhost:8090  (admin / Argo@123)" -ForegroundColor $Colors.Info
-    Write-Host "  Grafana:  http://localhost:3000  (rdpresser / rdpresser@123)" -ForegroundColor $Colors.Info
-    Write-Host "  Headlamp: http://localhost:4466" -ForegroundColor $Colors.Info
+    Write-Host "  Native Ingress Access (NO port-forward needed!):" -ForegroundColor $Colors.Info
+    Write-Host "    ArgoCD:  http://argocd.local (admin / Argo@123)" -ForegroundColor $Colors.Muted
+    Write-Host "    APIs:    http://cloudgames.local/user, /games, /payments" -ForegroundColor $Colors.Muted
+    Write-Host "    ⚠️  Run first: .\k3d-manager.ps1 update-hosts (requires Admin)" -ForegroundColor $Colors.Warning
+    Write-Host ""
+    Write-Host "  Management Services (require port-forward):" -ForegroundColor $Colors.Info
+    Write-Host "    Grafana: http://localhost:3000  (rdpresser / rdpresser@123)" -ForegroundColor $Colors.Muted
+    Write-Host "    Headlamp: http://localhost:4466" -ForegroundColor $Colors.Muted
     Write-Host ""
 }
 
@@ -218,13 +227,15 @@ function Show-Menu {
         Write-Host "  [6] 🛑 Stop port-forwards" -ForegroundColor $Colors.Info
         Write-Host "  [7] 📋 List port-forwards" -ForegroundColor $Colors.Info
         Write-Host "  [8] 🐳 Check Docker" -ForegroundColor $Colors.Info
-        Write-Host "  [9] 📊 Cluster status" -ForegroundColor $Colors.Info
-        Write-Host " [10] 🎨 Start Headlamp UI" -ForegroundColor $Colors.Info
-        Write-Host " [11] 🔐 Configure External Secrets (Azure Key Vault)" -ForegroundColor $Colors.Info
-        Write-Host " [12] 🔑 List/Search Secrets" -ForegroundColor $Colors.Info
-        Write-Host " [13] 🐳 Build & Push Docker Images" -ForegroundColor $Colors.Info
-        Write-Host " [14] 🚀 Bootstrap ArgoCD Applications" -ForegroundColor $Colors.Info
-        Write-Host " [15] 🗑️  Cleanup all" -ForegroundColor $Colors.Info
+        Write-Host "  [9] 🌐 Update Hosts File (requires Admin)" -ForegroundColor $Colors.Info
+        Write-Host " [10] 📊 Cluster status" -ForegroundColor $Colors.Info
+        Write-Host " [11] 🎨 Start Headlamp UI" -ForegroundColor $Colors.Info
+        Write-Host " [12] 🔐 Configure External Secrets (Azure Key Vault)" -ForegroundColor $Colors.Info
+        Write-Host " [13] 🔑 List/Search Secrets" -ForegroundColor $Colors.Info
+        Write-Host " [14] 🐳 Build & Push Docker Images" -ForegroundColor $Colors.Info
+        Write-Host " [15] 🚀 Bootstrap ArgoCD Applications" -ForegroundColor $Colors.Info
+        Write-Host " [16] 🔄 Reset ArgoCD Application" -ForegroundColor $Colors.Info
+        Write-Host " [17] 🗑️  Cleanup all" -ForegroundColor $Colors.Info
         Write-Host "  [0] ❌ Exit" -ForegroundColor $Colors.Error
         Write-Host ""
 
@@ -233,19 +244,21 @@ function Show-Menu {
         switch ($choice) {
             "1" { Invoke-Command "create" }
             "2" { Invoke-Command "start" }
-            "3" { Invoke-Command "port-forward" "all" }
-            "4" { Invoke-Command "port-forward" "argocd" }
-            "5" { Invoke-Command "port-forward" "grafana" }
-            "6" { Invoke-Command "stop" "all" }
-            "7" { Invoke-Command "list" }
-            "8" { Invoke-Command "check" }
-            "9" { Invoke-Command "status" }
-            "10" { Invoke-Command "headlamp" }
-            "11" { Invoke-Command "external-secrets" }
-            "12" { Invoke-Command "secrets" }
-            "13" { Invoke-Command "build" }
-            "14" { Invoke-Command "bootstrap" }
-            "15" { Invoke-Command "cleanup" }
+            "3" { Invoke-Command -cmd "port-forward" -args @("all") }
+            "4" { Invoke-Command -cmd "port-forward" -args @("argocd") }
+            "5" { Invoke-Command -cmd "port-forward" -args @("grafana") }
+            "6" { Invoke-Command -cmd "stop-port-forward" }
+            "7" { Invoke-Command -cmd "list-port-forward" }
+            "8" { Invoke-Command -cmd "check" }
+            "9" { Invoke-Command -cmd "update-hosts" }
+            "10" { Invoke-Command -cmd "status" }
+            "11" { Invoke-Command -cmd "ui" }
+            "12" { Invoke-Command -cmd "configure-external-secrets" }
+            "13" { Invoke-Command -cmd "list-secrets" }
+            '14' { Invoke-Command -cmd "build-push" }
+            '15' { Invoke-Command -cmd "bootstrap-argocd" }
+            '16' { Invoke-Command -cmd "reset-argocd" }
+            '17' { Invoke-Command -cmd "cleanup" }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
                 exit 0
@@ -299,6 +312,12 @@ function Invoke-Command($cmd, $arg1 = "", $arg2 = "") {
             Write-Host "`n🐳 Checking Docker..." -ForegroundColor $Colors.Info
             & "$scriptPath\check-docker-network.ps1"
         }
+        { $_ -in "update-hosts", "hosts" } {
+            Write-Host "`n🌐 Updating hosts file..." -ForegroundColor $Colors.Info
+            Write-Host "⚠️  This requires Administrator privileges!" -ForegroundColor $Colors.Warning
+            Write-Host ""
+            & "$scriptPath\update-hosts-file.ps1"
+        }
         "headlamp" {
             Write-Host "`n🎨 Starting Headlamp..." -ForegroundColor $Colors.Info
             & "$scriptPath\start-headlamp-docker.ps1"
@@ -324,6 +343,10 @@ function Invoke-Command($cmd, $arg1 = "", $arg2 = "") {
             Write-Host "`n🚀 Bootstrapping ArgoCD applications..." -ForegroundColor $Colors.Info
             $env = if ($arg1) { $arg1 } else { "dev" }
             & "$scriptPath\bootstrap-argocd-apps.ps1" -Environment $env
+        }
+        { $_ -in "reset", "reset-argocd" } {
+            Write-Host "`n🔄 Resetting ArgoCD application..." -ForegroundColor $Colors.Info
+            & "$scriptPath\reset-argocd-app.ps1"
         }
         "status" {
             Show-Status

@@ -21,7 +21,7 @@ kubectl rollout status deployment argocd-repo-server -n argocd
 
 Write-Host "
 4. Recreating user-app application..." -ForegroundColor Yellow
-kubectl apply -f C:\Projects\tc-cloudgames-solution\infrastructure\kubernetes\manifests\application-user.yaml
+kubectl apply -f .\infrastructure\kubernetes\manifests\application-user.yaml
 
 Write-Host "
 5. Checking status..." -ForegroundColor Green

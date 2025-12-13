@@ -118,7 +118,31 @@ foreach ($ns in $namespaces) {
     }
 }
 
-# 6) Summary
+# 6) Verify ArgoCD Ingress is present
+Write-Host "`n🌐 Verifying ArgoCD Ingress..." -ForegroundColor Cyan
+$ingress = kubectl get ingress -n argocd argocd-server --no-headers 2>$null
+if ($ingress) {
+    Write-Host "   ✅ ArgoCD Ingress is active (argocd.local)" -ForegroundColor Green
+} else {
+    Write-Host "   ⚠️  ArgoCD Ingress not found. Applying..." -ForegroundColor Yellow
+    $manifestsPath = Join-Path (Split-Path $PSScriptRoot -Parent) "manifests"
+    kubectl apply -f "$manifestsPath\argocd-ingress.yaml" 2>$null
+    Write-Host "   ✅ ArgoCD Ingress applied" -ForegroundColor Green
+}
+
+# 7) Check hosts file
+Write-Host "`n📝 Checking hosts file..." -ForegroundColor Cyan
+$hostsContent = Get-Content C:\Windows\System32\drivers\etc\hosts -ErrorAction SilentlyContinue
+$hasArgocd = $hostsContent -match "argocd\.local"
+$hasCloudgames = $hostsContent -match "cloudgames\.local"
+if ($hasArgocd -and $hasCloudgames) {
+    Write-Host "   ✅ Hosts file configured (argocd.local, cloudgames.local)" -ForegroundColor Green
+} else {
+    Write-Host "   ⚠️  Hosts file missing entries. Run as Admin:" -ForegroundColor Yellow
+    Write-Host "      .\k3d-manager.ps1 update-hosts" -ForegroundColor White
+}
+
+# 8) Summary
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Cluster:  k3d-$clusterName" -ForegroundColor White
 Write-Host "Status:   " -NoNewline
@@ -128,9 +152,14 @@ if ($ready) {
     Write-Host "⚠️  Partially ready (some pods still initializing)" -ForegroundColor Yellow
 }
 
-Write-Host "`n💡 Next steps:" -ForegroundColor Cyan
-Write-Host "   1. Run: .\port-forward.ps1 all" -ForegroundColor White
-Write-Host "   2. Access ArgoCD: http://localhost:8090" -ForegroundColor White
-Write-Host "   3. Access Grafana: http://localhost:3000" -ForegroundColor White
+Write-Host "`n🌐 ACCESS URLs (Native Ingress - NO port-forward needed!):" -ForegroundColor Cyan
+Write-Host "   ArgoCD:       http://argocd.local (admin / Argo@123)" -ForegroundColor White
+Write-Host "   User API:     http://cloudgames.local/user" -ForegroundColor White
+Write-Host "   Games API:    http://cloudgames.local/games" -ForegroundColor White
+Write-Host "   Payments API: http://cloudgames.local/payments" -ForegroundColor White
+
+Write-Host "`n💡 Port-forward only needed for Grafana:" -ForegroundColor Cyan
+Write-Host "   .\k3d-manager.ps1 port-forward grafana" -ForegroundColor White
+Write-Host "   Access: http://localhost:3000" -ForegroundColor Gray
 Write-Host ""
 

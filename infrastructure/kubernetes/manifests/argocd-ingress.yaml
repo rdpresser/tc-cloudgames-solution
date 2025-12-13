@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    # Traefik specific annotations
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # ArgoCD needs insecure mode for HTTP access
+    # In production, use HTTPS with proper certificates
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: argocd.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              number: 80

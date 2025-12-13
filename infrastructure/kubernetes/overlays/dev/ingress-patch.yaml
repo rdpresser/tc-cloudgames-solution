@@ -1,13 +1,24 @@
-# yaml-language-server: $schema=
 # Patch to configure Ingress for local k3d cluster with Traefik
 # - Changes ingressClassName from nginx to traefik
 # - Traefik is the default ingress controller in k3d
+# - Maintains the same hosts and paths
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: user-api
 spec:
   ingressClassName: traefik
+  rules:
+    - host: cloudgames.local
+      http:
+        paths:
+          - path: /user
+            pathType: Prefix
+            backend:
+              service:
+                name: user-api
+                port:
+                  number: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -15,6 +26,17 @@ metadata:
   name: games-api
 spec:
   ingressClassName: traefik
+  rules:
+    - host: cloudgames.local
+      http:
+        paths:
+          - path: /games
+            pathType: Prefix
+            backend:
+              service:
+                name: games-api
+                port:
+                  number: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -22,4 +44,15 @@ metadata:
   name: payments-api
 spec:
   ingressClassName: traefik
+  rules:
+    - host: cloudgames.local
+      http:
+        paths:
+          - path: /payments
+            pathType: Prefix
+            backend:
+              service:
+                name: payments-api
+                port:
+                  number: 8080
 

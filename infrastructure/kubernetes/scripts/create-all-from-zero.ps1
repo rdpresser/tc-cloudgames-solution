@@ -1,10 +1,27 @@
 <#
 .SYNOPSIS
-  Creates local registry, k3d cluster with 8GB, and installs ArgoCD, KEDA, kube-prom-stack (Prometheus+Grafana).
-  Changes ArgoCD admin password to Argo@123 and creates Grafana user rdpresser / rdpresser@123 with Admin role.
+  Creates local k3d cluster with native Ingress port mapping and installs core services.
+  
 .DESCRIPTION
-  Requirements: k3d, kubectl, helm, docker, (argocd CLI optional).
-  Run in PowerShell.
+  This script creates a complete local development environment with:
+  - K3d cluster with 8GB RAM per node
+  - Native port mapping (80:80, 443:443) for Ingress - NO port-forward needed!
+  - Local Docker registry (localhost:5000)
+  - ArgoCD (admin / Argo@123)
+  - KEDA for autoscaling
+  - Prometheus + Grafana monitoring (rdpresser / rdpresser@123)
+  
+  Requirements: k3d, kubectl, helm, docker
+  
+.EXAMPLE
+  .\create-all-from-zero.ps1
+  
+.NOTES
+  Port Mapping Feature: This script configures native port mapping (80:80@loadbalancer)
+  so your Ingress works WITHOUT port-forward scripts. Just add to hosts file:
+    127.0.0.1 cloudgames.local
+  
+  Then access: http://cloudgames.local/user, /games, /payments
 #>
 
 # === Configuration ===
@@ -59,8 +76,12 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "Cluster $clusterName does not exist. Skipping delete."
 }
 
-# === 3) Create cluster with configured resources ===
-Write-Host "=== 3) Creating cluster $clusterName with $memoryPerNode per node..."
+# === 3) Create cluster with native Ingress port mapping ===
+Write-Host "=== 3) Creating cluster $clusterName with native port mapping (80:80, 443:443)..."
+Write-Host "   ℹ️  Port mapping means Ingress works WITHOUT port-forward scripts!" -ForegroundColor Cyan
+Write-Host "   ℹ️  Just add to hosts file: 127.0.0.1 cloudgames.local" -ForegroundColor Cyan
+Write-Host ""
+
 k3d cluster create $clusterName --servers $serverCount --agents $agentCount `
   --port "80:80@loadbalancer" --port "443:443@loadbalancer" `
   --servers-memory $memoryPerNode --agents-memory $agentMemory `
@@ -140,6 +161,12 @@ helm upgrade --install argocd argo/argo-cd -n argocd `
 
 Write-Host "Waiting for ArgoCD pods to be ready..."
 Start-Sleep -Seconds 10
+
+# Apply ArgoCD Ingress for native access (no port-forward needed)
+Write-Host "Applying ArgoCD Ingress (argocd.local)..."
+$manifestsPath = Join-Path (Split-Path $PSScriptRoot -Parent) "manifests"
+kubectl apply -f "$manifestsPath\argocd-ingress.yaml"
+Write-Host "✅ ArgoCD Ingress applied (access via http://argocd.local after updating hosts file)" -ForegroundColor Green
 
 # === 6) Install KEDA ===
 Write-Host "=== 6) Installing KEDA ==="
@@ -275,8 +302,44 @@ try {
 # kill grafana port-forward
 Stop-Process -Id $pfGraf.Id -ErrorAction SilentlyContinue
 
-Write-Host "=== Finished: environment created. Summary ==="
-Write-Host "ArgoCD initial (original): $argocdInitialPassword"
-Write-Host "ArgoCD admin current password: $argocdAdminNewPassword"
-Write-Host "Grafana admin current password: $grafanaAdminCurrent"
-Write-Host "Grafana user created: $grafanaNewUser / $grafanaNewUserPassword"
+Write-Host ""
+Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Green
+Write-Host "║           ✅ Environment Created Successfully             ║" -ForegroundColor Green
+Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host ""
+Write-Host "📋 CREDENTIALS:" -ForegroundColor Cyan
+Write-Host "   ArgoCD:  admin / $argocdAdminNewPassword" -ForegroundColor White
+Write-Host "   Grafana: $grafanaNewUser / $grafanaNewUserPassword" -ForegroundColor White
+Write-Host ""
+Write-Host "🌐 INGRESS ACCESS (Native - NO port-forward needed!):" -ForegroundColor Cyan
+Write-Host "   ℹ️  Cluster created with native port mapping (80:80@loadbalancer)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "   ⚠️  REQUIRED: Update hosts file (run as Administrator):" -ForegroundColor Yellow
+Write-Host "      .\k3d-manager.ps1 update-hosts" -ForegroundColor White
+Write-Host ""
+Write-Host "   ✅ Then access directly at:" -ForegroundColor Green
+Write-Host "      ArgoCD:       http://argocd.local" -ForegroundColor White
+Write-Host "      User API:     http://cloudgames.local/user" -ForegroundColor White
+Write-Host "      Games API:    http://cloudgames.local/games" -ForegroundColor White
+Write-Host "      Payments API: http://cloudgames.local/payments" -ForegroundColor White
+Write-Host ""
+Write-Host "🔗 ALTERNATIVE ACCESS (with port-forward):" -ForegroundColor Cyan
+Write-Host "   Grafana only: .\k3d-manager.ps1 port-forward grafana" -ForegroundColor White
+Write-Host "   Access:       http://localhost:3000" -ForegroundColor Gray
+Write-Host ""
+Write-Host "📝 NEXT STEPS:" -ForegroundColor Cyan
+Write-Host "   1. Update hosts file (REQUIRED for Ingress access):" -ForegroundColor White
+Write-Host "      .\k3d-manager.ps1 update-hosts" -ForegroundColor Gray
+Write-Host ""
+Write-Host "   2. Configure External Secrets (Azure Key Vault):" -ForegroundColor White
+Write-Host "      .\k3d-manager.ps1 external-secrets" -ForegroundColor Gray
+Write-Host ""
+Write-Host "   3. Bootstrap ArgoCD Applications:" -ForegroundColor White
+Write-Host "      .\k3d-manager.ps1 bootstrap" -ForegroundColor Gray
+Write-Host ""
+Write-Host "   4. Test Ingress access (after deploying apps):" -ForegroundColor White
+Write-Host "      Invoke-WebRequest http://argocd.local" -ForegroundColor Gray
+Write-Host "      Invoke-WebRequest http://cloudgames.local/user/health" -ForegroundColor Gray
+Write-Host ""
+Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host ""
