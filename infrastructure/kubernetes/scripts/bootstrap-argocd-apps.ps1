@@ -147,10 +147,10 @@ kubectl get applications -n argocd 2>$null
 
 Write-Host ""
 Write-Host "Access ArgoCD UI:" -ForegroundColor $Colors.Title
-Write-Host "   URL: http://localhost:8090" -ForegroundColor $Colors.Info
+Write-Host "   URL: http://argocd.local" -ForegroundColor $Colors.Info
 Write-Host "   User: admin" -ForegroundColor $Colors.Muted
 Write-Host "   Pass: Argo@123" -ForegroundColor $Colors.Muted
 Write-Host ""
-Write-Host "Start port-forward if needed:" -ForegroundColor $Colors.Muted
-Write-Host "   .\k3d-manager.ps1 port-forward argocd" -ForegroundColor $Colors.Muted
+Write-Host "Note: Requires hosts file entry (run once as Admin):" -ForegroundColor $Colors.Muted
+Write-Host "   .\k3d-manager.ps1 update-hosts" -ForegroundColor $Colors.Muted
 Write-Host ""

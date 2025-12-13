@@ -1,29 +1,29 @@
 <#
 .SYNOPSIS
-  Starts port-forward for ArgoCD and/or Grafana in background (detached) mode.
+  Starts port-forward for Grafana in background (detached) mode.
 .DESCRIPTION
-  Script to facilitate access to k3d cluster services via port-forward.
+  Script to facilitate access to k3d cluster management services via port-forward.
   Runs in background without blocking the terminal.
 
+  Note: ArgoCD no longer needs port-forward - access via http://argocd.local
+  (requires hosts file entry: 127.0.0.1 argocd.local)
+
   Available services:
-  - argocd: http://localhost:8090 (redirects to ArgoCD port 443 - HTTP Insecure)
   - grafana: http://localhost:3000 (redirects to Grafana port 80)
-  - all: Starts both port-forwards
 
 .PARAMETER Service
-  Service for port-forward: argocd, grafana, or all
+  Service for port-forward: grafana (default)
 
 .EXAMPLE
-  .\port-forward.ps1 argocd
+  .\port-forward.ps1
   .\port-forward.ps1 grafana
-  .\port-forward.ps1 all
-  .\port-forward.ps1 -Service all
+  .\port-forward.ps1 -Service grafana
 #>
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("argocd", "grafana", "all")]
-    [string]$Service = "all"
+    [ValidateSet("grafana")]
+    [string]$Service = "grafana"
 )
 
 # Function to check if port-forward is already running
@@ -129,28 +129,14 @@ if ($kubectlPath -like "*chocolatey\bin\kubectl.exe") {
 }
 
 Write-Host "`n=== Port-Forward Manager ===" -ForegroundColor Cyan
-Write-Host "Mode: $Service`n" -ForegroundColor White
+Write-Host "Starting Grafana port-forward...`n" -ForegroundColor White
 
 $processes = @()
 
-# Start port-forwards as requested
-switch ($Service) {
-    "argocd" {
-        $proc = Start-PortForward "argocd-server" "argocd" 8090 443 $kubectlPath
-        if ($proc) { $processes += $proc }
-    }
-    "grafana" {
-        $proc = Start-PortForward "kube-prom-stack-grafana" "monitoring" 3000 80 $kubectlPath
-        if ($proc) { $processes += $proc }
-    }
-    "all" {
-        $proc1 = Start-PortForward "argocd-server" "argocd" 8090 443 $kubectlPath
-        if ($proc1) { $processes += $proc1 }
-
-        $proc2 = Start-PortForward "kube-prom-stack-grafana" "monitoring" 3000 80 $kubectlPath
-        if ($proc2) { $processes += $proc2 }
-    }
-}
+# Start port-forward for Grafana (only service that needs it)
+# Note: ArgoCD is now accessible via http://argocd.local (native Ingress)
+$proc = Start-PortForward "kube-prom-stack-grafana" "monitoring" 3000 80 $kubectlPath
+if ($proc) { $processes += $proc }
 
 if ($processes.Count -eq 0) {
     Write-Host "`n⚠️  No port-forward was started" -ForegroundColor Yellow
@@ -159,11 +145,9 @@ if ($processes.Count -eq 0) {
 
 Write-Host "`n" -NoNewline
 Write-Host "📌 Active port-forwards:" -ForegroundColor Cyan
-if ($Service -eq "argocd" -or $Service -eq "all") {
-    Write-Host "   🔐 ArgoCD:  http://localhost:8090" -ForegroundColor Green
-}
-if ($Service -eq "grafana" -or $Service -eq "all") {
-    Write-Host "   📊 Grafana: http://localhost:3000" -ForegroundColor Green
-}
+Write-Host "   📊 Grafana: http://localhost:3000" -ForegroundColor Green
+Write-Host ""
+Write-Host "ℹ️  ArgoCD is now accessible via native Ingress:" -ForegroundColor Cyan
+Write-Host "   🔐 ArgoCD:  http://argocd.local" -ForegroundColor Green
 
 Write-Host "`n💡 To stop port-forwards, run: .\stop-port-forward.ps1`n" -ForegroundColor Yellow

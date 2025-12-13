@@ -28,8 +28,8 @@
   # Creates cluster from scratch
 
 .EXAMPLE
-  .\k3d-manager.ps1 port-forward argocd
-  # Starts port-forward only for ArgoCD
+  .\k3d-manager.ps1 port-forward grafana
+  # Starts port-forward for Grafana (only management service that needs it)
 #>
 
 [CmdletBinding()]
@@ -79,10 +79,10 @@ function Show-Help {
     Write-Host ""
 
     Write-Host "  🔌 PORT-FORWARD:" -ForegroundColor $Colors.Info
-    Write-Host "    port-forward [svc]  " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Starts port-forwards (all/argocd/grafana)" -ForegroundColor $Colors.Muted
-    Write-Host "    stop [svc]          " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Stops port-forwards (all/argocd/grafana)" -ForegroundColor $Colors.Muted
+    Write-Host "    port-forward        " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Starts port-forward for Grafana (only service that needs it)" -ForegroundColor $Colors.Muted
+    Write-Host "    stop                " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Stops port-forward for Grafana" -ForegroundColor $Colors.Muted
     Write-Host "    list                " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Lists active port-forwards" -ForegroundColor $Colors.Muted
     Write-Host ""
@@ -123,7 +123,7 @@ function Show-Help {
     Write-Host "  .\k3d-manager.ps1 create" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 start" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 update-hosts" -ForegroundColor $Colors.Muted
-    Write-Host "  .\k3d-manager.ps1 port-forward all" -ForegroundColor $Colors.Muted
+    Write-Host "  .\k3d-manager.ps1 port-forward grafana" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 external-secrets" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 build" -ForegroundColor $Colors.Muted
     Write-Host "  .\k3d-manager.ps1 build user" -ForegroundColor $Colors.Muted
@@ -208,7 +208,7 @@ function Show-Status {
         Write-Host "   💡 Run: .\k3d-manager.ps1 list" -ForegroundColor $Colors.Info
     } else {
         Write-Host "   ⚠️  No active port-forwards" -ForegroundColor $Colors.Warning
-        Write-Host "   💡 Run: .\k3d-manager.ps1 port-forward all" -ForegroundColor $Colors.Info
+        Write-Host "   💡 Run: .\k3d-manager.ps1 port-forward grafana" -ForegroundColor $Colors.Info
     }
 
     Write-Host ""
@@ -221,21 +221,19 @@ function Show-Menu {
         Write-Host ""
         Write-Host "  [1] 🔧 Create cluster from scratch" -ForegroundColor $Colors.Info
         Write-Host "  [2] 🚀 Start cluster (after reboot)" -ForegroundColor $Colors.Info
-        Write-Host "  [3] 🔌 Port-forward (all)" -ForegroundColor $Colors.Info
-        Write-Host "  [4] 🔌 Port-forward (ArgoCD)" -ForegroundColor $Colors.Info
-        Write-Host "  [5] 🔌 Port-forward (Grafana)" -ForegroundColor $Colors.Info
-        Write-Host "  [6] 🛑 Stop port-forwards" -ForegroundColor $Colors.Info
-        Write-Host "  [7] 📋 List port-forwards" -ForegroundColor $Colors.Info
-        Write-Host "  [8] 🐳 Check Docker" -ForegroundColor $Colors.Info
-        Write-Host "  [9] 🌐 Update Hosts File (requires Admin)" -ForegroundColor $Colors.Info
-        Write-Host " [10] 📊 Cluster status" -ForegroundColor $Colors.Info
-        Write-Host " [11] 🎨 Start Headlamp UI" -ForegroundColor $Colors.Info
-        Write-Host " [12] 🔐 Configure External Secrets (Azure Key Vault)" -ForegroundColor $Colors.Info
-        Write-Host " [13] 🔑 List/Search Secrets" -ForegroundColor $Colors.Info
-        Write-Host " [14] 🐳 Build & Push Docker Images" -ForegroundColor $Colors.Info
-        Write-Host " [15] 🚀 Bootstrap ArgoCD Applications" -ForegroundColor $Colors.Info
-        Write-Host " [16] 🔄 Reset ArgoCD Application" -ForegroundColor $Colors.Info
-        Write-Host " [17] 🗑️  Cleanup all" -ForegroundColor $Colors.Info
+        Write-Host "  [3] 🔌 Port-forward (Grafana)" -ForegroundColor $Colors.Info
+        Write-Host "  [4] 🛑 Stop port-forwards" -ForegroundColor $Colors.Info
+        Write-Host "  [5] 📋 List port-forwards" -ForegroundColor $Colors.Info
+        Write-Host "  [6] 🐳 Check Docker" -ForegroundColor $Colors.Info
+        Write-Host "  [7] 🌐 Update Hosts File (requires Admin)" -ForegroundColor $Colors.Info
+        Write-Host "  [8] 📊 Cluster status" -ForegroundColor $Colors.Info
+        Write-Host "  [9] 🎨 Start Headlamp UI" -ForegroundColor $Colors.Info
+        Write-Host " [10] 🔐 Configure External Secrets (Azure Key Vault)" -ForegroundColor $Colors.Info
+        Write-Host " [11] 🔑 List/Search Secrets" -ForegroundColor $Colors.Info
+        Write-Host " [12] 🐳 Build & Push Docker Images" -ForegroundColor $Colors.Info
+        Write-Host " [13] 🚀 Bootstrap ArgoCD Applications" -ForegroundColor $Colors.Info
+        Write-Host " [14] 🔄 Reset ArgoCD Application" -ForegroundColor $Colors.Info
+        Write-Host " [15] 🗑️  Cleanup all" -ForegroundColor $Colors.Info
         Write-Host "  [0] ❌ Exit" -ForegroundColor $Colors.Error
         Write-Host ""
 
@@ -244,21 +242,19 @@ function Show-Menu {
         switch ($choice) {
             "1" { Invoke-Command "create" }
             "2" { Invoke-Command "start" }
-            "3" { Invoke-Command -cmd "port-forward" -args @("all") }
-            "4" { Invoke-Command -cmd "port-forward" -args @("argocd") }
-            "5" { Invoke-Command -cmd "port-forward" -args @("grafana") }
-            "6" { Invoke-Command -cmd "stop-port-forward" }
-            "7" { Invoke-Command -cmd "list-port-forward" }
-            "8" { Invoke-Command -cmd "check" }
-            "9" { Invoke-Command -cmd "update-hosts" }
-            "10" { Invoke-Command -cmd "status" }
-            "11" { Invoke-Command -cmd "ui" }
-            "12" { Invoke-Command -cmd "configure-external-secrets" }
-            "13" { Invoke-Command -cmd "list-secrets" }
-            '14' { Invoke-Command -cmd "build-push" }
-            '15' { Invoke-Command -cmd "bootstrap-argocd" }
-            '16' { Invoke-Command -cmd "reset-argocd" }
-            '17' { Invoke-Command -cmd "cleanup" }
+            "3" { Invoke-Command -cmd "port-forward" -args @("grafana") }
+            "4" { Invoke-Command -cmd "stop-port-forward" }
+            "5" { Invoke-Command -cmd "list-port-forward" }
+            "6" { Invoke-Command -cmd "check" }
+            "7" { Invoke-Command -cmd "update-hosts" }
+            "8" { Invoke-Command -cmd "status" }
+            "9" { Invoke-Command -cmd "ui" }
+            "10" { Invoke-Command -cmd "configure-external-secrets" }
+            "11" { Invoke-Command -cmd "list-secrets" }
+            '12' { Invoke-Command -cmd "build-push" }
+            '13' { Invoke-Command -cmd "bootstrap-argocd" }
+            '14' { Invoke-Command -cmd "reset-argocd" }
+            '15' { Invoke-Command -cmd "cleanup" }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
                 exit 0

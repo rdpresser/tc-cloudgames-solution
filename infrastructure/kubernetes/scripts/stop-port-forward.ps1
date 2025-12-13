@@ -5,22 +5,24 @@
   Identifies and terminates running kubectl port-forward processes.
   Allows termination by service name or specific PID.
 
+  Note: ArgoCD no longer needs port-forward - access via http://argocd.local
+
 .PARAMETER Service
-  Optional: Specifies which service to stop (argocd, grafana, or all). Default: all.
+  Optional: Specifies which service to stop (grafana or all). Default: all.
 
 .PARAMETER Id
   Optional: Specific PID to kill (useful for stuck/zombie processes).
 
 .EXAMPLE
   .\stop-port-forward.ps1
-  .\stop-port-forward.ps1 argocd
+  .\stop-port-forward.ps1 grafana
   .\stop-port-forward.ps1 -Id 12345
 #>
 
 [CmdletBinding(DefaultParameterSetName="ByService")]
 param(
     [Parameter(ParameterSetName="ByService", Position = 0)]
-    [ValidateSet("argocd", "grafana", "all")]
+    [ValidateSet("grafana", "all")]
     [string]$Service = "all",
 
     [Parameter(ParameterSetName="ById", Mandatory=$true)]
@@ -61,11 +63,6 @@ foreach ($proc in $kubectlProcesses) {
             $shouldStop = $false
 
             switch ($Service) {
-                "argocd" {
-                    if ($cmdLine -like "*argocd-server*") {
-                        $shouldStop = $true
-                    }
-                }
                 "grafana" {
                     if ($cmdLine -like "*grafana*") {
                         $shouldStop = $true

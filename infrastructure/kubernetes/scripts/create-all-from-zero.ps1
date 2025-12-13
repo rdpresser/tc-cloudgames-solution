@@ -270,7 +270,7 @@ try {
     Write-Host "✅ ArgoCD password changed successfully to: $argocdAdminNewPassword" -ForegroundColor Green
 } catch {
     Write-Host "⚠️  Failed to change ArgoCD password: $_" -ForegroundColor Yellow
-    Write-Host "   You can change it manually via UI at http://localhost:8090" -ForegroundColor Yellow
+    Write-Host "   You can change it manually via UI at http://argocd.local" -ForegroundColor Yellow
 }
 # kill port-forward
 Stop-Process -Id $pfArgocd.Id -ErrorAction SilentlyContinue
