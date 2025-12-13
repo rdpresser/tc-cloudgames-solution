@@ -144,15 +144,19 @@ function Build-Api {
     docker tag $fullImageName $registryImage
     Write-Host "[OK] Tagged as $registryImage" -ForegroundColor $Colors.Success
 
-    # Push if not skipped
+    # Import to k3d cluster (more reliable than registry push)
     if (-not $SkipPush) {
-        Write-Host "Pushing to registry..." -ForegroundColor $Colors.Muted
-        docker push $registryImage 2>&1
+        Write-Host "Importing to k3d cluster..." -ForegroundColor $Colors.Muted
+        k3d image import $registryImage -c dev 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "[FAILED] Push failed for $registryImage" -ForegroundColor $Colors.Error
-            return $false
+            Write-Host "[WARNING] k3d import failed, trying registry push..." -ForegroundColor $Colors.Warning
+            docker push $registryImage 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "[FAILED] Push failed for $registryImage" -ForegroundColor $Colors.Error
+                return $false
+            }
         }
-        Write-Host "[OK] Pushed $registryImage" -ForegroundColor $Colors.Success
+        Write-Host "[OK] Imported $registryImage to cluster" -ForegroundColor $Colors.Success
     }
 
     return $true

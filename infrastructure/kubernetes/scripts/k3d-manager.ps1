@@ -335,7 +335,7 @@ function Invoke-Command($cmd, $arg1 = "", $arg2 = "") {
             $api = if ($arg1) { $arg1 } else { "all" }
             & "$scriptPath\build-push-images.ps1" -Api $api -Restart
         }
-        "bootstrap" {
+        { $_ -in "bootstrap", "bootstrap-argocd" } {
             Write-Host "`n🚀 Bootstrapping ArgoCD applications..." -ForegroundColor $Colors.Info
             $env = if ($arg1) { $arg1 } else { "dev" }
             & "$scriptPath\bootstrap-argocd-apps.ps1" -Environment $env
