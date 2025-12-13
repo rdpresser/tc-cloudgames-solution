@@ -1,0 +1,30 @@
+# Traefik Middlewares for strip prefix
+# These middlewares remove the path prefix before forwarding requests to services
+# Required for: /user/* -> /*, /games/* -> /*, /payments/* -> /*
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-user-prefix
+spec:
+  stripPrefix:
+    prefixes:
+      - /user
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-games-prefix
+spec:
+  stripPrefix:
+    prefixes:
+      - /games
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-payments-prefix
+spec:
+  stripPrefix:
+    prefixes:
+      - /payments

@@ -1,11 +1,13 @@
 # Patch to configure Ingress for local k3d cluster with Traefik
 # - Changes ingressClassName from nginx to traefik
 # - Traefik is the default ingress controller in k3d
-# - Maintains the same hosts and paths
+# - Uses StripPrefix middleware to remove path prefix before forwarding to service
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: user-api
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: cloudgames-dev-strip-user-prefix@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
@@ -24,6 +26,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: games-api
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: cloudgames-dev-strip-games-prefix@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
@@ -42,6 +46,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: payments-api
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: cloudgames-dev-strip-payments-prefix@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:

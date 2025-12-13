@@ -1,6 +1,7 @@
 resources:
   - ../../base
   - cluster-secret-store-patch.yaml
+  - traefik-middlewares.yaml
 
 labels:
   - pairs:
