@@ -248,8 +248,8 @@ function Show-Menu {
             "6" { Invoke-Command -cmd "check" }
             "7" { Invoke-Command -cmd "update-hosts" }
             "8" { Invoke-Command -cmd "status" }
-            "9" { Invoke-Command -cmd "ui" }
-            "10" { Invoke-Command -cmd "configure-external-secrets" }
+            "9" { Invoke-Command -cmd "headlamp" }
+            "10" { Invoke-Command -cmd "external-secrets" }
             "11" { Invoke-Command -cmd "list-secrets" }
             '12' { Invoke-Command -cmd "build-push" }
             '13' { Invoke-Command -cmd "bootstrap-argocd" }

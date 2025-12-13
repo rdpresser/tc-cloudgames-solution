@@ -207,18 +207,71 @@ Write-Host "=== 5) Creating namespace '$appNamespace' ===" -ForegroundColor $Col
 kubectl create namespace $appNamespace --dry-run=client -o yaml | kubectl apply -f - 2>$null
 Write-Host "✅ Namespace '$appNamespace' ready" -ForegroundColor $Colors.Success
 
+# === 5.1) Wait for webhook to be ready ===
+Write-Host ""
+Write-Host "=== 5.1) Waiting for External Secrets webhook to be ready ===" -ForegroundColor $Colors.Title
+Write-Host "⏳ This ensures manifests can be validated properly..." -ForegroundColor $Colors.Muted
+
+$webhookReady = $false
+$maxAttempts = 30
+for ($i = 1; $i -le $maxAttempts; $i++) {
+    # Check if webhook pod is running and has endpoints
+    $webhookPod = kubectl get pods -n $namespace -l app.kubernetes.io/name=external-secrets-webhook --no-headers 2>$null
+    $endpoints = kubectl get endpoints external-secrets-webhook -n $namespace -o jsonpath='{.subsets[*].addresses[*].ip}' 2>$null
+    
+    if ($webhookPod -match "Running" -and $webhookPod -match "1/1" -and $endpoints) {
+        $webhookReady = $true
+        break
+    }
+    
+    if ($i % 5 -eq 0) {
+        Write-Host "   Attempt $i/$maxAttempts - Webhook not ready yet..." -ForegroundColor $Colors.Muted
+    }
+    Start-Sleep -Seconds 2
+}
+
+if (-not $webhookReady) {
+    Write-Host "⚠️  Warning: Webhook may not be fully ready. Waiting additional 10 seconds..." -ForegroundColor $Colors.Warning
+    Start-Sleep -Seconds 10
+} else {
+    Write-Host "✅ Webhook is ready and has endpoints" -ForegroundColor $Colors.Success
+}
+
 # === 6) Apply Kustomize manifests ===
 Write-Host ""
 Write-Host "=== 6) Applying External Secrets manifests ===" -ForegroundColor $Colors.Title
 
 $manifestsPath = Join-Path $PSScriptRoot "..\overlays\dev"
 if (Test-Path $manifestsPath) {
-    kubectl apply -k $manifestsPath
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "⚠️  Warning: Some resources may have failed. Check manually." -ForegroundColor $Colors.Warning
-    } else {
-        Write-Host "✅ Manifests applied successfully" -ForegroundColor $Colors.Success
+    # Apply with retry logic in case webhook needs a moment
+    $applySuccess = $false
+    $retryCount = 3
+    
+    for ($attempt = 1; $attempt -le $retryCount; $attempt++) {
+        $output = kubectl apply -k $manifestsPath 2>&1
+        
+        if ($LASTEXITCODE -eq 0) {
+            $applySuccess = $true
+            Write-Host $output
+            Write-Host "✅ Manifests applied successfully" -ForegroundColor $Colors.Success
+            break
+        }
+        
+        # Check if it's a webhook error
+        if ($output -match "failed calling webhook") {
+            Write-Host "⚠️  Webhook not ready (attempt $attempt/$retryCount). Waiting 10 seconds..." -ForegroundColor $Colors.Warning
+            Start-Sleep -Seconds 10
+        } else {
+            # Different error, show it and exit
+            Write-Host $output
+            Write-Host "⚠️  Warning: Some resources may have failed. Check manually." -ForegroundColor $Colors.Warning
+            break
+        }
+    }
+    
+    if (-not $applySuccess -and $LASTEXITCODE -ne 0) {
+        Write-Host "⚠️  Warning: Some resources may have failed after $retryCount attempts." -ForegroundColor $Colors.Warning
+        Write-Host "   You can retry manually: kubectl apply -k $manifestsPath" -ForegroundColor $Colors.Muted
     }
 } else {
     Write-Host "⚠️  Manifests directory not found: $manifestsPath" -ForegroundColor $Colors.Warning
