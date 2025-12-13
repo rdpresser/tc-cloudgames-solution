@@ -3,6 +3,26 @@
   Cleans up local environment: deletes k3d clusters, local registry (if exists), and removes headlamp container.
 #>
 
+# === Confirmation ===
+Write-Host ""
+Write-Host "⚠️  WARNING: This will DELETE your entire local Kubernetes environment!" -ForegroundColor Red
+Write-Host "   - Stop all port-forwards" -ForegroundColor Gray
+Write-Host "   - Remove Headlamp container" -ForegroundColor Gray
+Write-Host "   - Delete k3d cluster 'dev'" -ForegroundColor Gray
+Write-Host "   - Remove local registry" -ForegroundColor Gray
+Write-Host ""
+Write-Host "   This action is IRREVERSIBLE. You will need to run 'create' again." -ForegroundColor Yellow
+Write-Host ""
+$confirm = Read-Host "Are you sure you want to continue? (Y/N)"
+
+if ($confirm -ne 'Y' -and $confirm -ne 'y') {
+    Write-Host "
+❌ Operation cancelled." -ForegroundColor Red
+    return
+}
+
+Write-Host ""
+
 # List of clusters to remove (adjust if you have others)
 $clusters = @("dev")
 $registryName = "localhost"

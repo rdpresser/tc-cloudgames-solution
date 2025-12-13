@@ -8,6 +8,22 @@
   .\reset-argocd-app.ps1
 #>
 
+# === Confirmation ===
+Write-Host ""
+Write-Host "⚠️  WARNING: This will reset the ArgoCD application!" -ForegroundColor Yellow
+Write-Host "   - Delete user-app application" -ForegroundColor Gray
+Write-Host "   - Restart argocd-repo-server (clear cache)" -ForegroundColor Gray
+Write-Host "   - Recreate user-app application" -ForegroundColor Gray
+Write-Host ""
+$confirm = Read-Host "Are you sure you want to continue? (Y/N)"
+
+if ($confirm -ne 'Y' -and $confirm -ne 'y') {
+    Write-Host "
+❌ Operation cancelled." -ForegroundColor Red
+    return
+}
+
+Write-Host ""
 Write-Host "1. Deleting user-app application..." -ForegroundColor Yellow
 kubectl delete application user-app -n argocd
 
