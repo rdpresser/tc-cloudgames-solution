@@ -18,3 +18,4 @@ namespace: cloudgames-dev
 
 patches:
   - path: deployment-env-patch.yaml
+  - path: ingress-patch.yaml
