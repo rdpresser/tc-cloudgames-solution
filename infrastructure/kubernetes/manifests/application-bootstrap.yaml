@@ -11,7 +11,7 @@ spec:
     path: infrastructure/kubernetes/manifests
     directory:
       # Only deploy the unified Application and AppProject, not the deprecated separate ones
-      exclude: 'application-{user,games,payments}.yaml,appproject-{user,games,payments}.yaml'
+      exclude: 'application-{user,games,payments}.yaml,appproject-{user,games,payments}.yaml,application-cloudgames-project.yaml'
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

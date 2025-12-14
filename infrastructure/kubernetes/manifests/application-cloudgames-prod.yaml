@@ -22,7 +22,7 @@ spec:
   project: cloudgames
   source:
     repoURL: "https://github.com/rdpresser/tc-cloudgames-solution.git"
-    targetRevision: main
+    targetRevision: feature/phase_04
     path: "infrastructure/kubernetes/overlays/prod"
   destination:
     server: "https://kubernetes.default.svc"
