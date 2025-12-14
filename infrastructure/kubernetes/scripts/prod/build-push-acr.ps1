@@ -67,22 +67,39 @@ $script:Colors = @{
 
 $script:AcrLoginServer = "${AcrName}.azurecr.io"
 
+function Get-BuildTags {
+    param([string]$RequestedTag)
+
+    $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $gitSha = "local"
+    $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
+    try {
+        Push-Location $repoRoot
+        $gitSha = git rev-parse --short=8 HEAD 2>$null
+        if (-not $gitSha) { $gitSha = "local" }
+    }
+    catch { $gitSha = "local" }
+    finally { Pop-Location }
+
+    $generatedTag = "$timestamp-$gitSha"
+
+    # Always publish two tags: latest and timestamp-sha
+    return @($generatedTag, "latest")
+}
+
 # API configurations
 $script:Apis = @{
     "user" = @{
-        Name = "user-api"
+        Name = "users-api"
         Dockerfile = "services/users/src/Adapters/Inbound/TC.CloudGames.Users.Api/Dockerfile"
-        Context = "services/users"
     }
     "games" = @{
         Name = "games-api"
         Dockerfile = "services/games/src/Adapters/Inbound/TC.CloudGames.Games.Api/Dockerfile"
-        Context = "services/games"
     }
     "payments" = @{
-        Name = "payments-api"
+        Name = "payms-api"
         Dockerfile = "services/payments/src/Adapters/Inbound/TC.CloudGames.Payments.Api/Dockerfile"
-        Context = "services/payments"
     }
 }
 
@@ -150,49 +167,55 @@ function Build-Api {
     $apiConfig = $Apis[$ApiKey]
     $imageName = $apiConfig.Name
     $dockerfile = $apiConfig.Dockerfile
-    $context = $apiConfig.Context
-    $fullImageName = "${AcrLoginServer}/${imageName}:${Tag}"
+    $tags = Get-BuildTags -RequestedTag $Tag
+    $primaryTag = $tags[0]
+    $primaryImage = "${AcrLoginServer}/${imageName}:${primaryTag}"
     
     Write-Host "Building $imageName..." -ForegroundColor $Colors.Info
     
-    # Get repository root (3 levels up from scripts/azure/)
-    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../../..")).Path
+    # Get repository root - navigate from infrastructure/kubernetes/scripts/prod/ to project root
+    $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
     $dockerfilePath = Join-Path $repoRoot $dockerfile
-    $contextPath = Join-Path $repoRoot $context
 
     if (-not (Test-Path $dockerfilePath)) {
         Write-Host "❌ Dockerfile not found: $dockerfile" -ForegroundColor $Colors.Error
         return $false
     }
 
-    if (-not (Test-Path $contextPath)) {
-        Write-Host "❌ Build context not found: $context" -ForegroundColor $Colors.Error
-        return $false
-    }
-
-    # Build
+    # Build with repository root as context (includes shared/ and services/)
     Write-Host "   Dockerfile: $dockerfile" -ForegroundColor $Colors.Muted
-    Write-Host "   Context: $context" -ForegroundColor $Colors.Muted
-    Write-Host "   Image: $fullImageName" -ForegroundColor $Colors.Muted
+    Write-Host "   Context: $repoRoot" -ForegroundColor $Colors.Muted
+    Write-Host "   Tags: $($tags -join ', ')" -ForegroundColor $Colors.Muted
     
-    docker build -t $fullImageName -f $dockerfilePath $contextPath 2>&1
+    docker build -t $primaryImage -f $dockerfilePath $repoRoot 2>&1
     $buildResult = $LASTEXITCODE
 
     if ($buildResult -ne 0) {
         Write-Host "❌ Build failed for $imageName" -ForegroundColor $Colors.Error
         return $false
     }
-    Write-Host "✅ Built $fullImageName" -ForegroundColor $Colors.Success
+    Write-Host "✅ Built $primaryImage" -ForegroundColor $Colors.Success
+
+    # Tag additional tags pointing to same image
+    foreach ($tag in $tags) {
+        if ($tag -eq $primaryTag) { continue }
+        $targetImage = "${AcrLoginServer}/${imageName}:${tag}"
+        docker tag $primaryImage $targetImage
+        Write-Host "   Tagged: $targetImage" -ForegroundColor $Colors.Muted
+    }
 
     # Push to ACR
     if (-not $SkipPush) {
-        Write-Host "   Pushing to ACR..." -ForegroundColor $Colors.Muted
-        docker push $fullImageName 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ Push failed for $fullImageName" -ForegroundColor $Colors.Error
-            return $false
+        foreach ($tag in $tags) {
+            $targetImage = "${AcrLoginServer}/${imageName}:${tag}"
+            Write-Host "   Pushing: $targetImage" -ForegroundColor $Colors.Muted
+            docker push $targetImage 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "❌ Push failed for $targetImage" -ForegroundColor $Colors.Error
+                return $false
+            }
+            Write-Host "✅ Pushed $targetImage" -ForegroundColor $Colors.Success
         }
-        Write-Host "✅ Pushed $fullImageName" -ForegroundColor $Colors.Success
     }
 
     Write-Host ""
@@ -246,9 +269,9 @@ if ($failCount -eq 0) {
     Write-Host "✅ All images built and pushed successfully!" -ForegroundColor $Colors.Success
     Write-Host ""
     Write-Host "To update deployments in AKS:" -ForegroundColor $Colors.Info
-    Write-Host "   kubectl set image deployment/user-api user-api=$AcrLoginServer/user-api:$Tag -n cloudgames" -ForegroundColor $Colors.Muted
+    Write-Host "   kubectl set image deployment/user-api user-api=$AcrLoginServer/users-api:$Tag -n cloudgames" -ForegroundColor $Colors.Muted
     Write-Host "   kubectl set image deployment/games-api games-api=$AcrLoginServer/games-api:$Tag -n cloudgames" -ForegroundColor $Colors.Muted
-    Write-Host "   kubectl set image deployment/payments-api payments-api=$AcrLoginServer/payments-api:$Tag -n cloudgames" -ForegroundColor $Colors.Muted
+    Write-Host "   kubectl set image deployment/payments-api payments-api=$AcrLoginServer/payms-api:$Tag -n cloudgames" -ForegroundColor $Colors.Muted
     Write-Host ""
     Write-Host "Or restart deployments to pull new images:" -ForegroundColor $Colors.Info
     Write-Host "   kubectl rollout restart deployment -n cloudgames" -ForegroundColor $Colors.Muted

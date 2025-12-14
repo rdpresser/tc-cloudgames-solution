@@ -21,9 +21,7 @@ terraform {
       source  = "hashicorp/time"
       version = "~> 0.13" # Latest 0.x
     }
-    # NOTE: Helm and Kubernetes providers removed.
-    # ArgoCD is now installed manually via install-argocd-aks.ps1 script.
-    # This avoids Terraform Cloud connectivity issues with AKS cluster.
+    # Helm/Kubernetes providers removed - K8s components installed via aks-manager.ps1
   }
 
   # Terraform Cloud backend configuration
@@ -49,3 +47,9 @@ provider "azurerm" {
     }
   }
 }
+
+# =============================================================================
+# Kubernetes Components (ArgoCD, ESO, NGINX, Grafana Agent)
+# =============================================================================
+# Installed via: infrastructure/kubernetes/scripts/azure/aks-manager.ps1
+

@@ -449,13 +449,13 @@ argocd_admin_password = "Argo@SecurePass123!"
     value = "LoadBalancer"
   }
 
-  # Insecure mode (sem TLS) para facilitar acesso
+  # Insecure mode (no TLS) for easier access
   set {
     name  = "server.extraArgs[0]"
     value = "--insecure"
   }
 
-  # Senha admin (bcrypt hash)
+  # Admin password (bcrypt hash)
   set_sensitive {
     name  = "configs.secret.argocdServerAdminPassword"
     value = bcrypt_hash.argocd_admin_password.id
@@ -465,20 +465,20 @@ argocd_admin_password = "Argo@SecurePass123!"
 
 ### 3. LoadBalancer Service
 
-ArgoCD server é exposto via **Azure Load Balancer** com IP público automático.
+ArgoCD server is exposed via **Azure Load Balancer** with automatic public IP.
 
 ---
 
-## 📤 Outputs Disponíveis
+## 📤 Available Outputs
 
-Após `terraform apply`, os seguintes outputs estarão disponíveis:
+After `terraform apply`, the following outputs will be available:
 
 ```hcl
-# URL completa do ArgoCD
+# Complete ArgoCD URL
 output "argocd_server_url"
-# Exemplo: http://20.123.45.67
+# Example: http://20.123.45.67
 
-# Informações detalhadas
+# Detailed information
 output "argocd_info" {
   namespace            = "argocd"
   server_url           = "http://20.123.45.67"
@@ -491,27 +491,27 @@ output "argocd_info" {
 
 ---
 
-## 🎯 Acesso ao ArgoCD
+## 🎯 Accessing ArgoCD
 
-### Opção 1: Via LoadBalancer (Recomendado)
+### Option 1: Via LoadBalancer (Recommended)
 
 ```bash
-# 1. Obter URL do terraform output
+# 1. Get URL from terraform output
 terraform output argocd_server_url
 # Output: http://20.123.45.67
 
-# 2. Abrir no navegador
+# 2. Open in browser
 http://20.123.45.67
 
 # 3. Login
 Username: admin
-Password: <valor-do-terraform-cloud>
+Password: <value-from-terraform-cloud>
 ```
 
-### Opção 2: Via Port-Forward (Local)
+### Option 2: Via Port-Forward (Local)
 
 ```bash
-# 1. Conectar ao cluster
+# 1. Connect to cluster
 az aks get-credentials \
   --resource-group <rg-name> \
   --name <aks-name>
@@ -519,18 +519,18 @@ az aks get-credentials \
 # 2. Port-forward
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 
-# 3. Abrir no navegador
+# 3. Open in browser
 http://localhost:8080
 
 # 4. Login
 Username: admin
-Password: <valor-do-terraform-cloud>
+Password: <value-from-terraform-cloud>
 ```
 
-### Opção 3: Via ArgoCD CLI
+### Option 3: Via ArgoCD CLI
 
 ```bash
-# 1. Instalar ArgoCD CLI
+# 1. Install ArgoCD CLI
 choco install argocd  # Windows
 brew install argocd   # macOS
 # Linux: https://argo-cd.readthedocs.io/en/stable/cli_installation/
@@ -542,34 +542,34 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 argocd login localhost:8080 \
   --insecure \
   --username admin \
-  --password <valor-do-terraform-cloud>
+  --password <value-from-terraform-cloud>
 
-# 4. Listar aplicações
+# 4. List applications
 argocd app list
 ```
 
 ---
 
-## 🔄 Comparação: K3d (Dev) vs AKS (Prod)
+## 🔄 Comparison: K3d (Dev) vs AKS (Prod)
 
-### Script PowerShell (K3d - Local Dev)
+### PowerShell Script (K3d - Local Dev)
 ```powershell
 # create-all-from-zero.ps1
-# 1. Instala ArgoCD via Helm manualmente
+# 1. Install ArgoCD via Helm manually
 helm upgrade --install argocd argo/argo-cd -n argocd
 
-# 2. Recupera senha inicial
+# 2. Retrieve initial password
 $argocdInitialPassword = kubectl -n argocd get secret ...
 
 # 3. Port-forward
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 
-# 4. Altera senha via CLI
+# 4. Change password via CLI
 argocd login localhost:8080 --username admin --password $argocdInitialPassword
 argocd account update-password --new-password "Argo@123"
 ```
 
-### Terraform (AKS - Produção)
+### Terraform (AKS - Production)
 ```terraform
 # foundation/main.tf
 module "argocd" {
@@ -577,17 +577,17 @@ module "argocd" {
   admin_password = var.argocd_admin_password  # From Terraform Cloud
 }
 
-# ✅ Senha já definida no deploy (bcrypt hash)
-# ✅ LoadBalancer com IP público automático
-# ✅ Não precisa alterar senha manualmente
-# ✅ Senha gerenciada via Terraform Cloud (sensitive)
+# ✅ Password already set during deployment (bcrypt hash)
+# ✅ LoadBalancer with automatic public IP
+# ✅ No need to manually change password
+# ✅ Password managed via Terraform Cloud (sensitive)
 ```
 
 ---
 
-## 🛠️ Providers Necessários
+## 🛠️ Required Providers
 
-### Instalação Automática via Terraform
+### Automatic Installation via Terraform
 
 ```terraform
 # foundation/providers.tf
@@ -601,7 +601,7 @@ terraform {
 }
 ```
 
-### Autenticação via kubelogin
+### Authentication via kubelogin
 
 ```terraform
 provider "helm" {
@@ -618,13 +618,13 @@ provider "helm" {
 }
 ```
 
-**Pré-requisito:** `kubelogin` deve estar instalado no ambiente de execução do Terraform (Terraform Cloud Agent ou local).
+**Prerequisite:** `kubelogin` must be installed in the Terraform execution environment (Terraform Cloud Agent or local).
 
 ---
 
 ## 📊 Resource Limits
 
-Configurações padrão de recursos:
+Default resource configurations:
 
 ### ArgoCD Server
 ```yaml
@@ -657,95 +657,95 @@ resources:
 
 ## 🐛 Troubleshooting
 
-### Erro: "Module not found: argocd"
+### Error: "Module not found: argocd"
 ```bash
-# Executar terraform init
+# Run terraform init
 cd infrastructure/terraform/foundation
 terraform init
 ```
 
-### Erro: "kubelogin command not found"
+### Error: "kubelogin command not found"
 ```bash
-# Instalar kubelogin
-az aks install-cli  # Instala kubectl e kubelogin
+# Install kubelogin
+az aks install-cli  # Installs kubectl and kubelogin
 
-# Verificar instalação
+# Verify installation
 kubelogin --version
 ```
 
-### Erro: "LoadBalancer pending forever"
+### Error: "LoadBalancer pending forever"
 ```bash
-# Verificar status do service
+# Check service status
 kubectl -n argocd get svc argocd-server
 
-# Verificar eventos
+# Check events
 kubectl -n argocd describe svc argocd-server
 
-# Verificar load balancer no Azure
+# Check load balancer in Azure
 az network lb list -o table
 ```
 
-### Erro: "Cannot login to ArgoCD"
+### Error: "Cannot login to ArgoCD"
 ```bash
-# Verificar se senha está correta
-# A senha deve ser a mesma configurada no Terraform Cloud
+# Verify password is correct
+# Password must match the one configured in Terraform Cloud
 
-# Resetar senha manualmente (se necessário)
+# Reset password manually (if necessary)
 kubectl -n argocd patch secret argocd-secret \
-  -p '{"stringData": {"admin.password": "<novo-bcrypt-hash>"}}'
+  -p '{"stringData": {"admin.password": "<new-bcrypt-hash>"}}'
 ```
 
 ---
 
-## 📈 Custos
+## 📈 Costs
 
 ### ArgoCD (Azure)
-- **LoadBalancer:** ~$20/mês (IP público + regras)
-- **Pods (recursos):** Incluído no custo dos nodes AKS
-- **Total Adicional:** ~$20/mês
+- **LoadBalancer:** ~$20/month (public IP + rules)
+- **Pods (resources):** Included in AKS node costs
+- **Total Additional:** ~$20/month
 
 ---
 
-## ✅ Validação Pós-Deploy
+## ✅ Post-Deploy Validation
 
 ```bash
-# 1. Verificar pods do ArgoCD
+# 1. Check ArgoCD pods
 kubectl -n argocd get pods
 
-# Esperado:
+# Expected:
 # argocd-server-xxxxx              1/1   Running
 # argocd-repo-server-xxxxx         1/1   Running
 # argocd-application-controller-0  1/1   Running
 # argocd-redis-xxxxx               1/1   Running
 # argocd-dex-server-xxxxx          1/1   Running
 
-# 2. Verificar service LoadBalancer
+# 2. Check LoadBalancer service
 kubectl -n argocd get svc argocd-server
 
-# Esperado:
+# Expected:
 # NAME            TYPE           EXTERNAL-IP
 # argocd-server   LoadBalancer   20.123.45.67
 
-# 3. Testar acesso
+# 3. Test access
 curl http://<EXTERNAL-IP>
 
-# Esperado: HTML da página de login do ArgoCD
+# Expected: HTML of ArgoCD login page
 ```
 
 ---
 
-## 🎯 Próximos Passos
+## 🎯 Next Steps
 
-Após instalação do ArgoCD:
+After ArgoCD installation:
 
-1. **Conectar repositório Git** no ArgoCD
-2. **Criar Application CRDs** para users-api, games-api, payments-api
-3. **Deploy via GitOps:** Push manifests → ArgoCD sync automático
-4. **Configurar auto-sync** e self-heal para deployments automáticos
+1. **Connect Git repository** in ArgoCD
+2. **Create Application CRDs** for users-api, games-api, payments-api
+3. **Deploy via GitOps:** Push manifests → ArgoCD auto-syncs
+4. **Configure auto-sync** and self-heal for automatic deployments
 
 ---
 
-## 📚 Referências
+## 📚 References
 
 - [ArgoCD Official Docs](https://argo-cd.readthedocs.io/)
 - [Helm Chart Documentation](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd)
@@ -754,27 +754,27 @@ Após instalação do ArgoCD:
 
 ---
 
-## 🔑 Resumo da Variável
+## 🔑 Variable Summary
 
-**Nome da variável no Terraform Cloud:**
+**Variable name in Terraform Cloud:**
 ```
 argocd_admin_password
 ```
 
-**Tipo:** Terraform Variable  
-**Sensitive:** Sim  
-**Validação:** Mínimo 8 caracteres  
-**Uso:** Senha do usuário `admin` no ArgoCD  
-**Storage:** Bcrypt hash (cost=10) no secret do ArgoCD
+**Type:** Terraform Variable  
+**Sensitive:** Yes  
+**Validation:** Minimum 8 characters  
+**Usage:** Password for `admin` user in ArgoCD  
+**Storage:** Bcrypt hash (cost=10) in ArgoCD secret
 
-**Exemplo de configuração:**
+**Configuration example:**
 ```
 argocd_admin_password = "Argo@SecurePass123!"
 ```
 
 ---
 
-**Status:** ArgoCD instalado automaticamente via Terraform ✅  
-**Deploy:** Junto com `terraform apply` do foundation  
-**Acesso:** LoadBalancer IP público + senha do Terraform Cloud  
-**GitOps Ready:** Pronto para deploy de aplicações 🚀
+**Status:** ArgoCD automatically installed via Terraform ✅  
+**Deploy:** Together with `terraform apply` of foundation  
+**Access:** LoadBalancer public IP + password from Terraform Cloud  
+**GitOps Ready:** Ready for application deployment 🚀

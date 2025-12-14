@@ -48,6 +48,7 @@ $script:Config = @{
     ResourceGroup = "tc-cloudgames-solution-dev-rg"
     ClusterName   = "tc-cloudgames-dev-cr8n-aks"
     KeyVaultName  = "tccloudgamesdevcr8nkv"
+    ACRName       = "tccloudgamesdevcr8nacr"
 }
 
 # Colors and formatting
@@ -63,8 +64,8 @@ $script:Colors = @{
 function Show-Header {
     Write-Host ""
     Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
-    Write-Host "║          ☁️  AKS Cluster Manager v1.0                      ║" -ForegroundColor $Colors.Title
-    Write-Host "║          Azure Kubernetes Service Manager                 ║" -ForegroundColor $Colors.Title
+    Write-Host "║          ☁️  AKS Cluster Manager v1.0                       ║" -ForegroundColor $Colors.Title
+    Write-Host "║          Azure Kubernetes Service Manager                  ║" -ForegroundColor $Colors.Title
     Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Title
     Write-Host ""
     Write-Host "  Resource Group: $($Config.ResourceGroup)" -ForegroundColor $Colors.Muted
@@ -256,20 +257,161 @@ function Show-Status {
 }
 
 function Show-Menu {
+    function Get-InstallStatuses {
+        # Start parallel jobs for faster info gathering
+        $jobs = @()
+        
+        # Job 1: Check ArgoCD
+        $jobs += Start-Job -ScriptBlock {
+            try {
+                $pods = kubectl get pods -n argocd --no-headers 2>$null | Where-Object { $_ -match "Running" }
+                return @{ argocd = [bool]$pods }
+            } catch {
+                return @{ argocd = $false }
+            }
+        }
+        
+        # Job 2: Check Grafana Agent
+        $jobs += Start-Job -ScriptBlock {
+            try {
+                $pods = kubectl get pods -n grafana-agent --no-headers 2>$null | Where-Object { $_ -match "Running" }
+                return @{ grafana = [bool]$pods }
+            } catch {
+                return @{ grafana = $false }
+            }
+        }
+        
+        # Job 3: Check ESO
+        $jobs += Start-Job -ScriptBlock {
+            try {
+                $pods = kubectl get pods -n external-secrets --no-headers 2>$null | Where-Object { $_ -match "Running" }
+                return @{ eso = [bool]$pods }
+            } catch {
+                return @{ eso = $false }
+            }
+        }
+        
+        # Job 4: Check NGINX
+        $jobs += Start-Job -ScriptBlock {
+            try {
+                $pods = kubectl get pods -n ingress-nginx --no-headers 2>$null | Where-Object { $_ -match "Running" }
+                return @{ nginx = [bool]$pods }
+            } catch {
+                return @{ nginx = $false }
+            }
+        }
+        
+        # Job 5: Check ArgoCD PROD Application
+        $jobs += Start-Job -ScriptBlock {
+            try {
+                $app = kubectl get application cloudgames-prod -n argocd --no-headers 2>$null
+                return @{ apps = [bool]$app }
+            } catch {
+                return @{ apps = $false }
+            }
+        }
+        
+        # Job 6: Check ACR tags for all repos
+        $jobs += Start-Job -ArgumentList $Config.ACRName -ScriptBlock {
+            param($acrName)
+            $acrTags = @{}
+            $repos = @{
+                user     = "users-api"
+                games    = "games-api"
+                payments = "payms-api"
+            }
+            foreach ($key in $repos.Keys) {
+                try {
+                    $tagsJson = az acr repository show-tags --name $acrName --repository $repos[$key] --orderby time_desc --top 1 --detail 2>$null | ConvertFrom-Json
+                    if ($tagsJson) {
+                        $item = $tagsJson | Select-Object -First 1
+                        $acrTags[$key] = @{
+                            tag = $item.name
+                            lastUpdateTime = $item.lastUpdateTime
+                        }
+                    }
+                } catch {}
+            }
+            return @{ acrTags = $acrTags }
+        }
+        
+        # Animated spinner while waiting for jobs
+        $frames = @('⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏')
+        $frameIndex = 0
+        Write-Host "`n🔎 Collecting cluster information " -NoNewline -ForegroundColor $Colors.Info
+        
+        while ($jobs | Where-Object { $_.State -eq 'Running' }) {
+            Write-Host "`r🔎 Collecting cluster information $($frames[$frameIndex]) " -NoNewline -ForegroundColor $Colors.Info
+            $frameIndex = ($frameIndex + 1) % $frames.Count
+            Start-Sleep -Milliseconds 80
+        }
+        
+        Write-Host "`r🔎 Collecting cluster information ✓  " -ForegroundColor $Colors.Success
+        
+        # Collect results
+        $result = @{
+            argocd  = $false
+            grafana = $false
+            eso     = $false
+            nginx   = $false
+            apps    = $false
+            acrTags = @{}
+        }
+        
+        foreach ($job in $jobs) {
+            $jobResult = Receive-Job -Job $job -Wait -AutoRemoveJob
+            if ($jobResult) {
+                foreach ($key in $jobResult.Keys) {
+                    $result[$key] = $jobResult[$key]
+                }
+            }
+        }
+        
+        return $result
+    }
+
     while ($true) {
         Show-Header
-        Write-Host "📋 MAIN MENU" -ForegroundColor $Colors.Title
+        
+        # Parallel info collection with animated spinner
+        $statuses = Get-InstallStatuses
+        Write-Host "" # spacing
+
+        Write-Host "📋 MAIN MENU (PRODUCTION)" -ForegroundColor $Colors.Title
         Write-Host ""
+
+        $installed = { param($flag) if ($flag) { '(installed)' } else { '(not installed)' } }
+
         Write-Host "  [1] 🔌 Connect to AKS cluster" -ForegroundColor $Colors.Info
         Write-Host "  [2] 📊 Show cluster status" -ForegroundColor $Colors.Info
-        Write-Host "  [3] 📦 Install ArgoCD" -ForegroundColor $Colors.Info
-        Write-Host "  [4] 📈 Install Grafana Agent" -ForegroundColor $Colors.Info
-        Write-Host "  [5] 🔐 Install External Secrets Operator" -ForegroundColor $Colors.Info
-        Write-Host "  [6] 🌐 Install NGINX Ingress" -ForegroundColor $Colors.Info
+
+        Write-Host ("  [3] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [4] 📈 Install Grafana Agent {0}" -f (& $installed $statuses.grafana)) -ForegroundColor $(if ($statuses.grafana) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [5] 🔐 Install External Secrets Operator {0}" -f (& $installed $statuses.eso)) -ForegroundColor $(if ($statuses.eso) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [6] 🌐 Install NGINX Ingress {0}" -f (& $installed $statuses.nginx)) -ForegroundColor $(if ($statuses.nginx) { $Colors.Success } else { $Colors.Info })
         Write-Host "  [7] 🚀 Install ALL components" -ForegroundColor $Colors.Info
-        Write-Host "  [8] 🔗 Get ArgoCD URL & credentials" -ForegroundColor $Colors.Info
-        Write-Host "  [9] 📋 Bootstrap ArgoCD apps" -ForegroundColor $Colors.Info
-        Write-Host " [10] 🐳 Build & Push images to ACR" -ForegroundColor $Colors.Info
+
+        Write-Host ("  [8] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
+        Write-Host ("  [9] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
+
+        # ACR last builds per repo
+        $acrUser    = $statuses.acrTags['user']
+        $acrGames   = $statuses.acrTags['games']
+        $acrPayments= $statuses.acrTags['payments']
+        $acrLine = " [10] 🐳 Build & Push images to ACR"
+        Write-Host $acrLine -ForegroundColor $Colors.Info
+        if ($acrUser -or $acrGames -or $acrPayments) {
+            if ($acrUser) {
+                Write-Host ("       • users-api:   tag {0} at {1}" -f ($acrUser.tag), ($acrUser.lastUpdateTime)) -ForegroundColor $Colors.Muted
+            }
+            if ($acrGames) {
+                Write-Host ("       • games-api:   tag {0} at {1}" -f ($acrGames.tag), ($acrGames.lastUpdateTime)) -ForegroundColor $Colors.Muted
+            }
+            if ($acrPayments) {
+                Write-Host ("       • payms-api:   tag {0} at {1}" -f ($acrPayments.tag), ($acrPayments.lastUpdateTime)) -ForegroundColor $Colors.Muted
+            }
+        }
+
         Write-Host " [11] 📋 View logs" -ForegroundColor $Colors.Info
         Write-Host "  [0] ❌ Exit" -ForegroundColor $Colors.Error
         Write-Host ""
@@ -376,16 +518,40 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
         }
         { $_ -in "bootstrap", "bootstrap-argocd" } {
-            $env = if ($arg1) { $arg1 } else { "dev" }
-            Write-Host "`n🚀 Bootstrapping ArgoCD applications ($env)..." -ForegroundColor $Colors.Info
-            # Apply ArgoCD Application manifests
-            $manifestsPath = Join-Path (Split-Path (Split-Path $scriptPath -Parent) -Parent) "manifests"
-            if (Test-Path "$manifestsPath\application-cloudgames-$env.yaml") {
-                kubectl apply -f "$manifestsPath\application-cloudgames-$env.yaml"
-                Write-Host "✅ Applied application-cloudgames-$env.yaml" -ForegroundColor $Colors.Success
+            Write-Host "`n🚀 Bootstrapping ArgoCD applications (PRODUCTION)..." -ForegroundColor $Colors.Info
+            
+            # Safety: Remove dev application if it exists (should not be in PROD)
+            Write-Host "🧹 Checking for dev application..." -ForegroundColor $Colors.Warning
+            $devApp = kubectl get application cloudgames-dev -n argocd --ignore-not-found 2>$null
+            if ($devApp) {
+                Write-Host "   ⚠️  Found cloudgames-dev - removing..." -ForegroundColor $Colors.Warning
+                kubectl delete application cloudgames-dev -n argocd --wait=true 2>$null
+                Write-Host "   ✅ Removed cloudgames-dev" -ForegroundColor $Colors.Success
             }
             else {
-                Write-Host "❌ Manifest not found: application-cloudgames-$env.yaml" -ForegroundColor $Colors.Error
+                Write-Host "   ✅ No dev application found" -ForegroundColor $Colors.Success
+            }
+            
+            # Apply PRODUCTION manifest
+            $manifestsPath = Join-Path (Split-Path (Split-Path $scriptPath -Parent) -Parent) "manifests"
+            $prodManifest = "$manifestsPath\application-cloudgames-prod.yaml"
+            
+            if (Test-Path $prodManifest) {
+                Write-Host "`n📦 Applying PRODUCTION manifest..." -ForegroundColor $Colors.Info
+                Write-Host "   📄 application-cloudgames-prod.yaml" -ForegroundColor $Colors.Muted
+                kubectl apply -f $prodManifest
+                
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✅ Applied application-cloudgames-prod.yaml" -ForegroundColor $Colors.Success
+                    Write-Host "`n📊 Application Status:" -ForegroundColor $Colors.Info
+                    kubectl get application cloudgames-prod -n argocd
+                }
+                else {
+                    Write-Host "❌ Failed to apply manifest" -ForegroundColor $Colors.Error
+                }
+            }
+            else {
+                Write-Host "❌ Manifest not found: $prodManifest" -ForegroundColor $Colors.Error
             }
         }
         "logs" {

@@ -308,89 +308,11 @@ output "aks_get_credentials_command" {
   value       = "az aks get-credentials --resource-group ${module.resource_group.name} --name ${module.aks.cluster_name}"
 }
 
-# =============================================================================
-# ArgoCD
-# =============================================================================
-# REMOVED: ArgoCD is now installed manually via install-argocd-aks.ps1 script.
-# These outputs are no longer available from Terraform.
-# =============================================================================
-# output "argocd_info" {
-#   description = "ArgoCD deployment details"
-#   value = {
-#     namespace              = module.argocd.argocd_namespace
-#     server_url             = module.argocd.argocd_server_url
-#     server_ip              = module.argocd.argocd_server_ip
-#     admin_username         = module.argocd.admin_username
-#     helm_release_name      = module.argocd.helm_release_name
-#     helm_release_version   = module.argocd.helm_release_version
-#     port_forward_command   = module.argocd.kubectl_port_forward_command
-#     cli_login_command_hint = module.argocd.argocd_cli_login_command
-#   }
-# }
-#
-# output "argocd_server_url" {
-#   description = "ArgoCD server external URL (LoadBalancer IP)"
-#   value       = module.argocd.argocd_server_url
-# }
-#
-# output "argocd_admin_username" {
-#   description = "ArgoCD admin username"
-#   value       = "admin"
-# }
+# ArgoCD installed via: aks-manager.ps1 install-argocd
 
-# =============================================================================
-# Grafana Agent Outputs
-# =============================================================================
+# Grafana Agent installed via: aks-manager.ps1 install-grafana-agent
 
-output "grafana_agent_enabled" {
-  description = "Whether Grafana Agent is enabled"
-  value       = var.enable_grafana_agent
-}
+# External Secrets Operator installed via: aks-manager.ps1 install-eso
 
-output "grafana_agent_info" {
-  description = "Grafana Agent deployment details"
-  value = var.enable_grafana_agent ? {
-    namespace            = module.grafana_agent[0].namespace
-    helm_release_name    = module.grafana_agent[0].helm_release_name
-    helm_release_version = module.grafana_agent[0].helm_release_version
-    helm_release_status  = module.grafana_agent[0].helm_release_status
-    prometheus_url       = module.grafana_agent[0].grafana_cloud_prometheus_url
-    loki_url             = module.grafana_agent[0].grafana_cloud_loki_url
-    kubectl_command      = "kubectl get pods -n ${module.grafana_agent[0].namespace}"
-  } : null
-}
-
-# =============================================================================
-# External Secrets Operator
-# =============================================================================
-
-output "external_secrets_info" {
-  description = "External Secrets Operator deployment details"
-  value = {
-    identity_name      = module.external_secrets.eso_identity_name
-    identity_client_id = module.external_secrets.eso_identity_client_id
-    namespace          = module.external_secrets.eso_namespace
-    service_account    = module.external_secrets.eso_service_account_name
-    kubectl_command    = "kubectl get pods -n ${module.external_secrets.eso_namespace}"
-  }
-}
-
-output "eso_workload_identity_client_id" {
-  description = "Client ID for External Secrets Workload Identity (use in ClusterSecretStore)"
-  value       = module.external_secrets.eso_identity_client_id
-}
-
-# =============================================================================
-# NGINX Ingress Controller
-# =============================================================================
-
-output "nginx_ingress_info" {
-  description = "NGINX Ingress Controller deployment details"
-  value = {
-    namespace       = module.nginx_ingress.nginx_namespace
-    release_name    = module.nginx_ingress.nginx_release_name
-    chart_version   = module.nginx_ingress.nginx_chart_version
-    kubectl_command = "kubectl get svc -n ${module.nginx_ingress.nginx_namespace}"
-  }
-}
+# NGINX Ingress Controller installed via: aks-manager.ps1 install-nginx
 
