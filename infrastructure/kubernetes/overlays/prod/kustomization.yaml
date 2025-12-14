@@ -24,13 +24,13 @@ labels:
 # =============================================================================
 images:
   - name: localhost:5000/user-api
-    newName: tccloudgamesdevcr8nacr.azurecr.io/user-api
+    newName: tccloudgamesdevcr8nacr.azurecr.io/users-api
     newTag: latest
   - name: localhost:5000/games-api
     newName: tccloudgamesdevcr8nacr.azurecr.io/games-api
     newTag: latest
   - name: localhost:5000/payments-api
-    newName: tccloudgamesdevcr8nacr.azurecr.io/payments-api
+    newName: tccloudgamesdevcr8nacr.azurecr.io/payms-api
     newTag: latest
 
 # =============================================================================
