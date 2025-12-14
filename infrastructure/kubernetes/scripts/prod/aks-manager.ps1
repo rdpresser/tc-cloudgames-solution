@@ -100,8 +100,10 @@ function Show-Help {
     Write-Host ""
 
     Write-Host "  🔐 SECRETS & CONFIGURATION:" -ForegroundColor $Colors.Info
+    Write-Host "    setup-eso-wi        " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Configures ESO with Workload Identity (recommended)" -ForegroundColor $Colors.Muted
     Write-Host "    setup-eso           " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Configures ESO ClusterSecretStore for Key Vault" -ForegroundColor $Colors.Muted
+    Write-Host "Configures ESO ClusterSecretStore (legacy)" -ForegroundColor $Colors.Muted
     Write-Host "    list-secrets        " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Lists secrets from Key Vault" -ForegroundColor $Colors.Muted
     Write-Host ""
@@ -392,14 +394,15 @@ function Show-Menu {
         Write-Host "  [7] 🚀 Install ALL components" -ForegroundColor $Colors.Info
 
         Write-Host ("  [8] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
-        Write-Host "  [9] 🔐 Setup ESO ClusterSecretStore" -ForegroundColor $Colors.Info
-        Write-Host (" [10] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
+        Write-Host "  [9] 🔐 Setup ESO with Workload Identity (recommended)" -ForegroundColor $Colors.Info
+        Write-Host " [10] 🔐 Setup ESO ClusterSecretStore (legacy)" -ForegroundColor $Colors.Info
+        Write-Host (" [11] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
 
         # ACR last builds per repo
         $acrUser    = $statuses.acrTags['user']
         $acrGames   = $statuses.acrTags['games']
         $acrPayments= $statuses.acrTags['payments']
-        $acrLine = " [11] 🐳 Build & Push images to ACR"
+        $acrLine = " [12] 🐳 Build & Push images to ACR"
         Write-Host $acrLine -ForegroundColor $Colors.Info
         if ($acrUser -or $acrGames -or $acrPayments) {
             if ($acrUser) {
@@ -413,7 +416,7 @@ function Show-Menu {
             }
         }
 
-        Write-Host " [12] 📋 View logs" -ForegroundColor $Colors.Info
+        Write-Host " [13] 📋 View logs" -ForegroundColor $Colors.Info
         Write-Host "  [0] ❌ Exit" -ForegroundColor $Colors.Error
         Write-Host ""
 
@@ -428,13 +431,14 @@ function Show-Menu {
             "6" { Invoke-Command "install-nginx" }
             "7" { Invoke-Command "install-all" }
             "8" { Invoke-Command "get-argocd-url" }
-            "9" { Invoke-Command "setup-eso" }
-            "10" { Invoke-Command "bootstrap" }
-            "11" { 
+            "9" { Invoke-Command "setup-eso-wi" }
+            "10" { Invoke-Command "setup-eso" }
+            "11" { Invoke-Command "bootstrap" }
+            "12" { 
                 $api = Read-Host "API to build (all/user/games/payments) [all]"
                 Invoke-Command "build-push" $api
             }
-            "12" { 
+            "13" { 
                 $comp = Read-Host "Component (argocd/grafana-agent/eso/nginx)"
                 $comp = Read-Host "Component (argocd/grafana-agent/eso/nginx)"
                 Invoke-Command "logs" $comp
@@ -494,8 +498,13 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "`n✅ All components installed!" -ForegroundColor $Colors.Success
         }
         "setup-eso" {
-            Write-Host "`n🔐 Setting up ESO ClusterSecretStore..." -ForegroundColor $Colors.Info
+            Write-Host "`n🔐 Setting up ESO ClusterSecretStore (legacy)..." -ForegroundColor $Colors.Info
+            Write-Host "⚠️  Consider using 'setup-eso-wi' for Workload Identity (recommended)" -ForegroundColor $Colors.Warning
             & "$scriptPath\setup-eso-clustersecretstore.ps1" -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName -KeyVaultName $Config.KeyVaultName
+        }
+        "setup-eso-wi" {
+            Write-Host "`n🔐 Setting up ESO with Workload Identity..." -ForegroundColor $Colors.Info
+            & "$scriptPath\setup-eso-workload-identity.ps1" -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName -KeyVaultName $Config.KeyVaultName
         }
         "get-argocd-url" {
             Write-Host "`n🔗 ArgoCD Access Information:" -ForegroundColor $Colors.Info

@@ -36,13 +36,15 @@ images:
 # =============================================================================
 # Replicas - Production Scale
 # =============================================================================
+# NOTE: Reduced to 1 replica due to PostgreSQL connection limit (50 max)
+# TODO: Increase PostgreSQL tier to support more connections, then scale to 3
 replicas:
   - name: user-api
-    count: 3
+    count: 1
   - name: games-api
-    count: 3
+    count: 1
   - name: payments-api
-    count: 3
+    count: 1
 
 # =============================================================================
 # Patches - Production Configuration

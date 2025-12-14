@@ -43,16 +43,19 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$ResourceGroup,
-    
+
     [Parameter(Mandatory = $true)]
     [string]$ClusterName,
-    
+
     [Parameter(Mandatory = $false)]
     [string]$Namespace = "external-secrets",
-    
+
     [Parameter(Mandatory = $false)]
     [string]$ChartVersion = "0.9.11",
-    
+
+    [Parameter(Mandatory = $false)]
+    [string]$WorkloadIdentityClientId,
+
     [Parameter(Mandatory = $false)]
     [switch]$Force
 )
@@ -139,17 +142,31 @@ kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f 
 
 Write-Host "Installing ESO Helm chart version $ChartVersion..."
 
-helm upgrade --install external-secrets external-secrets/external-secrets `
-    --namespace $Namespace `
-    --version $ChartVersion `
-    --set installCRDs=true `
-    --set webhook.port=9443 `
-    --set resources.limits.cpu=200m `
-    --set resources.limits.memory=256Mi `
-    --set resources.requests.cpu=100m `
-    --set resources.requests.memory=128Mi `
-    --wait `
-    --timeout 5m
+# Build Helm values
+$helmArgs = @(
+    "upgrade", "--install", "external-secrets", "external-secrets/external-secrets",
+    "--namespace", $Namespace,
+    "--version", $ChartVersion,
+    "--set", "installCRDs=true",
+    "--set", "webhook.port=9443",
+    "--set", "resources.limits.cpu=200m",
+    "--set", "resources.limits.memory=256Mi",
+    "--set", "resources.requests.cpu=100m",
+    "--set", "resources.requests.memory=128Mi"
+)
+
+# Add Workload Identity configuration if client ID is provided
+if ($WorkloadIdentityClientId) {
+    Write-Host "   Configuring Workload Identity with Client ID: $WorkloadIdentityClientId" -ForegroundColor Gray
+    $helmArgs += @(
+        "--set", "serviceAccount.annotations.azure\.workload\.identity/client-id=$WorkloadIdentityClientId",
+        "--set", "podLabels.azure\.workload\.identity/use=true"
+    )
+}
+
+$helmArgs += @("--wait", "--timeout", "5m")
+
+helm @helmArgs
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Helm installation failed." -ForegroundColor Red
