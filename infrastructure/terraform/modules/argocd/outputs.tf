@@ -4,31 +4,31 @@
 
 output "argocd_namespace" {
   description = "Namespace where ArgoCD is installed"
-  value       = kubernetes_namespace.argocd.metadata[0].name
+  value       = kubernetes_namespace_v1.argocd.metadata[0].name
 }
 
 output "argocd_server_url" {
   description = "ArgoCD server external URL (LoadBalancer IP)"
-  value = length(data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress) > 0 ? (
-    data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].ip != null ?
-    "http://${data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].ip}" :
-    "http://${data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].hostname}"
+  value = length(data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress) > 0 ? (
+    data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].ip != null ?
+    "http://${data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].ip}" :
+    "http://${data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].hostname}"
   ) : "Waiting for LoadBalancer IP..."
 }
 
 output "argocd_server_ip" {
   description = "ArgoCD server LoadBalancer external IP"
-  value = length(data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress) > 0 ? (
-    data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].ip != null ?
-    data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].ip :
-    data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].hostname
+  value = length(data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress) > 0 ? (
+    data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].ip != null ?
+    data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].ip :
+    data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].hostname
   ) : null
 }
 
 output "argocd_server_hostname" {
   description = "ArgoCD server LoadBalancer hostname (if applicable)"
-  value = length(data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress) > 0 ? (
-    data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].hostname
+  value = length(data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress) > 0 ? (
+    data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].hostname
   ) : null
 }
 

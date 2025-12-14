@@ -2,16 +2,16 @@
 # Terraform Configuration
 # =============================================================================
 terraform {
-  required_version = ">= 1.13"
+  required_version = ">= 1.14"
 
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.52" # Latest 4.x
+      version = "~> 4.56" # Latest 4.x
     }
     azapi = {
       source  = "azure/azapi"
-      version = "~> 2.7" # Latest 2.x
+      version = "~> 2.8" # Latest 2.x
     }
     random = {
       source  = "hashicorp/random"
@@ -21,18 +21,9 @@ terraform {
       source  = "hashicorp/time"
       version = "~> 0.13" # Latest 0.x
     }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 3.1" # Latest 3.x
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.38" # Latest 2.x
-    }
-    bcrypt = {
-      source  = "viktorradnai/bcrypt"
-      version = "~> 0.1" # Latest 0.x
-    }
+    # NOTE: Helm and Kubernetes providers removed.
+    # ArgoCD is now installed manually via install-argocd-aks.ps1 script.
+    # This avoids Terraform Cloud connectivity issues with AKS cluster.
   }
 
   # Terraform Cloud backend configuration
@@ -57,35 +48,4 @@ provider "azurerm" {
       recover_soft_deleted_key_vaults = true
     }
   }
-}
-
-# =============================================================================
-# Helm Provider (for ArgoCD installation)
-# =============================================================================
-# Helm provider uses data source to fetch AKS credentials dynamically.
-# This allows installation of ArgoCD after AKS is created in the same apply.
-#
-# Note: The kubernetes attribute is a nested object (not a block) in Helm v3.
-# VS Code linter may show a warning, but terraform validate passes correctly.
-
-provider "helm" {
-  kubernetes = {
-    host                   = try(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].host, "")
-    client_certificate     = try(base64decode(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].client_certificate), "")
-    client_key             = try(base64decode(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].client_key), "")
-    cluster_ca_certificate = try(base64decode(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].cluster_ca_certificate), "")
-  }
-}
-
-# =============================================================================
-# Kubernetes Provider (for ArgoCD namespace and resources)
-# =============================================================================
-# Kubernetes provider uses data source to fetch AKS credentials dynamically.
-# This allows creation of namespaces and resources after AKS is created in the same apply.
-
-provider "kubernetes" {
-  host                   = try(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].host, "")
-  client_certificate     = try(base64decode(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].client_certificate), null)
-  client_key             = try(base64decode(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].client_key), null)
-  cluster_ca_certificate = try(base64decode(data.azurerm_kubernetes_cluster.aks_for_argocd[0].kube_config[0].cluster_ca_certificate), null)
 }

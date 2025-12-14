@@ -4,7 +4,7 @@
 
 output "namespace" {
   description = "Namespace where Grafana Agent is deployed"
-  value       = kubernetes_namespace.grafana_agent.metadata[0].name
+  value       = kubernetes_namespace_v1.grafana_agent.metadata[0].name
 }
 
 output "helm_release_name" {

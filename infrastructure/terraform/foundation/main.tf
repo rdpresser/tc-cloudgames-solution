@@ -1,20 +1,14 @@
 data "azurerm_client_config" "current" {}
 
 # =============================================================================
-# Data Source: AKS Cluster for ArgoCD Provider Configuration
+# NOTE: ArgoCD Installation
 # =============================================================================
-# This data source is used by Helm and Kubernetes providers to fetch AKS credentials.
-# The count ensures it only runs when AKS module creates a cluster.
-data "azurerm_kubernetes_cluster" "aks_for_argocd" {
-  count = 1
-
-  name                = module.aks.cluster_name
-  resource_group_name = module.resource_group.name
-
-  depends_on = [
-    module.aks
-  ]
-}
+# ArgoCD is NO LONGER managed by Terraform to avoid Terraform Cloud connectivity
+# issues with AKS cluster. Install ArgoCD manually using:
+#   infrastructure/kubernetes/scripts/install-argocd-aks.ps1
+#
+# This script can be run locally or via Azure Cloud Shell.
+# =============================================================================
 
 # =============================================================================
 # Deployment Timing - Start Timestamp
@@ -181,33 +175,30 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
 # =============================================================================
 # ArgoCD Installation (GitOps Platform)
 # =============================================================================
+# REMOVED: ArgoCD is now installed manually via install-argocd-aks.ps1 script.
+# This avoids Terraform Cloud connectivity issues with AKS cluster.
+# The module is preserved in ../modules/argocd for future reference.
 # =============================================================================
-# ArgoCD Module - GitOps
-# =============================================================================
-# ArgoCD is installed via Helm after AKS cluster is created.
-# Uses data source to fetch AKS credentials dynamically.
-# Make sure to set argocd_admin_password in Terraform Cloud variables.
-
-module "argocd" {
-  source = "../modules/argocd"
-
-  cluster_name        = module.aks.cluster_name
-  resource_group_name = module.resource_group.name
-  admin_password      = var.argocd_admin_password
-
-  labels = merge(
-    local.common_tags,
-    {
-      "app.kubernetes.io/name"     = "argocd"
-      "app.kubernetes.io/instance" = "argocd"
-    }
-  )
-
-  depends_on = [
-    module.aks,
-    azurerm_role_assignment.aks_acr_pull
-  ]
-}
+# module "argocd" {
+#   source = "../modules/argocd"
+#
+#   cluster_name        = module.aks.cluster_name
+#   resource_group_name = module.resource_group.name
+#   admin_password      = var.argocd_admin_password
+#
+#   labels = merge(
+#     local.common_tags,
+#     {
+#       "app.kubernetes.io/name"     = "argocd"
+#       "app.kubernetes.io/instance" = "argocd"
+#     }
+#   )
+#
+#   depends_on = [
+#     module.aks,
+#     azurerm_role_assignment.aks_acr_pull
+#   ]
+# }
 
 # =============================================================================
 # Grafana Agent Module - Send Metrics to Grafana Cloud
@@ -254,7 +245,6 @@ module "grafana_agent" {
 
   depends_on = [
     module.aks,
-    module.argocd,
     azurerm_role_assignment.aks_acr_pull
   ]
 }
@@ -518,6 +508,47 @@ module "apim" {
 #     module.apim
 #   ]
 # }
+
+# =============================================================================
+# External Secrets Operator with Workload Identity
+# =============================================================================
+# Installs ESO and configures Azure Workload Identity for secure
+# Key Vault access without storing credentials in the cluster.
+module "external_secrets" {
+  source = "../modules/external_secrets"
+
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+
+  # AKS OIDC configuration for Workload Identity
+  aks_oidc_issuer_url = module.aks.oidc_issuer_url
+
+  # Key Vault access
+  key_vault_id = module.key_vault.key_vault_id
+
+  tags = local.common_tags
+
+  depends_on = [
+    module.aks,
+    module.key_vault
+  ]
+}
+
+# =============================================================================
+# NGINX Ingress Controller
+# =============================================================================
+# Production-grade Ingress Controller with Azure Load Balancer
+module "nginx_ingress" {
+  source = "../modules/nginx_ingress"
+
+  nginx_namespace = "ingress-nginx"
+  replica_count   = var.environment == "prod" ? 3 : 2
+
+  depends_on = [
+    module.aks
+  ]
+}
 
 # =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation

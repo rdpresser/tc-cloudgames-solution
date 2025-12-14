@@ -11,7 +11,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.52" # Latest 4.x
+      version = "~> 4.56" # Latest 4.x
     }
     helm = {
       source  = "hashicorp/helm"
@@ -19,7 +19,7 @@ terraform {
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.38" # Latest 2.x
+      version = "~> 3.0" # Latest 3.x
     }
     bcrypt = {
       source  = "viktorradnai/bcrypt"
@@ -81,7 +81,7 @@ data "azurerm_kubernetes_cluster" "aks" {
 # =============================================================================
 # Namespace for ArgoCD
 # =============================================================================
-resource "kubernetes_namespace" "argocd" {
+resource "kubernetes_namespace_v1" "argocd" {
   metadata {
     name = "argocd"
     labels = {
@@ -107,13 +107,13 @@ resource "helm_release" "argocd" {
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   version    = var.argocd_chart_version
-  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
 
   # Helm v3 style: pass all overrides as values YAML
   values = [local.argocd_values]
 
   depends_on = [
-    kubernetes_namespace.argocd
+    kubernetes_namespace_v1.argocd
   ]
 
   # Wait for resources to be ready
@@ -125,10 +125,10 @@ resource "helm_release" "argocd" {
 # =============================================================================
 # Wait for LoadBalancer to get external IP
 # =============================================================================
-data "kubernetes_service" "argocd_server" {
+data "kubernetes_service_v1" "argocd_server" {
   metadata {
     name      = "argocd-server"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
+    namespace = kubernetes_namespace_v1.argocd.metadata[0].name
   }
 
   depends_on = [

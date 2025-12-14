@@ -8,7 +8,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.52" # Latest 4.x
+      version = "~> 4.56" # Latest 4.x
     }
     helm = {
       source  = "hashicorp/helm"
@@ -16,7 +16,7 @@ terraform {
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.38" # Latest 2.x
+      version = "~> 3.0" # Latest 3.x
     }
   }
 }
@@ -45,7 +45,7 @@ locals {
   )
 }
 
-resource "kubernetes_namespace" "grafana_agent" {
+resource "kubernetes_namespace_v1" "grafana_agent" {
   metadata {
     name = "grafana-agent"
     labels = {
@@ -54,10 +54,10 @@ resource "kubernetes_namespace" "grafana_agent" {
   }
 }
 
-resource "kubernetes_secret" "grafana_cloud_credentials" {
+resource "kubernetes_secret_v1" "grafana_cloud_credentials" {
   metadata {
     name      = "grafana-cloud-credentials"
-    namespace = kubernetes_namespace.grafana_agent.metadata[0].name
+    namespace = kubernetes_namespace_v1.grafana_agent.metadata[0].name
   }
   data = local.grafana_cloud_secret_data
   type = "Opaque"
@@ -174,13 +174,13 @@ resource "helm_release" "grafana_agent" {
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana-agent"
   version    = var.grafana_agent_chart_version
-  namespace  = kubernetes_namespace.grafana_agent.metadata[0].name
+  namespace  = kubernetes_namespace_v1.grafana_agent.metadata[0].name
 
   values = [local.grafana_agent_values]
 
   depends_on = [
-    kubernetes_namespace.grafana_agent,
-    kubernetes_secret.grafana_cloud_credentials,
+    kubernetes_namespace_v1.grafana_agent,
+    kubernetes_secret_v1.grafana_cloud_credentials,
     data.azurerm_kubernetes_cluster.aks
   ]
 

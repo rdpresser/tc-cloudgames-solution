@@ -5,9 +5,11 @@ metadata:
   namespace: argocd
 spec:
   description: CloudGames microservices project
-  # Allow deployment to cloudgames-* namespaces
+  # Allow deployment to cloudgames namespaces (dev and prod)
   destinations:
     - namespace: cloudgames-dev
+      server: "https://kubernetes.default.svc"
+    - namespace: cloudgames
       server: "https://kubernetes.default.svc"
     - namespace: cloudgames-prod
       server: "https://kubernetes.default.svc"

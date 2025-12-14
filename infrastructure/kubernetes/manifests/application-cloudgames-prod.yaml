@@ -1,0 +1,43 @@
+# =============================================================================
+# ArgoCD Application - CloudGames Production
+# =============================================================================
+# This Application deploys the CloudGames microservices to the production
+# namespace using the prod overlay configuration.
+#
+# Prerequisites:
+# 1. AppProject 'cloudgames' must exist
+# 2. External Secrets Operator with Workload Identity configured
+# 3. NGINX Ingress Controller installed
+# 4. Images pushed to Azure Container Registry
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudgames-prod
+  namespace: argocd
+  labels:
+    environment: prod
+    app.kubernetes.io/part-of: cloudgames
+spec:
+  project: cloudgames
+  source:
+    repoURL: "https://github.com/rdpresser/tc-cloudgames-solution.git"
+    targetRevision: main
+    path: "infrastructure/kubernetes/overlays/prod"
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: cloudgames
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+  # Ignore differences in image tags - allow CI/CD to update them
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/spec/containers/0/image

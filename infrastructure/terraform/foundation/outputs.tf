@@ -311,34 +311,32 @@ output "aks_get_credentials_command" {
 # =============================================================================
 # ArgoCD
 # =============================================================================
-# COMMENTED OUT: ArgoCD outputs require the argocd module to be deployed
+# REMOVED: ArgoCD is now installed manually via install-argocd-aks.ps1 script.
+# These outputs are no longer available from Terraform.
 # =============================================================================
-# ArgoCD Outputs
-# =============================================================================
-
-output "argocd_info" {
-  description = "ArgoCD deployment details"
-  value = {
-    namespace              = module.argocd.argocd_namespace
-    server_url             = module.argocd.argocd_server_url
-    server_ip              = module.argocd.argocd_server_ip
-    admin_username         = module.argocd.admin_username
-    helm_release_name      = module.argocd.helm_release_name
-    helm_release_version   = module.argocd.helm_release_version
-    port_forward_command   = module.argocd.kubectl_port_forward_command
-    cli_login_command_hint = module.argocd.argocd_cli_login_command
-  }
-}
-
-output "argocd_server_url" {
-  description = "ArgoCD server external URL (LoadBalancer IP)"
-  value       = module.argocd.argocd_server_url
-}
-
-output "argocd_admin_username" {
-  description = "ArgoCD admin username"
-  value       = "admin"
-}
+# output "argocd_info" {
+#   description = "ArgoCD deployment details"
+#   value = {
+#     namespace              = module.argocd.argocd_namespace
+#     server_url             = module.argocd.argocd_server_url
+#     server_ip              = module.argocd.argocd_server_ip
+#     admin_username         = module.argocd.admin_username
+#     helm_release_name      = module.argocd.helm_release_name
+#     helm_release_version   = module.argocd.helm_release_version
+#     port_forward_command   = module.argocd.kubectl_port_forward_command
+#     cli_login_command_hint = module.argocd.argocd_cli_login_command
+#   }
+# }
+#
+# output "argocd_server_url" {
+#   description = "ArgoCD server external URL (LoadBalancer IP)"
+#   value       = module.argocd.argocd_server_url
+# }
+#
+# output "argocd_admin_username" {
+#   description = "ArgoCD admin username"
+#   value       = "admin"
+# }
 
 # =============================================================================
 # Grafana Agent Outputs
@@ -360,5 +358,39 @@ output "grafana_agent_info" {
     loki_url             = module.grafana_agent[0].grafana_cloud_loki_url
     kubectl_command      = "kubectl get pods -n ${module.grafana_agent[0].namespace}"
   } : null
+}
+
+# =============================================================================
+# External Secrets Operator
+# =============================================================================
+
+output "external_secrets_info" {
+  description = "External Secrets Operator deployment details"
+  value = {
+    identity_name      = module.external_secrets.eso_identity_name
+    identity_client_id = module.external_secrets.eso_identity_client_id
+    namespace          = module.external_secrets.eso_namespace
+    service_account    = module.external_secrets.eso_service_account_name
+    kubectl_command    = "kubectl get pods -n ${module.external_secrets.eso_namespace}"
+  }
+}
+
+output "eso_workload_identity_client_id" {
+  description = "Client ID for External Secrets Workload Identity (use in ClusterSecretStore)"
+  value       = module.external_secrets.eso_identity_client_id
+}
+
+# =============================================================================
+# NGINX Ingress Controller
+# =============================================================================
+
+output "nginx_ingress_info" {
+  description = "NGINX Ingress Controller deployment details"
+  value = {
+    namespace       = module.nginx_ingress.nginx_namespace
+    release_name    = module.nginx_ingress.nginx_release_name
+    chart_version   = module.nginx_ingress.nginx_chart_version
+    kubectl_command = "kubectl get svc -n ${module.nginx_ingress.nginx_namespace}"
+  }
 }
 

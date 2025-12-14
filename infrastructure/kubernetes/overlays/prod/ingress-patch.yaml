@@ -1,0 +1,89 @@
+# =============================================================================
+# Ingress Patches for Production - NGINX Ingress Controller
+# =============================================================================
+# - Uses NGINX Ingress Controller (deployed via Terraform Helm)
+# - Configures path rewriting to strip prefix before forwarding
+# - Ready for TLS configuration (add tls block when certificates are ready)
+# - Host should be updated to production domain
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: user-api
+  annotations:
+    # NGINX Ingress specific annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Optional: SSL redirect when TLS is configured
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Optional: Rate limiting
+    # nginx.ingress.kubernetes.io/limit-rps: "100"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.cloudgames.com
+      http:
+        paths:
+          - path: /user(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-api
+                port:
+                  number: 8080
+  # Uncomment when TLS certificates are ready
+  # tls:
+  #   - hosts:
+  #       - api.cloudgames.com
+  #     secretName: cloudgames-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: games-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.cloudgames.com
+      http:
+        paths:
+          - path: /games(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: games-api
+                port:
+                  number: 8080
+  # tls:
+  #   - hosts:
+  #       - api.cloudgames.com
+  #     secretName: cloudgames-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: payments-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.cloudgames.com
+      http:
+        paths:
+          - path: /payments(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payments-api
+                port:
+                  number: 8080
+  # tls:
+  #   - hosts:
+  #       - api.cloudgames.com
+  #     secretName: cloudgames-tls

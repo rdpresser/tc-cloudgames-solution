@@ -1,39 +1,55 @@
+# =============================================================================
+# Kustomization for Production Environment - Azure AKS
+# =============================================================================
+# This overlay configures the application for production deployment on AKS
+# - Uses Azure Container Registry for images
+# - Uses Workload Identity for Key Vault access
+# - Uses NGINX Ingress Controller
+# - Configures production replicas and resource limits
+# =============================================================================
+
 resources:
   - ../../base
+  - cluster-secret-store-patch.yaml
 
 labels:
   - pairs:
       environment: prod
 
+# =============================================================================
+# Images - Azure Container Registry
+# =============================================================================
+# Update newName to match your ACR login server from Terraform output:
+#   terraform output -raw acr_info | jq -r '.login_server'
+# =============================================================================
 images:
   - name: localhost:5000/user-api
-    newTag: 1.0.0
+    newName: tccloudgamesdevcr8nacr.azurecr.io/user-api
+    newTag: latest
   - name: localhost:5000/games-api
-    newTag: 1.0.0
+    newName: tccloudgamesdevcr8nacr.azurecr.io/games-api
+    newTag: latest
   - name: localhost:5000/payments-api
-    newTag: 1.0.0
+    newName: tccloudgamesdevcr8nacr.azurecr.io/payments-api
+    newTag: latest
 
+# =============================================================================
+# Replicas - Production Scale
+# =============================================================================
+replicas:
+  - name: user-api
+    count: 3
+  - name: games-api
+    count: 3
+  - name: payments-api
+    count: 3
+
+# =============================================================================
+# Patches - Production Configuration
+# =============================================================================
 patches:
-  - target:
-      kind: Deployment
-      name: user-api
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 3
-  - target:
-      kind: Deployment
-      name: games-api
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 3
-  - target:
-      kind: Deployment
-      name: payments-api
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 3
+  - path: deployment-env-patch.yaml
+  - path: ingress-patch.yaml
 
 namespace: cloudgames
+

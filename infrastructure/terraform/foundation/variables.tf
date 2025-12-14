@@ -156,20 +156,20 @@ variable "aks_admin_group_object_ids" {
 # =============================================================================
 # ArgoCD Configuration
 # =============================================================================
-# COMMENTED OUT: ArgoCD variable will be used in second phase deployment
-# Uncomment when ready to deploy ArgoCD module
-
-variable "argocd_admin_password" {
-  description = "ArgoCD admin password (minimum 8 characters) - Optional for now"
-  type        = string
-  sensitive   = true
-  default     = "ChangeMe123!" # Temporary default
-
-  validation {
-    condition     = length(var.argocd_admin_password) >= 8
-    error_message = "ArgoCD admin password must be at least 8 characters long"
-  }
-}
+# REMOVED: ArgoCD is now installed manually via install-argocd-aks.ps1 script.
+# This variable is no longer used by Terraform.
+# =============================================================================
+# variable "argocd_admin_password" {
+#   description = "ArgoCD admin password (minimum 8 characters)"
+#   type        = string
+#   sensitive   = true
+#   default     = "ChangeMe123!"
+#
+#   validation {
+#     condition     = length(var.argocd_admin_password) >= 8
+#     error_message = "ArgoCD admin password must be at least 8 characters long"
+#   }
+# }
 
 # =============================================================================
 # ELASTICSEARCH Variables
