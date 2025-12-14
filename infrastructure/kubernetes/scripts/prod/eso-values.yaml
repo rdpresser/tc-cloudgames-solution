@@ -3,9 +3,6 @@
 
 installCRDs: true
 
-webhook:
-  port: 9443
-
 resources:
   limits:
     cpu: 200m
@@ -19,18 +16,21 @@ serviceAccount:
   name: external-secrets
   annotations:
     azure.workload.identity/client-id: "${ESO_CLIENT_ID}"
+    azure.workload.identity/tenant-id: "${ESO_TENANT_ID}"
 
 # Pod labels for Workload Identity
 podLabels:
   azure.workload.identity/use: "true"
 
-# Also configure webhook and cert-controller
+# Webhook configuration
 webhook:
+  port: 9443
   serviceAccount:
     create: true
     name: external-secrets-webhook
     annotations:
       azure.workload.identity/client-id: "${ESO_CLIENT_ID}"
+      azure.workload.identity/tenant-id: "${ESO_TENANT_ID}"
   podLabels:
     azure.workload.identity/use: "true"
 
@@ -40,6 +40,7 @@ certController:
     name: external-secrets-cert-controller
     annotations:
       azure.workload.identity/client-id: "${ESO_CLIENT_ID}"
+      azure.workload.identity/tenant-id: "${ESO_TENANT_ID}"
   podLabels:
     azure.workload.identity/use: "true"
 
