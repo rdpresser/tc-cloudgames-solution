@@ -1,3 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+spec:
+  template:
+    metadata:
+      annotations:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: user-api
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: games-api
+spec:
+  template:
+    metadata:
+      annotations:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: games-api
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+spec:
+  template:
+    metadata:
+      annotations:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: payments-api
 # =============================================================================
 # Deployment Environment Patches for Production
 # =============================================================================
