@@ -43,7 +43,7 @@ spec:
             - name: AZURE_CLIENT_ID
               value: "fa8c944e-d16b-474e-91ac-82e56c0ce5e8"
             - name: AZURE_FEDERATED_TOKEN_FILE
-              value: "/var/run/secrets/workload-identity-token"
+              value: "/var/run/secrets/workload-identity-token/token"
           volumeMounts:
             - name: workload-identity-token
               mountPath: /var/run/secrets/workload-identity-token
