@@ -189,6 +189,27 @@ resource "azurerm_key_vault_secret" "db_connection_timeout" {
   ]
 }
 
+# DB Connection Pool Size
+resource "azurerm_key_vault_secret" "db_max_pool_size" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-max-pool-size"
+  value        = tostring(var.db_max_pool_size)
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "db_min_pool_size" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-min-pool-size"
+  value        = tostring(var.db_min_pool_size)
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
 resource "azurerm_key_vault_secret" "db_admin_login" {
   key_vault_id = azurerm_key_vault.key_vault.id
   name         = "db-admin-login"

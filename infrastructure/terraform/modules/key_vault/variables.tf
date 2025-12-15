@@ -181,6 +181,19 @@ variable "db_connection_timeout" {
   default     = 30
 }
 
+# Connection Pool Size (optional overrides; apps have sane defaults)
+variable "db_max_pool_size" {
+  description = "Maximum size of the DB connection pool per application instance"
+  type        = number
+  default     = 10
+}
+
+variable "db_min_pool_size" {
+  description = "Minimum size of the DB connection pool per application instance"
+  type        = number
+  default     = 0
+}
+
 # =============================================================================
 # Cache Connection Variables (replacing redis_* pattern)
 # =============================================================================
