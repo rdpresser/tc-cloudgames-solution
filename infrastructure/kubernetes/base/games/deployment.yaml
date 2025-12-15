@@ -18,6 +18,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        fsGroup: 65534  # Allows reading projected tokens
       serviceAccountName: games-api-sa
       containers:
         - name: games-api
