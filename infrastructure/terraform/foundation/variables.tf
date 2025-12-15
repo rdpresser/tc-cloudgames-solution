@@ -92,11 +92,11 @@ variable "use_keyvault_secrets" {
 variable "kubernetes_version" {
   description = "Kubernetes version for the AKS cluster"
   type        = string
-  default     = "1.33"
+  default     = "1.34.1"
 
   validation {
-    condition     = can(regex("^1\\.(29|30|31|32|33)$", var.kubernetes_version))
-    error_message = "Kubernetes version must be 1.29, 1.30, 1.31, 1.32, or 1.33 (LTS)"
+    condition     = can(regex("^1\\.(30|31|32|33|34)(\\.\\d+)?$", var.kubernetes_version))
+    error_message = "Kubernetes version must be 1.30, 1.31, 1.32, 1.33, or 1.34.x"
   }
 }
 

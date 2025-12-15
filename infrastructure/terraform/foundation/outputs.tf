@@ -110,6 +110,56 @@ output "servicebus_info" {
 }
 
 # =============================================================================
+# Workload Identity - User-Assigned Managed Identities
+# =============================================================================
+
+output "workload_identity_user_api" {
+  description = "User API Workload Identity details"
+  value = {
+    client_id    = azurerm_user_assigned_identity.user_api.client_id
+    principal_id = azurerm_user_assigned_identity.user_api.principal_id
+    id           = azurerm_user_assigned_identity.user_api.id
+    name         = azurerm_user_assigned_identity.user_api.name
+  }
+}
+
+output "workload_identity_games_api" {
+  description = "Games API Workload Identity details"
+  value = {
+    client_id    = azurerm_user_assigned_identity.games_api.client_id
+    principal_id = azurerm_user_assigned_identity.games_api.principal_id
+    id           = azurerm_user_assigned_identity.games_api.id
+    name         = azurerm_user_assigned_identity.games_api.name
+  }
+}
+
+output "workload_identity_payments_api" {
+  description = "Payments API Workload Identity details"
+  value = {
+    client_id    = azurerm_user_assigned_identity.payments_api.client_id
+    principal_id = azurerm_user_assigned_identity.payments_api.principal_id
+    id           = azurerm_user_assigned_identity.payments_api.id
+    name         = azurerm_user_assigned_identity.payments_api.name
+  }
+}
+
+# Simplified client_id outputs for easy reference
+output "user_api_client_id" {
+  description = "Client ID for user-api Workload Identity (use in Kubernetes ServiceAccount annotation)"
+  value       = azurerm_user_assigned_identity.user_api.client_id
+}
+
+output "games_api_client_id" {
+  description = "Client ID for games-api Workload Identity (use in Kubernetes ServiceAccount annotation)"
+  value       = azurerm_user_assigned_identity.games_api.client_id
+}
+
+output "payments_api_client_id" {
+  description = "Client ID for payments-api Workload Identity (use in Kubernetes ServiceAccount annotation)"
+  value       = azurerm_user_assigned_identity.payments_api.client_id
+}
+
+# =============================================================================
 # Azure Function App
 # =============================================================================
 

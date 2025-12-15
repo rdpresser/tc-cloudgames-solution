@@ -1,3 +1,11 @@
+# =============================================================================
+# ServiceAccount Patches for Workload Identity
+# =============================================================================
+# Each deployment uses a dedicated ServiceAccount annotated with the
+# Azure Workload Identity client ID. This enables passwordless authentication
+# to Azure services (Service Bus, Key Vault) without connection strings.
+# =============================================================================
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,9 +16,10 @@ spec:
       annotations:
         azure.workload.identity/use: "true"
     spec:
-      serviceAccountName: default
+      serviceAccountName: user-api-sa
       containers:
         - name: user-api
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,9 +30,10 @@ spec:
       annotations:
         azure.workload.identity/use: "true"
     spec:
-      serviceAccountName: default
+      serviceAccountName: games-api-sa
       containers:
         - name: games-api
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,9 +44,10 @@ spec:
       annotations:
         azure.workload.identity/use: "true"
     spec:
-      serviceAccountName: default
+      serviceAccountName: payments-api-sa
       containers:
         - name: payments-api
+---
 # =============================================================================
 # Deployment Environment Patches for Production
 # =============================================================================
@@ -44,6 +55,7 @@ spec:
 # - MESSAGE_BROKER_TYPE=AzureServiceBus for cloud messaging
 # - Resource limits and requests for production workloads
 # - Production-appropriate probe timeouts
+# - AZURE_CLIENT_ID removed: Workload Identity injects it automatically
 # =============================================================================
 
 apiVersion: apps/v1
@@ -60,8 +72,6 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
-            - name: AZURE_CLIENT_ID
-              value: "9f886ef4-6c88-46e6-8bad-cdb7205b7de8"
           resources:
             requests:
               cpu: "100m"
@@ -106,8 +116,6 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
-            - name: AZURE_CLIENT_ID
-              value: "9f886ef4-6c88-46e6-8bad-cdb7205b7de8"
           resources:
             requests:
               cpu: "100m"
@@ -152,8 +160,6 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
-            - name: AZURE_CLIENT_ID
-              value: "9f886ef4-6c88-46e6-8bad-cdb7205b7de8"
           resources:
             requests:
               cpu: "100m"

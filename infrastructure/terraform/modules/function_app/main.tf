@@ -93,6 +93,11 @@ resource "azurerm_linux_function_app" "main" {
       # Ignore changes to app_settings that Azure might modify automatically
       app_settings["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"],
       app_settings["WEBSITE_CONTENTSHARE"],
+      # Azure may stamp or regenerate these; avoid perpetual drift/noise
+      app_settings["APPINSIGHTS_INSTRUMENTATIONKEY"],
+      app_settings["APPLICATIONINSIGHTS_CONNECTION_STRING"],
+      app_settings["AzureWebJobsStorage"],
+      app_settings["FUNCTIONS_EXTENSION_VERSION"],
       
       # Ignore hidden tags that Azure adds automatically
       tags["hidden-link: /app-insights-resource-id"],

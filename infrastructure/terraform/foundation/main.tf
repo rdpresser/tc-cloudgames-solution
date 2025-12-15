@@ -169,6 +169,76 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
 # Grafana Agent installed via: aks-manager.ps1 install-grafana-agent
 
 # =============================================================================
+# User-Assigned Identities for Workload Identity (Applications)
+# =============================================================================
+# Each application gets its own managed identity for Azure service authentication
+# These identities are federated with Kubernetes ServiceAccounts via OIDC
+resource "azurerm_user_assigned_identity" "user_api" {
+  name                = "${local.full_name}-user-api-identity"
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [module.aks]
+}
+
+resource "azurerm_user_assigned_identity" "games_api" {
+  name                = "${local.full_name}-games-api-identity"
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [module.aks]
+}
+
+resource "azurerm_user_assigned_identity" "payments_api" {
+  name                = "${local.full_name}-payments-api-identity"
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [module.aks]
+}
+
+# =============================================================================
+# Federated Identity Credentials for Workload Identity
+# =============================================================================
+# Links Azure AD managed identities to Kubernetes ServiceAccounts via OIDC
+# This enables pods to authenticate to Azure services without secrets
+resource "azurerm_federated_identity_credential" "user_api" {
+  name                = "${local.full_name}-user-api-fic"
+  resource_group_name = module.resource_group.name
+  parent_id           = azurerm_user_assigned_identity.user_api.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks.oidc_issuer_url
+  subject             = "system:serviceaccount:cloudgames:user-api-sa"
+
+  depends_on = [azurerm_user_assigned_identity.user_api]
+}
+
+resource "azurerm_federated_identity_credential" "games_api" {
+  name                = "${local.full_name}-games-api-fic"
+  resource_group_name = module.resource_group.name
+  parent_id           = azurerm_user_assigned_identity.games_api.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks.oidc_issuer_url
+  subject             = "system:serviceaccount:cloudgames:games-api-sa"
+
+  depends_on = [azurerm_user_assigned_identity.games_api]
+}
+
+resource "azurerm_federated_identity_credential" "payments_api" {
+  name                = "${local.full_name}-payments-api-fic"
+  resource_group_name = module.resource_group.name
+  parent_id           = azurerm_user_assigned_identity.payments_api.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks.oidc_issuer_url
+  subject             = "system:serviceaccount:cloudgames:payments-api-sa"
+
+  depends_on = [azurerm_user_assigned_identity.payments_api]
+}
+
+# =============================================================================
 # Log Analytics Workspace Module
 # =============================================================================
 module "logs" {
@@ -341,6 +411,84 @@ module "servicebus" {
 
   depends_on = [
     module.resource_group
+  ]
+}
+
+# =============================================================================
+# Service Bus RBAC for Workload Identity (Applications)
+# =============================================================================
+# Grant minimum required permissions: Data Sender + Data Receiver
+# Each application can send and receive messages from Service Bus topics/queues
+
+# User API - Azure Service Bus Data Sender
+resource "azurerm_role_assignment" "user_api_sb_sender" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Azure Service Bus Data Sender"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.servicebus
+  ]
+}
+
+# User API - Azure Service Bus Data Receiver
+resource "azurerm_role_assignment" "user_api_sb_receiver" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.servicebus
+  ]
+}
+
+# Games API - Azure Service Bus Data Sender
+resource "azurerm_role_assignment" "games_api_sb_sender" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Azure Service Bus Data Sender"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.servicebus
+  ]
+}
+
+# Games API - Azure Service Bus Data Receiver
+resource "azurerm_role_assignment" "games_api_sb_receiver" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.servicebus
+  ]
+}
+
+# Payments API - Azure Service Bus Data Sender
+resource "azurerm_role_assignment" "payments_api_sb_sender" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Azure Service Bus Data Sender"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.servicebus
+  ]
+}
+
+# Payments API - Azure Service Bus Data Receiver
+resource "azurerm_role_assignment" "payments_api_sb_receiver" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.servicebus
   ]
 }
 
