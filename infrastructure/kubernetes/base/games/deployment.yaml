@@ -18,6 +18,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+      serviceAccountName: games-api-sa
       containers:
         - name: games-api
           image: localhost:5000/games-api:latest
@@ -35,6 +36,17 @@ spec:
               value: "Production"
             - name: ASPNETCORE_URLS
               value: "http://+:8080"
+            # Workload Identity variables
+            - name: AZURE_TENANT_ID
+              value: "084169c0-a779-43c3-970c-487a71a93f88"
+            - name: AZURE_CLIENT_ID
+              value: "fa8c944e-d16b-474e-91ac-82e56c0ce5e8"
+            - name: AZURE_FEDERATED_TOKEN_FILE
+              value: "/var/run/secrets/workload-identity-token"
+          volumeMounts:
+            - name: workload-identity-token
+              mountPath: /var/run/secrets/workload-identity-token
+              readOnly: true
           startupProbe:
             httpGet:
               path: /health
@@ -59,3 +71,11 @@ spec:
             limits:
               cpu: 1000m
               memory: 1Gi
+      volumes:
+        - name: workload-identity-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: api://AzureADTokenExchange
+                  expirationSeconds: 3600
+                  path: token
