@@ -406,8 +406,12 @@ module "servicebus" {
   }
   create_sql_filter_rules = true
 
-  # RBAC será configurado separadamente para evitar ciclo de dependência
-  managed_identity_principal_ids = []
+  # RBAC: Atribuir Azure Service Bus Data Owner às Managed Identities das APIs
+  managed_identity_principal_ids = [
+    azurerm_user_assigned_identity.user_api.principal_id,
+    azurerm_user_assigned_identity.games_api.principal_id,
+    azurerm_user_assigned_identity.payments_api.principal_id
+  ]
 
   depends_on = [
     module.resource_group
