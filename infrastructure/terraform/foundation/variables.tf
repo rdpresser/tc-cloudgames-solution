@@ -54,6 +54,13 @@ variable "postgres_admin_password" {
   sensitive   = true
 }
 
+# PostgreSQL SKU (compute tier/size). Defaults to B_Standard_B2ms for more headroom.
+variable "postgres_sku" {
+  type        = string
+  description = "PostgreSQL Flexible Server SKU (e.g., B_Standard_B1ms, B_Standard_B2ms, GP_Standard_D2s_v3)"
+  default     = "B_Standard_B2ms"
+}
+
 # =============================================================================
 # RBAC Access Control Variables (Object IDs for Key Vault permissions)
 # =============================================================================

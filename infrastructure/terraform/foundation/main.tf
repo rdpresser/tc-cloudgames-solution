@@ -60,6 +60,7 @@ module "postgres" {
   resource_group_name     = module.resource_group.name
   postgres_admin_login    = var.postgres_admin_login
   postgres_admin_password = var.postgres_admin_password
+  postgres_sku            = var.postgres_sku
   tags                    = local.common_tags
 
   depends_on = [
