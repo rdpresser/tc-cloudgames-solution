@@ -4,6 +4,9 @@ metadata:
   name: games-api
   labels:
     app.kubernetes.io/name: games-api
+  annotations:
+    # ArgoCD service link - displayed in UI under Services tab
+    service.argocd.argoproj.io/url: 'http://cloudgames.local/games'
 spec:
   type: ClusterIP
   selector:

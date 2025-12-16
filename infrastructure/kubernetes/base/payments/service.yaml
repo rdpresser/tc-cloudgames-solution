@@ -4,6 +4,9 @@ metadata:
   name: payments-api
   labels:
     app.kubernetes.io/name: payments-api
+  annotations:
+    # ArgoCD service link - displayed in UI under Services tab
+    service.argocd.argoproj.io/url: 'http://cloudgames.local/payments'
 spec:
   type: ClusterIP
   selector:
