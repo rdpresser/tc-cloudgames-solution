@@ -212,8 +212,8 @@ module "apim" {
   publisher_email = var.apim_publisher_email
   sku_name        = var.apim_sku_name
 
-  # Backend URL será configurado manualmente após instalação do NGINX
-  # O IP do NGINX será obtido após instalação via script PowerShell
+  # Backend URL configured with NGINX Ingress IP
+  # IP obtained after manual NGINX installation via: .\aks-manager.ps1 install-nginx
   backend_url          = var.nginx_ingress_ip != "" ? "http://${var.nginx_ingress_ip}" : null
   require_subscription = var.apim_require_subscription
 
