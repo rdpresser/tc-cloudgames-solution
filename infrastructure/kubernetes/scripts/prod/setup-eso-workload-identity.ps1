@@ -256,19 +256,23 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host ""
 Write-Host "=== 6/7 Annotating ESO ServiceAccount ===" -ForegroundColor $Colors.Title
 
-# Annotate the ServiceAccount with the client ID
+# Annotate the ServiceAccount with the client ID and tenant ID
 kubectl annotate serviceaccount $EsoServiceAccount -n $EsoNamespace `
     "azure.workload.identity/client-id=$clientId" --overwrite 2>$null
+kubectl annotate serviceaccount $EsoServiceAccount -n $EsoNamespace `
+    "azure.workload.identity/tenant-id=$tenantId" --overwrite 2>$null
 
 # Also add the label for workload identity
 kubectl label serviceaccount $EsoServiceAccount -n $EsoNamespace `
     "azure.workload.identity/use=true" --overwrite 2>$null
 
-Write-Host "✅ ServiceAccount annotated with client ID" -ForegroundColor $Colors.Success
+Write-Host "✅ ServiceAccount annotated with client ID and tenant ID" -ForegroundColor $Colors.Success
 
 # Annotate webhook ServiceAccount too
 kubectl annotate serviceaccount external-secrets-webhook -n $EsoNamespace `
     "azure.workload.identity/client-id=$clientId" --overwrite 2>$null
+kubectl annotate serviceaccount external-secrets-webhook -n $EsoNamespace `
+    "azure.workload.identity/tenant-id=$tenantId" --overwrite 2>$null
 kubectl label serviceaccount external-secrets-webhook -n $EsoNamespace `
     "azure.workload.identity/use=true" --overwrite 2>$null
 

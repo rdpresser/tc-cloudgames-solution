@@ -1,4 +1,24 @@
-# 🚀 K3D Cluster Management
+# ☸️ TC CloudGames - Kubernetes Infrastructure
+
+> Complete Kubernetes infrastructure for **local development (K3D)** and **production (AKS)**
+
+---
+
+## 📚 Documentation
+
+| Environment | Description | Documentation |
+|-------------|-------------|---------------|
+| **🔧 Local Development** | K3D cluster with native Ingress | This README (below) |
+| **☁️ Production (AKS)** | Azure Kubernetes Service | [scripts/prod/README.md](scripts/prod/README.md) |
+
+**Quick Links:**
+- 🏗️ [AKS Architecture](scripts/prod/ARCHITECTURE.md) - Modular script architecture
+- 📊 [Grafana Cloud Setup](scripts/prod/GRAFANA_CLOUD_SETUP.md) - Monitoring configuration
+- 🚀 [AKS Quick Start](scripts/prod/README.md#-quick-start) - Get started with production
+
+---
+
+# 🚀 K3D Local Development
 
 > Complete local Kubernetes development environment with **native Ingress support** - no port-forward needed!
 

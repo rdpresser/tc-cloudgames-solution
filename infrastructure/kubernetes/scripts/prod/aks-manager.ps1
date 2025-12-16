@@ -87,6 +87,12 @@ function Show-Help {
     Write-Host ""
 
     Write-Host "  📦 COMPONENT INSTALLATION:" -ForegroundColor $Colors.Info
+    Write-Host "    install-nginx       " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Installs NGINX Ingress Controller on AKS" -ForegroundColor $Colors.Muted
+    Write-Host "    install-eso         " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Installs External Secrets Operator on AKS" -ForegroundColor $Colors.Muted
+    Write-Host "    install-grafana     " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Installs Grafana Agent on AKS" -ForegroundColor $Colors.Muted
     Write-Host "    install-argocd      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Installs ArgoCD on AKS cluster" -ForegroundColor $Colors.Muted
     Write-Host ""
@@ -124,9 +130,10 @@ function Show-Help {
 
     Write-Host "📝 EXAMPLES:" -ForegroundColor $Colors.Title
     Write-Host "  .\aks-manager.ps1 connect" -ForegroundColor $Colors.Muted
+    Write-Host "  .\aks-manager.ps1 install-nginx" -ForegroundColor $Colors.Muted
+    Write-Host "  .\aks-manager.ps1 install-eso" -ForegroundColor $Colors.Muted
+    Write-Host "  .\aks-manager.ps1 install-grafana" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Muted
-    Write-Host "  .\aks-manager.ps1 install-grafana-agent" -ForegroundColor $Colors.Muted
-    Write-Host "  .\aks-manager.ps1 install-all" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 get-argocd-url" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 bootstrap prod" -ForegroundColor $Colors.Muted
     Write-Host ""
@@ -330,6 +337,16 @@ function Show-Menu {
             return @{ acrTags = $acrTags }
         }
         
+        # Job 7: Check NGINX LoadBalancer IP
+        $jobs += Start-Job -ScriptBlock {
+            try {
+                $ip = kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
+                return @{ nginxIP = $ip }
+            } catch {
+                return @{ nginxIP = $null }
+            }
+        }
+        
         # Animated spinner while waiting for jobs
         $frames = @('⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏')
         $frameIndex = 0
@@ -351,6 +368,7 @@ function Show-Menu {
             nginx   = $false
             apps    = $false
             acrTags = @{}
+            nginxIP = $null
         }
         
         foreach ($job in $jobs) {
@@ -379,19 +397,29 @@ function Show-Menu {
 
         Write-Host "  [1] 🔌 Connect to AKS cluster" -ForegroundColor $Colors.Info
         Write-Host "  [2] 📊 Show cluster status" -ForegroundColor $Colors.Info
-
-        Write-Host ("  [3] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
-
-        Write-Host ("  [4] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
-        Write-Host "  [5] 🔐 Setup ESO with Workload Identity (recommended)" -ForegroundColor $Colors.Info
-        # Removed legacy ClusterSecretStore option
-        Write-Host ("  [7] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
-
+        Write-Host ""
+        Write-Host "  COMPONENT INSTALLATION:" -ForegroundColor $Colors.Title
+        Write-Host ("  [3] 📦 Install NGINX Ingress {0}" -f (& $installed $statuses.nginx)) -ForegroundColor $(if ($statuses.nginx) { $Colors.Success } else { $Colors.Info })
+        if ($statuses.nginxIP) {
+            Write-Host ("       • LoadBalancer IP: {0}" -f $statuses.nginxIP) -ForegroundColor $Colors.Muted
+        }
+        Write-Host ("  [4] 🔐 Install External Secrets Operator {0}" -f (& $installed $statuses.eso)) -ForegroundColor $(if ($statuses.eso) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [5] 📊 Install Grafana Agent {0}" -f (& $installed $statuses.grafana)) -ForegroundColor $(if ($statuses.grafana) { $Colors.Success } else { $Colors.Info })
+        Write-Host ""
+        Write-Host "  ARGOCD & DEPLOYMENT:" -ForegroundColor $Colors.Title
+        Write-Host ("  [6] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [7] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
+        Write-Host ""
+        Write-Host "  CONFIGURATION:" -ForegroundColor $Colors.Title
+        Write-Host "  [8] 🔐 Setup ESO with Workload Identity" -ForegroundColor $Colors.Info
+        Write-Host ("  [9] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
+        Write-Host ""
+        Write-Host "  BUILD & DEPLOY:" -ForegroundColor $Colors.Title
         # ACR last builds per repo
         $acrUser    = $statuses.acrTags['user']
         $acrGames   = $statuses.acrTags['games']
         $acrPayments= $statuses.acrTags['payments']
-        Write-Host "  [8] 🐳 Build & Push images to ACR" -ForegroundColor $Colors.Info
+        Write-Host " [10] 🐳 Build & Push images to ACR" -ForegroundColor $Colors.Info
         if ($acrUser -or $acrGames -or $acrPayments) {
             if ($acrUser) {
                 Write-Host ("       • users-api:   tag {0} at {1}" -f ($acrUser.tag), ($acrUser.lastUpdateTime)) -ForegroundColor $Colors.Muted
@@ -403,8 +431,12 @@ function Show-Menu {
                 Write-Host ("       • payms-api:   tag {0} at {1}" -f ($acrPayments.tag), ($acrPayments.lastUpdateTime)) -ForegroundColor $Colors.Muted
             }
         }
-        Write-Host "  [9] 📝 View logs" -ForegroundColor $Colors.Info
-        Write-Host " [10] 🔧 Post-Terraform Complete Setup (connect, nginx, terraform update, ESO, WI, grafana optional, deploy)" -ForegroundColor $Colors.Info
+        Write-Host ""
+        Write-Host "  UTILITIES:" -ForegroundColor $Colors.Title
+        Write-Host " [11] 📝 View logs" -ForegroundColor $Colors.Info
+        Write-Host " [12] 🔧 Post-Terraform Complete Setup" -ForegroundColor $Colors.Info
+        Write-Host "       (All-in-one: connect, nginx, ESO, WI, grafana, deploy)" -ForegroundColor $Colors.Muted
+        Write-Host ""
         Write-Host "  [0] ❌ Exit" -ForegroundColor $Colors.Error
         Write-Host ""
 
@@ -413,20 +445,22 @@ function Show-Menu {
         switch ($choice) {
             "1" { Invoke-Command "connect" }
             "2" { Invoke-Command "status" }
-            "3" { Invoke-Command "install-argocd" }
-            "4" { Invoke-Command "get-argocd-url" }
-            "5" { Invoke-Command "setup-eso-wi" }
-            # Option 6 removed (legacy ClusterSecretStore)
-            "7" { Invoke-Command "bootstrap" }
-            "8" { 
+            "3" { Invoke-Command "install-nginx" }
+            "4" { Invoke-Command "install-eso" }
+            "5" { Invoke-Command "install-grafana" }
+            "6" { Invoke-Command "install-argocd" }
+            "7" { Invoke-Command "get-argocd-url" }
+            "8" { Invoke-Command "setup-eso-wi" }
+            "9" { Invoke-Command "bootstrap" }
+            "10" { 
                 $api = Read-Host "API to build (all/user/games/payments) [all]"
                 Invoke-Command "build-push" $api
             }
-            "9" { 
+            "11" { 
                 $comp = Read-Host "Component (argocd/grafana-agent/eso/nginx)"
                 Invoke-Command "logs" $comp
             }
-            "10" { Invoke-Command "post-terraform-setup" }
+            "12" { Invoke-Command "post-terraform-setup" }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
                 exit 0
@@ -460,6 +494,45 @@ function Invoke-Command($cmd, $arg1 = "") {
         "install-argocd" {
             Write-Host "`n📦 Installing ArgoCD..." -ForegroundColor $Colors.Info
             & "$scriptPath\install-argocd-aks.ps1" -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName
+        }
+        "install-nginx" {
+            Write-Host "`n📦 Installing NGINX Ingress..." -ForegroundColor $Colors.Info
+            $forceResp = Read-Host "Force reinstall (uninstall first)? (y/N)"
+            $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
+            
+            $installArgs = @{
+                ResourceGroup = $Config.ResourceGroup
+                ClusterName = $Config.ClusterName
+            }
+            if ($useForce) { $installArgs['Force'] = $true }
+            
+            & "$scriptPath\install-nginx-ingress.ps1" @installArgs
+        }
+        "install-eso" {
+            Write-Host "`n📦 Installing External Secrets Operator..." -ForegroundColor $Colors.Info
+            $forceResp = Read-Host "Force reinstall (uninstall first)? (y/N)"
+            $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
+            
+            $installArgs = @{
+                ResourceGroup = $Config.ResourceGroup
+                ClusterName = $Config.ClusterName
+            }
+            if ($useForce) { $installArgs['Force'] = $true }
+            
+            & "$scriptPath\install-external-secrets.ps1" @installArgs
+        }
+        "install-grafana" {
+            Write-Host "`n📦 Installing Grafana Agent..." -ForegroundColor $Colors.Info
+            $forceResp = Read-Host "Force reinstall (uninstall first)? (y/N)"
+            $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
+            
+            $installArgs = @{
+                ResourceGroup = $Config.ResourceGroup
+                ClusterName = $Config.ClusterName
+            }
+            if ($useForce) { $installArgs['Force'] = $true }
+            
+            & "$scriptPath\install-grafana-agent.ps1" @installArgs
         }
         # Removed legacy individual installers (Grafana Agent, ESO, NGINX).
         # Use "post-terraform-setup" to perform the complete setup.

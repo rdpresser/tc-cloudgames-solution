@@ -104,7 +104,7 @@ Write-Host "✅ Connected to AKS cluster" -ForegroundColor Green
 kubectl cluster-info
 
 # =============================================================================
-# 2. Install NGINX Ingress (inline)
+# 2. Install NGINX Ingress
 # =============================================================================
 $nginxIP = $null
 
@@ -113,60 +113,18 @@ if (-not $SkipNginx) {
     Write-Host "=== Step 2/9: Installing NGINX Ingress Controller ===" -ForegroundColor Yellow
     Write-Host ""
 
-    $namespace = "ingress-nginx"
-    $chartVersion = "4.11.3"
-
-    $existingRelease = helm list -n $namespace -q 2>$null | Where-Object { $_ -match "ingress-nginx" }
-    if ($existingRelease) {
-        if ($Force) {
-            Write-Host "🔄 Force requested: uninstalling existing NGINX before reinstall" -ForegroundColor Yellow
-            helm uninstall $existingRelease -n $namespace --wait 2>$null
-            kubectl delete namespace $namespace --timeout=60s 2>$null
-            Start-Sleep -Seconds 5
-        } else {
-            Write-Host "ℹ️  NGINX Ingress already installed in '$namespace' - performing upgrade in-place" -ForegroundColor Cyan
-        }
+    $installArgs = @{
+        ResourceGroup = $ResourceGroup
+        ClusterName = $ClusterName
     }
+    if ($Force) { $installArgs['Force'] = $true }
 
-    foreach ($cmd in @("az", "kubectl", "helm")) {
-        if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-            Write-Host "ERROR: '$cmd' not found. Please install it first." -ForegroundColor Red
-            exit 1
-        }
+    & "$scriptDir\install-nginx-ingress.ps1" @installArgs
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ NGINX Ingress installation failed" -ForegroundColor Red
+        exit 1
     }
-
-    az aks get-credentials --resource-group $ResourceGroup --name $ClusterName --overwrite-existing 2>$null
-    if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Failed to get AKS credentials." -ForegroundColor Red; exit 1 }
-
-    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx 2>$null
-    helm repo update
-
-    kubectl create namespace $namespace --dry-run=client -o yaml | kubectl apply -f -
-
-    Write-Host "Installing NGINX Ingress Helm chart version $chartVersion..."
-    helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx `
-        --namespace $namespace `
-        --version $chartVersion `
-        --set controller.service.type=LoadBalancer `
-        --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"=/healthz `
-        --set controller.metrics.enabled=true `
-        --set controller.metrics.serviceMonitor.enabled=false `
-        --set controller.resources.limits.cpu=500m `
-        --set controller.resources.limits.memory=512Mi `
-        --set controller.resources.requests.cpu=250m `
-        --set controller.resources.requests.memory=256Mi `
-        --set controller.admissionWebhooks.enabled=true `
-        --set controller.admissionWebhooks.patch.enabled=true `
-        --set defaultBackend.enabled=true `
-        --set defaultBackend.resources.limits.cpu=50m `
-        --set defaultBackend.resources.limits.memory=64Mi `
-        --set defaultBackend.resources.requests.cpu=25m `
-        --set defaultBackend.resources.requests.memory=32Mi `
-        --wait `
-        --timeout 10m
-
-    if ($LASTEXITCODE -ne 0) { Write-Host "❌ Helm install failed for NGINX" -ForegroundColor Red; exit 1 }
-    Write-Host "✅ NGINX Ingress installed" -ForegroundColor Green
 } else {
     Write-Host ""
     Write-Host "=== Step 2/9: Skipping NGINX Ingress (already installed) ===" -ForegroundColor Yellow
@@ -270,301 +228,69 @@ if ($response -ne "n" -and $response -ne "N") {
 Pop-Location
 
 # =============================================================================
-# 6. Install External Secrets Operator (inline)
+# 6. Install External Secrets Operator
 # =============================================================================
 Write-Host ""
 Write-Host "=== Step 6/9: Installing External Secrets Operator ===" -ForegroundColor Yellow
 Write-Host ""
 
-$esoNamespace = "external-secrets"
-$esoChartVersion = "0.9.11"
+$installArgs = @{
+    ResourceGroup = $ResourceGroup
+    ClusterName = $ClusterName
+}
+if ($Force) { $installArgs['Force'] = $true }
 
-$existingEso = helm list -n $esoNamespace -q 2>$null | Where-Object { $_ -match "external-secrets" }
-if ($existingEso) {
-    if ($Force) {
-        Write-Host "🔄 Force requested: uninstalling existing ESO before reinstall" -ForegroundColor Yellow
-        helm uninstall $existingEso -n $esoNamespace --wait 2>$null
-        kubectl delete namespace $esoNamespace --timeout=60s 2>$null
-        Start-Sleep -Seconds 5
-    } else {
-        Write-Host "ℹ️  ESO already installed - performing upgrade in-place" -ForegroundColor Cyan
-    }
+& "$scriptDir\install-external-secrets.ps1" @installArgs
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ External Secrets Operator installation failed" -ForegroundColor Red
+    exit 1
 }
 
-helm repo add external-secrets https://charts.external-secrets.io 2>$null
-helm repo update
-
-kubectl create namespace $esoNamespace --dry-run=client -o yaml | kubectl apply -f -
-
-$helmArgs = @(
-    "upgrade", "--install", "external-secrets", "external-secrets/external-secrets",
-    "--namespace", $esoNamespace,
-    "--version", $esoChartVersion,
-    "--set", "installCRDs=true",
-    "--set", "webhook.port=9443",
-    "--set", "resources.limits.cpu=200m",
-    "--set", "resources.limits.memory=256Mi",
-    "--set", "resources.requests.cpu=100m",
-    "--set", "resources.requests.memory=128Mi",
-    "--wait", "--timeout", "5m"
-)
-
-helm @helmArgs
-if ($LASTEXITCODE -ne 0) { Write-Host "❌ Helm install failed for ESO" -ForegroundColor Red; exit 1 }
-
-Start-Sleep -Seconds 5
-Write-Host "✅ External Secrets Operator installed" -ForegroundColor Green
-
 # =============================================================================
-# 7. Setup Workload Identity for ESO (inline)
+# 7. Setup Workload Identity for ESO
 # =============================================================================
 Write-Host ""
 Write-Host "=== Step 7/9: Configuring Workload Identity ===" -ForegroundColor Yellow
 Write-Host ""
 
 $keyVaultName = if ($KeyVaultName) { $KeyVaultName } else { "tccloudgamesdevcr8nkv" }
-$esoNamespace = "external-secrets"
-$esoServiceAccount = "external-secrets"
-$identityName = "$ClusterName-eso-identity"
 
-# Step 1: Check ESO is installed
-$esoPods = kubectl get pods -n $esoNamespace --no-headers 2>$null | Where-Object { $_ -match "Running" }
-if (-not $esoPods) {
-    Write-Host "❌ External Secrets Operator not running" -ForegroundColor Red
+& "$scriptDir\setup-eso-workload-identity.ps1" `
+    -ResourceGroup $ResourceGroup `
+    -ClusterName $ClusterName `
+    -KeyVaultName $keyVaultName
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Failed to configure Workload Identity" -ForegroundColor Red
     exit 1
 }
 
-# Step 2: Get AKS OIDC Issuer URL
-$aks = az aks show --resource-group $ResourceGroup --name $ClusterName 2>$null | ConvertFrom-Json
-if (-not $aks) {
-    Write-Host "❌ AKS cluster not found" -ForegroundColor Red
-    exit 1
-}
-
-$oidcIssuerUrl = $aks.oidcIssuerProfile.issuerUrl
-if (-not $oidcIssuerUrl) {
-    Write-Host "❌ OIDC Issuer not enabled on AKS cluster" -ForegroundColor Red
-    exit 1
-}
-
-$tenantId = (az account show 2>$null | ConvertFrom-Json).tenantId
-Write-Host "✅ OIDC Issuer URL obtained" -ForegroundColor Green
-
-# Step 3: Create User Assigned Identity
-$ErrorActionPreference = "SilentlyContinue"
-$existingIdentityJson = az identity show --name $identityName --resource-group $ResourceGroup 2>&1
-$ErrorActionPreference = "Stop"
-
-if ($LASTEXITCODE -eq 0 -and $existingIdentityJson) {
-    $existingIdentity = $existingIdentityJson | ConvertFrom-Json
-    $clientId = $existingIdentity.clientId
-    $principalId = $existingIdentity.principalId
-    Write-Host "ℹ️  Identity '$identityName' already exists" -ForegroundColor Cyan
-} else {
-    Write-Host "   Creating identity '$identityName'..." -ForegroundColor Cyan
-    $identityJson = az identity create --name $identityName --resource-group $ResourceGroup --location $aks.location 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Failed to create identity" -ForegroundColor Red
-        exit 1
-    }
-    $identity = $identityJson | ConvertFrom-Json
-    $clientId = $identity.clientId
-    $principalId = $identity.principalId
-    Write-Host "✅ Identity created" -ForegroundColor Green
-    Start-Sleep -Seconds 15
-}
-
-# Step 4: Create Federated Identity Credential
-$fedCredName = "$identityName-federated-credential"
-$subject = "system:serviceaccount:${esoNamespace}:${esoServiceAccount}"
-
-$ErrorActionPreference = "SilentlyContinue"
-$existingFedCredJson = az identity federated-credential show --name $fedCredName --identity-name $identityName --resource-group $ResourceGroup 2>&1
-$ErrorActionPreference = "Stop"
-
-if ($LASTEXITCODE -ne 0 -or -not $existingFedCredJson) {
-    az identity federated-credential create `
-        --name $fedCredName `
-        --identity-name $identityName `
-        --resource-group $ResourceGroup `
-        --issuer $oidcIssuerUrl `
-        --subject $subject `
-        --audiences "api://AzureADTokenExchange" 2>$null | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Failed to create federated credential" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "✅ Federated credential created" -ForegroundColor Green
-}
-
-# Step 5: Grant Key Vault Access
-$kv = az keyvault show --name $keyVaultName 2>$null | ConvertFrom-Json
-if (-not $kv) {
-    Write-Host "❌ Key Vault '$keyVaultName' not found" -ForegroundColor Red
-    exit 1
-}
-
-az role assignment create `
-    --role "Key Vault Secrets User" `
-    --assignee-object-id $principalId `
-    --assignee-principal-type ServicePrincipal `
-    --scope $kv.id 2>$null | Out-Null
-
-Write-Host "✅ Key Vault access granted" -ForegroundColor Green
-
-# Step 6: Annotate ESO ServiceAccount
-kubectl annotate serviceaccount $esoServiceAccount -n $esoNamespace `
-    "azure.workload.identity/client-id=$clientId" --overwrite 2>$null
-kubectl label serviceaccount $esoServiceAccount -n $esoNamespace `
-    "azure.workload.identity/use=true" --overwrite 2>$null
-
-kubectl annotate serviceaccount external-secrets-webhook -n $esoNamespace `
-    "azure.workload.identity/client-id=$clientId" --overwrite 2>$null
-kubectl label serviceaccount external-secrets-webhook -n $esoNamespace `
-    "azure.workload.identity/use=true" --overwrite 2>$null
-
-Write-Host "   Restarting ESO pods..." -ForegroundColor Cyan
-kubectl rollout restart deployment/external-secrets -n $esoNamespace 2>$null
-kubectl rollout restart deployment/external-secrets-webhook -n $esoNamespace 2>$null
-kubectl rollout restart deployment/external-secrets-cert-controller -n $esoNamespace 2>$null
-
-kubectl rollout status deployment/external-secrets -n $esoNamespace --timeout=120s 2>$null
-
-# Step 7: Recreate ClusterSecretStore
-$kvUrl = "https://$keyVaultName.vault.azure.net"
-
-$manifest = @"
-apiVersion: external-secrets.io/v1beta1
-kind: ClusterSecretStore
-metadata:
-  name: azure-keyvault
-  labels:
-    app.kubernetes.io/part-of: cloudgames
-spec:
-  provider:
-    azurekv:
-      authType: WorkloadIdentity
-      vaultUrl: $kvUrl
-      tenantId: $tenantId
-      serviceAccountRef:
-        name: $esoServiceAccount
-        namespace: $esoNamespace
-"@
-
-kubectl delete clustersecretstore azure-keyvault 2>$null
-Start-Sleep -Seconds 2
-
-$tempFile = [System.IO.Path]::GetTempFileName()
-$manifest | Out-File -FilePath $tempFile -Encoding utf8
-kubectl apply -f $tempFile 2>&1 | Out-Null
-Remove-Item $tempFile -Force
-
-Write-Host "✅ ClusterSecretStore recreated" -ForegroundColor Green
-
-Start-Sleep -Seconds 10
-
-$store = kubectl get clustersecretstore azure-keyvault -o json 2>$null | ConvertFrom-Json
-if ($store.status.conditions) {
-    $readyCondition = $store.status.conditions | Where-Object { $_.type -eq "Ready" }
-    if ($readyCondition.status -eq "True") {
-        Write-Host "✅ Workload Identity configured - ClusterSecretStore READY!" -ForegroundColor Green
-    } else {
-        Write-Host "⚠️  ClusterSecretStore status: $($readyCondition.reason)" -ForegroundColor Yellow
-    }
-}
+Write-Host "✅ Workload Identity configured" -ForegroundColor Green
 
 # =============================================================================
-# 8. Install Grafana Agent (Optional, inline)
+# 8. Install Grafana Agent (Optional)
 # =============================================================================
 if (-not $SkipGrafana) {
-        Write-Host ""
-        Write-Host "=== Step 8/9: Installing Grafana Agent ===" -ForegroundColor Yellow
-        Write-Host ""
+    Write-Host ""
+    Write-Host "=== Step 8/9: Installing Grafana Agent ===" -ForegroundColor Yellow
+    Write-Host ""
 
-        $grafNamespace = "grafana-agent"
-        $grafChartVersion = "0.42.0"
+    $installArgs = @{
+        ResourceGroup = $ResourceGroup
+        ClusterName = $ClusterName
+    }
+    if ($Force) { $installArgs['Force'] = $true }
 
-        helm repo add grafana https://grafana.github.io/helm-charts 2>$null
-        helm repo update
+    & "$scriptDir\install-grafana-agent.ps1" @installArgs
 
-        kubectl create namespace $grafNamespace --dry-run=client -o yaml | kubectl apply -f -
-
-        $existingGraf = helm list -n $grafNamespace -q 2>$null | Where-Object { $_ -match "grafana-agent" }
-        if ($existingGraf -and $Force) {
-            Write-Host "🔄 Force requested: uninstalling existing Grafana Agent before reinstall" -ForegroundColor Yellow
-            helm uninstall grafana-agent -n $grafNamespace --wait 2>$null
-            Start-Sleep -Seconds 3
-        }
-
-        $grafanaValues = @"
-agent:
-    mode: flow
-    clustering:
-        enabled: false
-    configMap:
-        content: |
-            logging {
-                level = "info"
-                format = "logfmt"
-            }
-            discovery.kubernetes "pods" { role = "pod" }
-            discovery.kubernetes "nodes" { role = "node" }
-            discovery.kubernetes "services" { role = "service" }
-            prometheus.scrape "nodes" {
-                targets    = discovery.kubernetes.nodes.targets
-                forward_to = [prometheus.relabel.filter.receiver]
-                bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-                tls_config { insecure_skip_verify = true }
-            }
-            prometheus.scrape "pods" {
-                targets    = discovery.kubernetes.pods.targets
-                forward_to = [prometheus.relabel.filter.receiver]
-            }
-            prometheus.relabel "filter" {
-                rule { source_labels = ["__name__"], regex = "(up|container_.*|kube_.*|node_.*)", action = "keep" }
-                forward_to = [prometheus.remote_write.grafana_cloud.receiver]
-            }
-            prometheus.remote_write "grafana_cloud" {
-                endpoint { url = "http://localhost:9090/api/v1/write" }
-            }
-controller:
-    type: deployment
-    replicas: 1
-resources:
-    requests:
-        cpu: 100m
-        memory: 128Mi
-    limits:
-        cpu: 500m
-        memory: 512Mi
-serviceAccount:
-    create: true
-    name: grafana-agent
-rbac:
-    create: true
-"@
-
-        $valuesFile = [System.IO.Path]::GetTempFileName() + ".yaml"
-        $grafanaValues | Out-File -FilePath $valuesFile -Encoding utf8
-
-        helm upgrade --install grafana-agent grafana/grafana-agent `
-                --namespace $grafNamespace `
-                --version $grafChartVersion `
-                --values $valuesFile `
-                --wait `
-                --timeout 10m
-
-        Remove-Item $valuesFile -Force -ErrorAction SilentlyContinue
-
-        if ($LASTEXITCODE -ne 0) {
-                Write-Host "⚠️  Failed to install Grafana Agent (non-critical)" -ForegroundColor Yellow
-        } else {
-                Write-Host "✅ Grafana Agent installed" -ForegroundColor Green
-        }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "⚠️  Failed to install Grafana Agent (non-critical)" -ForegroundColor Yellow
+    }
 } else {
-        Write-Host ""
-        Write-Host "=== Step 8/9: Skipping Grafana Agent ===" -ForegroundColor Yellow
-        Write-Host ""
+    Write-Host ""
+    Write-Host "=== Step 8/9: Skipping Grafana Agent ===" -ForegroundColor Yellow
+    Write-Host ""
 }
 
 # =============================================================================
