@@ -61,6 +61,17 @@ variable "postgres_sku" {
   default     = "B_Standard_B2ms"
 }
 
+variable "db_max_pool_size" {
+  description = "Application DB max pool size"
+  type        = number
+  default     = 5
+}
+
+variable "db_min_pool_size" {
+  description = "Application DB min pool size"
+  type        = number
+  default     = 0
+}
 # =============================================================================
 # RBAC Access Control Variables (Object IDs for Key Vault permissions)
 # =============================================================================

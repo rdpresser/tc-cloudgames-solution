@@ -38,6 +38,10 @@ locals {
     Workspace   = terraform.workspace
     Provider    = "Azure"
   }
+
+  # Force application pool sizes in code to override workspace defaults
+  db_max_pool_size = 5
+  db_min_pool_size = 0
 }
 
 # =============================================================================
@@ -312,6 +316,10 @@ module "key_vault" {
   sendgrid_api_key            = var.sendgrid_api_key
   sendgrid_email_new_user_tid = var.sendgrid_email_new_user_tid
   sendgrid_email_purchase_tid = var.sendgrid_email_purchase_tid
+
+  # App DB pool sizes (forced to 5/0 via locals to avoid workspace overrides)
+  db_max_pool_size = local.db_max_pool_size
+  db_min_pool_size = local.db_min_pool_size
 
   depends_on = [
     module.resource_group,
