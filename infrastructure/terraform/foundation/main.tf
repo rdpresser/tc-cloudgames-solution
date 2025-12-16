@@ -40,8 +40,8 @@ locals {
   }
 
   # Force application pool sizes in code to override workspace defaults
-  db_max_pool_size = 5
-  db_min_pool_size = 0
+  db_max_pool_size = 20
+  db_min_pool_size = 2
 }
 
 # =============================================================================
@@ -369,9 +369,10 @@ module "key_vault" {
   sendgrid_email_new_user_tid = var.sendgrid_email_new_user_tid
   sendgrid_email_purchase_tid = var.sendgrid_email_purchase_tid
 
-  # App DB pool sizes (forced to 5/0 via locals to avoid workspace overrides)
-  db_max_pool_size = local.db_max_pool_size
-  db_min_pool_size = local.db_min_pool_size
+  # App DB pool sizes (forced to 20/2 via locals to avoid workspace overrides)
+  db_max_pool_size       = local.db_max_pool_size
+  db_min_pool_size       = local.db_min_pool_size
+  db_connection_timeout  = 60
 
   depends_on = [
     module.resource_group,
