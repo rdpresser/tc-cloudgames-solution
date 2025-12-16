@@ -172,28 +172,32 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
 # =============================================================================
 # NGINX Ingress Controller with Static IP
 # =============================================================================
-module "nginx_ingress" {
-  source              = "../modules/nginx_ingress"
-  location            = module.resource_group.location
-  node_resource_group = module.aks.node_resource_group
-
-  # Static IP will be created automatically
-  load_balancer_ip = null # Let module create it
-
-  replica_count = 2
-
-  enable_metrics         = true
-  enable_service_monitor = false
-  enable_pdb             = true
-  enable_default_backend = true
-
-  tags = local.common_tags
-
-  depends_on = [
-    module.aks,
-    azurerm_role_assignment.aks_acr_pull
-  ]
-}
+# NGINX Ingress instalado manualmente via script PowerShell
+# Ver: infrastructure/kubernetes/scripts/prod/install-nginx-ingress-aks.ps1
+# Motivo: Terraform Cloud não tem acesso ao cluster Kubernetes
+#
+# module "nginx_ingress" {
+#   source              = "../modules/nginx_ingress"
+#   location            = module.resource_group.location
+#   node_resource_group = module.aks.node_resource_group
+#
+#   # Static IP will be created automatically
+#   load_balancer_ip = null # Let module create it
+#
+#   replica_count = 2
+#
+#   enable_metrics         = true
+#   enable_service_monitor = false
+#   enable_pdb             = true
+#   enable_default_backend = true
+#
+#   tags = local.common_tags
+#
+#   depends_on = [
+#     module.aks,
+#     azurerm_role_assignment.aks_acr_pull
+#   ]
+# }
 
 # =============================================================================
 # Azure API Management
@@ -208,16 +212,15 @@ module "apim" {
   publisher_email = var.apim_publisher_email
   sku_name        = var.apim_sku_name
 
-  # Backend URL pointing to NGINX Ingress static IP
-  # Passa sempre o IP - o módulo APIM usa fallback se for nulo
-  backend_url          = "http://${module.nginx_ingress.load_balancer_ip}"
+  # Backend URL será configurado manualmente após instalação do NGINX
+  # O IP do NGINX será obtido após instalação via script PowerShell
+  backend_url          = var.nginx_ingress_ip != "" ? "http://${var.nginx_ingress_ip}" : null
   require_subscription = var.apim_require_subscription
 
   tags = local.common_tags
 
   depends_on = [
-    module.resource_group,
-    module.nginx_ingress
+    module.resource_group
   ]
 }
 
@@ -370,9 +373,9 @@ module "key_vault" {
   sendgrid_email_purchase_tid = var.sendgrid_email_purchase_tid
 
   # App DB pool sizes (forced to 20/2 via locals to avoid workspace overrides)
-  db_max_pool_size       = local.db_max_pool_size
-  db_min_pool_size       = local.db_min_pool_size
-  db_connection_timeout  = 60
+  db_max_pool_size      = local.db_max_pool_size
+  db_min_pool_size      = local.db_min_pool_size
+  db_connection_timeout = 60
 
   depends_on = [
     module.resource_group,

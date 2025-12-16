@@ -74,11 +74,11 @@ spec:
               value: "AzureServiceBus"
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
+              cpu: "200m"
               memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
@@ -91,6 +91,7 @@ spec:
             httpGet:
               path: /health
               port: 8080
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
@@ -107,6 +108,7 @@ kind: Deployment
 metadata:
   name: games-api
 spec:
+  replicas: 2
   template:
     spec:
       containers:
@@ -118,11 +120,11 @@ spec:
               value: "AzureServiceBus"
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
+              cpu: "200m"
               memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
@@ -135,6 +137,7 @@ spec:
             httpGet:
               path: /health
               port: 8080
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
@@ -162,11 +165,11 @@ spec:
               value: "AzureServiceBus"
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
+              cpu: "200m"
               memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
@@ -179,6 +182,7 @@ spec:
             httpGet:
               path: /health
               port: 8080
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3

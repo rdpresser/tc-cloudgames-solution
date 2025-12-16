@@ -1,3 +1,9 @@
+locals {
+  base_backend_url = (
+    var.backend_url != null && trimspace(var.backend_url) != ""
+  ) ? var.backend_url : "http://example.com"
+}
+
 resource "azurerm_api_management" "this" {
   name                = "${var.name_prefix}-apim"
   location            = var.location
@@ -19,7 +25,7 @@ resource "azurerm_api_management_backend" "games_api" {
   resource_group_name = var.resource_group_name
   api_management_name = azurerm_api_management.this.name
   protocol            = "http"
-  url                 = var.backend_url != null ? "${var.backend_url}/games" : "http://placeholder"
+  url                 = "${local.base_backend_url}/games"
   title               = "AKS Games API Backend"
   description         = "Backend pointing to Games API in AKS"
 }
@@ -29,7 +35,7 @@ resource "azurerm_api_management_backend" "user_api" {
   resource_group_name = var.resource_group_name
   api_management_name = azurerm_api_management.this.name
   protocol            = "http"
-  url                 = var.backend_url != null ? "${var.backend_url}/user" : "http://placeholder"
+  url                 = "${local.base_backend_url}/user"
   title               = "AKS User API Backend"
   description         = "Backend pointing to User API in AKS"
 }
@@ -39,7 +45,7 @@ resource "azurerm_api_management_backend" "payments_api" {
   resource_group_name = var.resource_group_name
   api_management_name = azurerm_api_management.this.name
   protocol            = "http"
-  url                 = var.backend_url != null ? "${var.backend_url}/payments" : "http://placeholder"
+  url                 = "${local.base_backend_url}/payments"
   title               = "AKS Payments API Backend"
   description         = "Backend pointing to Payments API in AKS"
 }
@@ -56,7 +62,7 @@ resource "azurerm_api_management_api" "games_api" {
   display_name        = "Games API"
   path                = "games"
   protocols           = ["https", "http"]
-  service_url         = var.backend_url != null ? "${var.backend_url}/games" : "http://placeholder"
+  service_url         = "${local.base_backend_url}/games"
   description         = "API for game management"
   
   subscription_required = var.require_subscription
@@ -68,9 +74,9 @@ resource "azurerm_api_management_api" "user_api" {
   api_management_name = azurerm_api_management.this.name
   revision            = "1"
   display_name        = "User API"
-  path                = "users"
+  path                = "user"
   protocols           = ["https", "http"]
-  service_url         = var.backend_url != null ? "${var.backend_url}/user" : "http://placeholder"
+  service_url         = "${local.base_backend_url}/user"
   description         = "API for user management"
   
   subscription_required = var.require_subscription
@@ -84,7 +90,7 @@ resource "azurerm_api_management_api" "payments_api" {
   display_name        = "Payments API"
   path                = "payments"
   protocols           = ["https", "http"]
-  service_url         = var.backend_url != null ? "${var.backend_url}/payments" : "http://placeholder"
+  service_url         = "${local.base_backend_url}/payments"
   description         = "API for payment processing"
   
   subscription_required = var.require_subscription
@@ -94,38 +100,7 @@ resource "azurerm_api_management_api" "payments_api" {
 # API Operations - Wildcard for all operations
 # =============================================================================
 
-resource "azurerm_api_management_api_operation" "games_all" {
-  operation_id        = "games-all-operations"
-  api_name            = azurerm_api_management_api.games_api.name
-  api_management_name = azurerm_api_management.this.name
-  resource_group_name = var.resource_group_name
-  display_name        = "All Games Operations"
-  method              = "*"
-  url_template        = "/*"
-  description         = "Proxy all operations to backend"
-}
-
-resource "azurerm_api_management_api_operation" "user_all" {
-  operation_id        = "user-all-operations"
-  api_name            = azurerm_api_management_api.user_api.name
-  api_management_name = azurerm_api_management.this.name
-  resource_group_name = var.resource_group_name
-  display_name        = "All User Operations"
-  method              = "*"
-  url_template        = "/*"
-  description         = "Proxy all operations to backend"
-}
-
-resource "azurerm_api_management_api_operation" "payments_all" {
-  operation_id        = "payments-all-operations"
-  api_name            = azurerm_api_management_api.payments_api.name
-  api_management_name = azurerm_api_management.this.name
-  resource_group_name = var.resource_group_name
-  display_name        = "All Payments Operations"
-  method              = "*"
-  url_template        = "/*"
-  description         = "Proxy all operations to backend"
-}
+// No explicit API operations are required; policies route to backends.
 
 # =============================================================================
 # API Policies - CORS and Backend Routing

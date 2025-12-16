@@ -370,10 +370,12 @@ output "aks_get_credentials_command" {
 # =============================================================================
 # NGINX Ingress Outputs
 # =============================================================================
-output "nginx_ingress_ip" {
-  description = "Static IP address of NGINX Ingress Load Balancer"
-  value       = module.nginx_ingress.load_balancer_ip
-}
+# NGINX Ingress instalado manualmente - IP obtido via:
+# kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+# output "nginx_ingress_ip" {
+#   description = "Static IP address of NGINX Ingress Load Balancer"
+#   value       = module.nginx_ingress.load_balancer_ip
+# }
 
 # =============================================================================
 # APIM Outputs

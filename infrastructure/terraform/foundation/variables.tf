@@ -384,3 +384,9 @@ variable "apim_require_subscription" {
   type        = bool
   default     = false
 }
+
+variable "nginx_ingress_ip" {
+  description = "IP address of NGINX Ingress LoadBalancer (obtained after manual installation)"
+  type        = string
+  default     = ""
+}
