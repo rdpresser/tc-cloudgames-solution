@@ -176,17 +176,17 @@ module "nginx_ingress" {
   source              = "../modules/nginx_ingress"
   location            = module.resource_group.location
   node_resource_group = module.aks.node_resource_group
-  
+
   # Static IP will be created automatically
-  load_balancer_ip = null  # Let module create it
-  
+  load_balancer_ip = null # Let module create it
+
   replica_count = 2
-  
-  enable_metrics          = true
-  enable_service_monitor  = false
+
+  enable_metrics         = true
+  enable_service_monitor = false
   enable_pdb             = true
   enable_default_backend = true
-  
+
   tags = local.common_tags
 
   depends_on = [
@@ -203,15 +203,15 @@ module "apim" {
   name_prefix         = local.name_prefix
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
-  
+
   publisher_name  = var.apim_publisher_name
   publisher_email = var.apim_publisher_email
   sku_name        = var.apim_sku_name
-  
+
   # Backend URL pointing to NGINX Ingress static IP
   backend_url          = module.nginx_ingress.load_balancer_ip != null ? "http://${module.nginx_ingress.load_balancer_ip}" : null
   require_subscription = var.apim_require_subscription
-  
+
   tags = local.common_tags
 
   depends_on = [
