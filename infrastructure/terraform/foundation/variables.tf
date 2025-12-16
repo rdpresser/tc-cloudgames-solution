@@ -357,3 +357,30 @@ variable "enable_grafana_agent" {
   type        = bool
   default     = false
 }
+
+# =============================================================================
+# Azure API Management Variables
+# =============================================================================
+variable "apim_publisher_name" {
+  description = "Publisher name for APIM"
+  type        = string
+  default     = "CloudGames Team"
+}
+
+variable "apim_publisher_email" {
+  description = "Publisher email for APIM"
+  type        = string
+  default     = "admin@cloudgames.com"
+}
+
+variable "apim_sku_name" {
+  description = "SKU for APIM (Consumption_0, Developer_1, Basic_1, etc)"
+  type        = string
+  default     = "Developer_1"
+}
+
+variable "apim_require_subscription" {
+  description = "Require subscription key for API access"
+  type        = bool
+  default     = false
+}

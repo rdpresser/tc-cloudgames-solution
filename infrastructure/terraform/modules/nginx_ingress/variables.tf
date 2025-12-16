@@ -2,6 +2,17 @@
 # NGINX Ingress Controller Variables
 # =============================================================================
 
+variable "location" {
+  description = "Azure region"
+  type        = string
+}
+
+variable "tags" {
+  description = "Resource tags"
+  type        = map(string)
+  default     = {}
+}
+
 variable "nginx_namespace" {
   description = "Kubernetes namespace for NGINX Ingress Controller"
   type        = string
@@ -42,6 +53,18 @@ variable "enable_default_backend" {
   description = "Enable default backend"
   type        = bool
   default     = true
+}
+
+variable "load_balancer_ip" {
+  description = "Static IP address for the Load Balancer (optional)"
+  type        = string
+  default     = null
+}
+
+variable "node_resource_group" {
+  description = "Node resource group name (MC_xxx) for static IP allocation"
+  type        = string
+  default     = null
 }
 
 variable "cpu_request" {

@@ -48,3 +48,18 @@ output "apim_portal_url" {
 output "name" {
   value = azurerm_api_management.this.name
 }
+# CloudGames API Paths
+output "games_api_url" {
+  description = "Full URL for Games API"
+  value       = var.backend_url != null ? "${azurerm_api_management.this.gateway_url}/games" : null
+}
+
+output "user_api_url" {
+  description = "Full URL for User API"
+  value       = var.backend_url != null ? "${azurerm_api_management.this.gateway_url}/users" : null
+}
+
+output "payments_api_url" {
+  description = "Full URL for Payments API"
+  value       = var.backend_url != null ? "${azurerm_api_management.this.gateway_url}/payments" : null
+}

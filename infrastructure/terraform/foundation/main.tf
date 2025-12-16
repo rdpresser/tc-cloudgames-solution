@@ -169,6 +169,57 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   ]
 }
 
+# =============================================================================
+# NGINX Ingress Controller with Static IP
+# =============================================================================
+module "nginx_ingress" {
+  source              = "../modules/nginx_ingress"
+  location            = module.resource_group.location
+  node_resource_group = module.aks.node_resource_group
+  
+  # Static IP will be created automatically
+  load_balancer_ip = null  # Let module create it
+  
+  replica_count = 2
+  
+  enable_metrics          = true
+  enable_service_monitor  = false
+  enable_pdb             = true
+  enable_default_backend = true
+  
+  tags = local.common_tags
+
+  depends_on = [
+    module.aks,
+    azurerm_role_assignment.aks_acr_pull
+  ]
+}
+
+# =============================================================================
+# Azure API Management
+# =============================================================================
+module "apim" {
+  source              = "../modules/apim"
+  name_prefix         = local.name_prefix
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  
+  publisher_name  = var.apim_publisher_name
+  publisher_email = var.apim_publisher_email
+  sku_name        = var.apim_sku_name
+  
+  # Backend URL pointing to NGINX Ingress static IP
+  backend_url          = module.nginx_ingress.load_balancer_ip != null ? "http://${module.nginx_ingress.load_balancer_ip}" : null
+  require_subscription = var.apim_require_subscription
+  
+  tags = local.common_tags
+
+  depends_on = [
+    module.resource_group,
+    module.nginx_ingress
+  ]
+}
+
 # ArgoCD installed via: aks-manager.ps1 install-argocd
 
 # Grafana Agent installed via: aks-manager.ps1 install-grafana-agent
@@ -547,51 +598,7 @@ module "function_app" {
   ]
 }
 
-# =============================================================================
-# API Management Module
-# =============================================================================
-
-module "apim" {
-  source              = "../modules/apim"
-  name_prefix         = local.full_name
-  location            = module.resource_group.location
-  resource_group_name = module.resource_group.name
-
-  tags = local.common_tags
-
-  depends_on = [
-    module.resource_group
-  ]
-}
-
-# =============================================================================
-# APIM APIs - COMMENTED OUT TO PRESERVE MANUALLY CONFIGURED APIs
-# =============================================================================
-# APIs são gerenciadas manualmente via Portal Azure ou Azure CLI
-# Para evitar conflitos com configurações manuais de Swagger/OpenAPI
-
-# module "apim_api" {
-#   source   = "../modules/apim_api"
-#   for_each = var.apis
-#
-#   name_prefix        = each.value.name
-#   display_name       = each.value.display_name
-#   path               = each.value.path
-#   swagger_url        = each.value.swagger_url
-#   api_policy         = lookup(each.value, "api_policy", null)
-#   operation_policies = lookup(each.value, "operation_policies", {})
-#
-#   api_management_name = module.apim.name
-#   resource_group_name = module.apim.resource_group_name
-#
-#   depends_on = [
-#     module.apim
-#   ]
-# }
-
 # External Secrets Operator installed via: aks-manager.ps1 install-eso
-
-# NGINX Ingress Controller installed via: aks-manager.ps1 install-nginx
 
 # =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation

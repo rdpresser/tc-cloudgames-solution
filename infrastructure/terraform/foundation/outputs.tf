@@ -366,3 +366,39 @@ output "aks_get_credentials_command" {
 
 # NGINX Ingress Controller installed via: aks-manager.ps1 install-nginx
 
+
+# =============================================================================
+# NGINX Ingress Outputs
+# =============================================================================
+output "nginx_ingress_ip" {
+  description = "Static IP address of NGINX Ingress Load Balancer"
+  value       = module.nginx_ingress.load_balancer_ip
+}
+
+# =============================================================================
+# APIM Outputs
+# =============================================================================
+output "apim_gateway_url" {
+  description = "Azure APIM Gateway URL"
+  value       = module.apim.apim_gateway_url
+}
+
+output "apim_portal_url" {
+  description = "Azure APIM Developer Portal URL"
+  value       = module.apim.apim_portal_url
+}
+
+output "apim_games_api_url" {
+  description = "Full URL for Games API via APIM"
+  value       = module.apim.games_api_url
+}
+
+output "apim_user_api_url" {
+  description = "Full URL for User API via APIM"
+  value       = module.apim.user_api_url
+}
+
+output "apim_payments_api_url" {
+  description = "Full URL for Payments API via APIM"
+  value       = module.apim.payments_api_url
+}

@@ -3,8 +3,8 @@
 # =============================================================================
 # - Uses NGINX Ingress Controller (deployed via Terraform Helm)
 # - Configures path rewriting to strip prefix before forwarding
+# - NO HOST REQUIREMENT - works with IP address directly
 # - Ready for TLS configuration (add tls block when certificates are ready)
-# - Host should be updated to production domain
 # =============================================================================
 
 apiVersion: networking.k8s.io/v1
@@ -15,15 +15,10 @@ metadata:
     # NGINX Ingress specific annotations
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/use-regex: "true"
-    # Optional: SSL redirect when TLS is configured
-    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    # Optional: Rate limiting
-    # nginx.ingress.kubernetes.io/limit-rps: "100"
 spec:
   ingressClassName: nginx
   rules:
-    - host: api.cloudgames.com
-      http:
+    - http:  # No host - accepts any host including IP
         paths:
           - path: /user(/|$)(.*)
             pathType: ImplementationSpecific
@@ -48,8 +43,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: api.cloudgames.com
-      http:
+    - http:  # No host - accepts any host including IP
         paths:
           - path: /games(/|$)(.*)
             pathType: ImplementationSpecific
@@ -58,10 +52,6 @@ spec:
                 name: games-api
                 port:
                   number: 8080
-  # tls:
-  #   - hosts:
-  #       - api.cloudgames.com
-  #     secretName: cloudgames-tls
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -73,8 +63,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: api.cloudgames.com
-      http:
+    - http:  # No host - accepts any host including IP
         paths:
           - path: /payments(/|$)(.*)
             pathType: ImplementationSpecific
@@ -83,7 +72,3 @@ spec:
                 name: payments-api
                 port:
                   number: 8080
-  # tls:
-  #   - hosts:
-  #       - api.cloudgames.com
-  #     secretName: cloudgames-tls
