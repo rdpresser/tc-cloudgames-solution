@@ -209,7 +209,8 @@ module "apim" {
   sku_name        = var.apim_sku_name
 
   # Backend URL pointing to NGINX Ingress static IP
-  backend_url          = module.nginx_ingress.load_balancer_ip != null ? "http://${module.nginx_ingress.load_balancer_ip}" : null
+  # Passa sempre o IP - o módulo APIM usa fallback se for nulo
+  backend_url          = "http://${module.nginx_ingress.load_balancer_ip}"
   require_subscription = var.apim_require_subscription
 
   tags = local.common_tags
