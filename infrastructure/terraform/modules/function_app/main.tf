@@ -60,7 +60,7 @@ resource "azurerm_linux_function_app" "main" {
     application_insights_key               = azurerm_application_insights.function_insights.instrumentation_key
 
     application_stack {
-      dotnet_version = "9.0"
+      dotnet_version = "8.0"
     }
   }
 
@@ -77,9 +77,13 @@ resource "azurerm_linux_function_app" "main" {
     "SENDGRID_EMAIL_NEW_USER_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-new-user-tid)"
     "SENDGRID_EMAIL_PURCHASE_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-purchase-tid)"
     
-    # Service Bus settings
+    # Service Bus settings - usando Key Vault reference como fallback
     "SERVICEBUS_CONNECTION" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-connection-string)"
     "SERVICEBUS_NAMESPACE" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-namespace)"
+    
+    # CRÍTICO: Service Bus Trigger com Managed Identity requer esta configuração
+    # Permite que triggers usem Managed Identity automaticamente
+    "AzureWebJobsServiceBus__fullyQualifiedNamespace" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-namespace)"
   }
 
   identity {
