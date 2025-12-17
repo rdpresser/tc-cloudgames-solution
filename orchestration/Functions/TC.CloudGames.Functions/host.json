@@ -10,6 +10,13 @@
       "sessionHandlerOptions": {
         "autoComplete": true,
         "maxConcurrentSessions": 8
+      },
+      "clientRetryOptions": {
+        "mode": "exponential",
+        "tryTimeout": "00:01:00",
+        "delay": "00:00:00.80",
+        "maxDelay": "00:01:00",
+        "maxRetries": 3
       }
     }
   },
