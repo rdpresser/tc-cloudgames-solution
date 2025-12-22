@@ -35,9 +35,15 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
-  # Ignore differences in image tags - allow CI/CD to update them
+  # Ignore differences that are managed by other controllers
   ignoreDifferences:
+    # Ignore image tags - allow CI/CD to update them
     - group: apps
       kind: Deployment
       jsonPointers:
         - /spec/template/spec/containers/0/image
+    # Ignore replicas - managed by HPA (Horizontal Pod Autoscaler)
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
