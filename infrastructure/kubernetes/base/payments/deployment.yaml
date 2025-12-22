@@ -68,11 +68,11 @@ spec:
             periodSeconds: 15
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
+              cpu: 100m
+              memory: 320Mi
             limits:
-              cpu: 1000m
-              memory: 1Gi
+              cpu: 500m
+              memory: 640Mi
       volumes:
         - name: workload-identity-token
           projected:
