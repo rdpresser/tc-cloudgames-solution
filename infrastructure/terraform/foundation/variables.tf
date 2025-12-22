@@ -54,11 +54,11 @@ variable "postgres_admin_password" {
   sensitive   = true
 }
 
-# PostgreSQL SKU (compute tier/size). Defaults to B_Standard_B2ms for more headroom.
+# PostgreSQL SKU (compute tier/size). Defaults to B_Standard_B2s for cost optimization.
 variable "postgres_sku" {
   type        = string
-  description = "PostgreSQL Flexible Server SKU (e.g., B_Standard_B1ms, B_Standard_B2ms, GP_Standard_D2s_v3)"
-  default     = "B_Standard_B2ms"
+  description = "PostgreSQL Flexible Server SKU (e.g., B_Standard_B1ms, B_Standard_B2s, GP_Standard_D2s_v3)"
+  default     = "B_Standard_B2s"
 }
 
 variable "db_max_pool_size" {

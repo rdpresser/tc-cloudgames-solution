@@ -59,4 +59,16 @@ resource "azurerm_kubernetes_cluster" "aks" {
   local_account_disabled = length(var.admin_group_object_ids) > 0 ? var.local_account_disabled : false
 
   tags = var.tags
+
+  lifecycle {
+    # Prevent Terraform from attempting AKS updates due to provider/API drift
+    # when no IaC changes were made. Azure may auto-patch agent pool versions
+    # and modify nested tags, which can trigger unwanted updates.
+    ignore_changes = [
+      kubernetes_version,
+      default_node_pool[0].orchestrator_version,
+      default_node_pool[0].tags,
+      default_node_pool[0].upgrade_settings,
+    ]
+  }
 }

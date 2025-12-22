@@ -32,6 +32,18 @@ resource "azurerm_key_vault" "key_vault" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    # Avoid perpetual drift when Azure adds/changes tags or network ACL defaults
+    ignore_changes = [
+      tags,
+      network_acls,
+      # Azure platform may adjust retention settings; ignore unless we explicitly change IaC
+      soft_delete_retention_days,
+      # Tenant ID is fetched via data source; suppress noisy re-stamp when unchanged
+      tenant_id
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------

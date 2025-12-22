@@ -119,6 +119,16 @@ resource "azurerm_linux_function_app" "main" {
       site_config[0].minimum_tls_version,
       site_config[0].remote_debugging_enabled,
       site_config[0].ftps_state
+      ,
+      # Azure may toggle https_only or stamp ancillary defaults without IaC changes
+      https_only
+      ,
+      # Azure stamps deployment packages (SAS URL) into WEBSITE_RUN_FROM_PACKAGE
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      # Azure may add/remove this placeholder flag automatically
+      app_settings["WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED"],
+      # Runtime isolation flag may toggle depending on platform defaults
+      site_config[0].application_stack[0].use_dotnet_isolated_runtime
     ]
   }
 }
