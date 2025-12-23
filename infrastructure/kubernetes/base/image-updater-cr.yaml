@@ -1,0 +1,36 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: cloudgames-images
+  namespace: argocd
+spec:
+  namespace: argocd
+  commonUpdateSettings:
+    updateStrategy: latest
+    pullSecret: pull-secret
+  writeBackConfig:
+    method: argocd
+  applicationRefs:
+  - namePattern: cloudgames-*
+    images:
+    - alias: games-api
+      imageName: tccloudgamesdevcr8nacr.azurecr.io/games-api:latest
+      commonUpdateSettings:
+        updateStrategy: latest
+      manifestTargets:
+        kustomize:
+          name: tccloudgamesdevcr8nacr.azurecr.io/games-api
+    - alias: users-api
+      imageName: tccloudgamesdevcr8nacr.azurecr.io/users-api:latest
+      commonUpdateSettings:
+        updateStrategy: latest
+      manifestTargets:
+        kustomize:
+          name: tccloudgamesdevcr8nacr.azurecr.io/users-api
+    - alias: payments-api
+      imageName: tccloudgamesdevcr8nacr.azurecr.io/payments-api:latest
+      commonUpdateSettings:
+        updateStrategy: latest
+      manifestTargets:
+        kustomize:
+          name: tccloudgamesdevcr8nacr.azurecr.io/payments-api
