@@ -170,6 +170,42 @@ variable "aks_admin_group_object_ids" {
   default     = []
 }
 
+# =============================================================================
+# Log Analytics Controls
+# =============================================================================
+variable "log_analytics_sku" {
+  description = "SKU for Log Analytics (only PerGB2018 supported; Standard/Premium deprecated by Azure)"
+  type        = string
+  default     = "PerGB2018"
+  
+  validation {
+    condition     = var.log_analytics_sku == "PerGB2018"
+    error_message = "Only PerGB2018 is supported. Standard and Premium are deprecated by Azure."
+  }
+}
+
+variable "log_analytics_retention_in_days" {
+  description = "Log retention in days (30-730, minimum enforced by Azure)"
+  type        = number
+  default     = 30
+  
+  validation {
+    condition     = var.log_analytics_retention_in_days >= 30 && var.log_analytics_retention_in_days <= 730
+    error_message = "Retention must be between 30 and 730 days."
+  }
+}
+
+variable "log_analytics_daily_quota_gb" {
+  description = "Daily ingestion quota in GB (0 = unlimited, min 0.023 GB = ~24 MB/day if set)"
+  type        = number
+  default     = 0
+  
+  validation {
+    condition     = var.log_analytics_daily_quota_gb == 0 || var.log_analytics_daily_quota_gb >= 0.023
+    error_message = "Daily quota must be 0 (unlimited) or >= 0.023 GB."
+  }
+}
+
 
 # =============================================================================
 # ArgoCD Configuration
@@ -376,7 +412,7 @@ variable "apim_publisher_email" {
 variable "apim_sku_name" {
   description = "SKU for APIM (Consumption_0, Developer_1, Basic_1, etc)"
   type        = string
-  default     = "Developer_1"
+  default     = "Consumption_0"
 }
 
 variable "apim_require_subscription" {

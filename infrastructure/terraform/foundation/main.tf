@@ -217,6 +217,14 @@ module "apim" {
   backend_url          = var.nginx_ingress_ip != "" ? "http://${var.nginx_ingress_ip}" : null
   require_subscription = var.apim_require_subscription
 
+  # Swagger URLs from Container Apps (development) - imported to get operation definitions
+  user_swagger_url  = lookup(var.apis["users"], "swagger_url", null)
+  games_swagger_url = lookup(var.apis["games"], "swagger_url", null)
+
+  # API Policies from apis variable (includes rate limiting, CORS, etc)
+  user_api_policy  = lookup(var.apis["users"], "api_policy", null)
+  games_api_policy = lookup(var.apis["games"], "api_policy", null)
+
   tags = local.common_tags
 
   depends_on = [
@@ -306,6 +314,9 @@ module "logs" {
   name_prefix         = local.full_name
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
+  sku                 = var.log_analytics_sku
+  retention_in_days   = var.log_analytics_retention_in_days
+  daily_quota_gb      = var.log_analytics_daily_quota_gb
   tags                = local.common_tags
 
   depends_on = [

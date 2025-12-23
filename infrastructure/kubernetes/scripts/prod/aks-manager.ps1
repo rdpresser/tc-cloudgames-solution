@@ -95,6 +95,8 @@ function Show-Help {
     Write-Host "Installs Grafana Agent on AKS" -ForegroundColor $Colors.Muted
     Write-Host "    install-argocd      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Installs ArgoCD on AKS cluster" -ForegroundColor $Colors.Muted
+    Write-Host "    install-argocd-image-updater" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Installs ArgoCD Image Updater for auto image detection" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "  🔐 SECRETS & CONFIGURATION:" -ForegroundColor $Colors.Info
@@ -347,6 +349,16 @@ function Show-Menu {
             }
         }
         
+        # Job 8: Check ArgoCD Image Updater
+        $jobs += Start-Job -ScriptBlock {
+            try {
+                $pods = kubectl get pods -n argocd-image-updater --no-headers 2>$null | Where-Object { $_ -match "Running" }
+                return @{ imageUpdater = [bool]$pods }
+            } catch {
+                return @{ imageUpdater = $false }
+            }
+        }
+        
         # Animated spinner while waiting for jobs
         $frames = @('⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏')
         $frameIndex = 0
@@ -362,13 +374,14 @@ function Show-Menu {
         
         # Collect results
         $result = @{
-            argocd  = $false
-            grafana = $false
-            eso     = $false
-            nginx   = $false
-            apps    = $false
-            acrTags = @{}
-            nginxIP = $null
+            argocd       = $false
+            grafana      = $false
+            eso          = $false
+            nginx        = $false
+            apps         = $false
+            imageUpdater = $false
+            acrTags      = @{}
+            nginxIP      = $null
         }
         
         foreach ($job in $jobs) {
@@ -414,6 +427,7 @@ function Show-Menu {
         Write-Host "  📦 ARGOCD & DEPLOYMENT:" -ForegroundColor $Colors.Title
         Write-Host ""
         Write-Host ("  [6] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [6a] 📦 Install ArgoCD Image Updater {0}" -f (& $installed $statuses.imageUpdater)) -ForegroundColor $(if ($statuses.imageUpdater) { $Colors.Success } else { $Colors.Info })
         Write-Host ("  [7] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
         Write-Host ""
         
@@ -467,6 +481,7 @@ function Show-Menu {
             "4" { Invoke-Command "install-eso" }
             "5" { Invoke-Command "install-grafana" }
             "6" { Invoke-Command "install-argocd" }
+            "6a" { Invoke-Command "install-argocd-image-updater" }
             "7" { Invoke-Command "get-argocd-url" }
             "8" { Invoke-Command "setup-eso-wi" }
             "9" { Invoke-Command "bootstrap" }
@@ -551,6 +566,14 @@ function Invoke-Command($cmd, $arg1 = "") {
             if ($useForce) { $installArgs['Force'] = $true }
             
             & "$scriptPath\install-grafana-agent.ps1" @installArgs
+        }
+        "install-argocd-image-updater" {
+            Write-Host "`n📦 Installing ArgoCD Image Updater..." -ForegroundColor $Colors.Info
+            & "$scriptPath\install-argocd-image-updater.ps1" `
+                -ResourceGroup $Config.ResourceGroup `
+                -ClusterName $Config.ClusterName `
+                -KeyVaultName $Config.KeyVaultName `
+                -ACRLoginServer "$($Config.ACRName).azurecr.io"
         }
         # Removed legacy individual installers (Grafana Agent, ESO, NGINX).
         # Use "post-terraform-setup" to perform the complete setup.
