@@ -4,14 +4,18 @@ metadata:
   name: payments-api
   labels:
     app.kubernetes.io/name: payments-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Forwarded-Prefix: /payments";
 spec:
   ingressClassName: nginx
   rules:
     - host: cloudgames.local
       http:
         paths:
-          - path: /payments
-            pathType: Prefix
+          - path: /payments(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: payments-api

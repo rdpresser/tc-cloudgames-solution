@@ -398,7 +398,10 @@ function Show-Menu {
         Write-Host "  [1] 🔌 Connect to AKS cluster" -ForegroundColor $Colors.Info
         Write-Host "  [2] 📊 Show cluster status" -ForegroundColor $Colors.Info
         Write-Host ""
-        Write-Host "  COMPONENT INSTALLATION:" -ForegroundColor $Colors.Title
+        
+        # ===== COMPONENT INSTALLATION =====
+        Write-Host "  🔧 COMPONENT INSTALLATION:" -ForegroundColor $Colors.Title
+        Write-Host ""
         Write-Host ("  [3] 📦 Install NGINX Ingress {0}" -f (& $installed $statuses.nginx)) -ForegroundColor $(if ($statuses.nginx) { $Colors.Success } else { $Colors.Info })
         if ($statuses.nginxIP) {
             Write-Host ("       • LoadBalancer IP: {0}" -f $statuses.nginxIP) -ForegroundColor $Colors.Muted
@@ -406,21 +409,31 @@ function Show-Menu {
         Write-Host ("  [4] 🔐 Install External Secrets Operator {0}" -f (& $installed $statuses.eso)) -ForegroundColor $(if ($statuses.eso) { $Colors.Success } else { $Colors.Info })
         Write-Host ("  [5] 📊 Install Grafana Agent {0}" -f (& $installed $statuses.grafana)) -ForegroundColor $(if ($statuses.grafana) { $Colors.Success } else { $Colors.Info })
         Write-Host ""
-        Write-Host "  ARGOCD & DEPLOYMENT:" -ForegroundColor $Colors.Title
+        
+        # ===== ARGOCD & DEPLOYMENT =====
+        Write-Host "  📦 ARGOCD & DEPLOYMENT:" -ForegroundColor $Colors.Title
+        Write-Host ""
         Write-Host ("  [6] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
         Write-Host ("  [7] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
         Write-Host ""
-        Write-Host "  CONFIGURATION:" -ForegroundColor $Colors.Title
+        
+        # ===== CONFIGURATION =====
+        Write-Host "  ⚙️  CONFIGURATION:" -ForegroundColor $Colors.Title
+        Write-Host ""
         Write-Host "  [8] 🔐 Setup ESO with Workload Identity" -ForegroundColor $Colors.Info
         Write-Host ("  [9] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
         Write-Host ""
-        Write-Host "  BUILD & DEPLOY:" -ForegroundColor $Colors.Title
+        
+        # ===== BUILD & DEPLOY =====
+        Write-Host "  🐳 BUILD & DEPLOY:" -ForegroundColor $Colors.Title
+        Write-Host ""
         # ACR last builds per repo
         $acrUser    = $statuses.acrTags['user']
         $acrGames   = $statuses.acrTags['games']
         $acrPayments= $statuses.acrTags['payments']
         Write-Host " [10] 🐳 Build & Push images to ACR" -ForegroundColor $Colors.Info
         if ($acrUser -or $acrGames -or $acrPayments) {
+            Write-Host ""
             if ($acrUser) {
                 Write-Host ("       • users-api:   tag {0} at {1}" -f ($acrUser.tag), ($acrUser.lastUpdateTime)) -ForegroundColor $Colors.Muted
             }
@@ -432,11 +445,16 @@ function Show-Menu {
             }
         }
         Write-Host ""
-        Write-Host "  UTILITIES:" -ForegroundColor $Colors.Title
+        
+        # ===== UTILITIES =====
+        Write-Host "  🔧 UTILITIES:" -ForegroundColor $Colors.Title
+        Write-Host ""
         Write-Host " [11] 📝 View logs" -ForegroundColor $Colors.Info
         Write-Host " [12] 🔧 Post-Terraform Complete Setup" -ForegroundColor $Colors.Info
         Write-Host "       (All-in-one: connect, nginx, ESO, WI, grafana, deploy)" -ForegroundColor $Colors.Muted
         Write-Host ""
+        
+        # ===== EXIT =====
         Write-Host "  [0] ❌ Exit" -ForegroundColor $Colors.Error
         Write-Host ""
 

@@ -37,6 +37,15 @@ spec:
               value: "Production"
             - name: ASPNETCORE_URLS
               value: "http://+:8080"
+            - name: ASPNETCORE_APPL_PATH
+              value: "/payments"
+            # OpenTelemetry (OTLP) Configuration
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://grafana-agent.grafana-agent.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
+            - name: OTEL_SERVICE_NAME
+              value: "payments-api"
             # Workload Identity variables
             - name: AZURE_TENANT_ID
               value: "084169c0-a779-43c3-970c-487a71a93f88"
