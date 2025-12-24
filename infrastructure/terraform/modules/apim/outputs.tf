@@ -56,7 +56,7 @@ output "games_api_url" {
 
 output "user_api_url" {
   description = "Full URL for User API"
-  value       = var.backend_url != null ? "${azurerm_api_management.this.gateway_url}/users" : null
+  value       = var.backend_url != null ? "${azurerm_api_management.this.gateway_url}/user" : null
 }
 
 output "payments_api_url" {

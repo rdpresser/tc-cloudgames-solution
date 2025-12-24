@@ -1,46 +1,42 @@
 <#
 .SYNOPSIS
-  Executa o setup completo da infraestrutura após o Terraform apply.
+  Executes complete infrastructure setup after Terraform apply.
   
 .DESCRIPTION
-  Este script automatiza todos os passos necessários após o Terraform apply inicial:
-  1. Conecta ao cluster AKS
-  2. Instala NGINX Ingress Controller
-  3. Obtém o IP do LoadBalancer
-  4. Atualiza Terraform com o IP do NGINX
-  5. Re-executa Terraform para configurar APIM backends
-  6. Instala External Secrets Operator
-  7. Configura Workload Identity
-  8. (Opcional) Instala Grafana Agent
-  9. Deploy das aplicações via Kustomize
+  This script automates all necessary steps after the initial Terraform apply:
+  1. Connects to AKS cluster
+  2. Installs NGINX Ingress Controller
+  3. Retrieves LoadBalancer IP
+  4. Updates Terraform with NGINX IP
+  5. Re-runs Terraform to configure APIM backends
+    6. Installs External Secrets Operator
+    7. Configures Workload Identity
+    8. Deploys applications via Kustomize
   
 .PARAMETER ResourceGroup
   Azure Resource Group name.
   
 .PARAMETER ClusterName
-  Nome do cluster AKS.
+  AKS cluster name.
   
 .PARAMETER Environment
-  Ambiente: dev, staging, prod
+  Environment: dev, staging, prod
   Default: dev
   
 .PARAMETER SkipNginx
-  Pula instalação do NGINX Ingress (se já estiver instalado).
-  
-.PARAMETER SkipGrafana
-  Pula instalação do Grafana Agent.
+  Skip NGINX Ingress installation (if already installed).
   
 .PARAMETER SkipDeploy
-  Pula deploy das aplicações.
+  Skip application deployment.
 
 .PARAMETER Force
-    Reinstala componentes (NGINX/ESO/Grafana) mesmo se já instalados.
+        Reinstalls components (NGINX/ESO) even if already installed.
   
 .EXAMPLE
   .\setup-complete-infrastructure.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks"
   
 .EXAMPLE
-  .\setup-complete-infrastructure.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks" -SkipNginx -SkipGrafana
+    .\setup-complete-infrastructure.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks" -SkipNginx
 #>
 
 [CmdletBinding()]
@@ -60,9 +56,6 @@ param(
     
     [Parameter(Mandatory = $false)]
     [switch]$SkipNginx,
-    
-    [Parameter(Mandatory = $false)]
-    [switch]$SkipGrafana,
     
     [Parameter(Mandatory = $false)]
     [switch]$SkipDeploy,
@@ -90,7 +83,7 @@ Write-Host ""
 # 1. Connect to AKS
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 1/9: Connecting to AKS ===" -ForegroundColor Yellow
+Write-Host "=== Step 1/8: Connecting to AKS ===" -ForegroundColor Yellow
 Write-Host ""
 
 az aks get-credentials --resource-group $ResourceGroup --name $ClusterName --overwrite-existing
@@ -110,7 +103,7 @@ $nginxIP = $null
 
 if (-not $SkipNginx) {
     Write-Host ""
-    Write-Host "=== Step 2/9: Installing NGINX Ingress Controller ===" -ForegroundColor Yellow
+    Write-Host "=== Step 2/8: Installing NGINX Ingress Controller ===" -ForegroundColor Yellow
     Write-Host ""
 
     $installArgs = @{
@@ -127,7 +120,7 @@ if (-not $SkipNginx) {
     }
 } else {
     Write-Host ""
-    Write-Host "=== Step 2/9: Skipping NGINX Ingress (already installed) ===" -ForegroundColor Yellow
+    Write-Host "=== Step 2/8: Skipping NGINX Ingress (already installed) ===" -ForegroundColor Yellow
     Write-Host ""
 }
 
@@ -135,7 +128,7 @@ if (-not $SkipNginx) {
 # 3. Get NGINX LoadBalancer IP
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 3/9: Getting NGINX LoadBalancer IP ===" -ForegroundColor Yellow
+Write-Host "=== Step 3/8: Getting NGINX LoadBalancer IP ===" -ForegroundColor Yellow
 Write-Host ""
 
 $maxAttempts = 30
@@ -165,7 +158,7 @@ Write-Host "✅ NGINX LoadBalancer IP: $nginxIP" -ForegroundColor Green
 # 4. Update Terraform Variables
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 4/9: Updating Terraform Variables ===" -ForegroundColor Yellow
+Write-Host "=== Step 4/8: Updating Terraform Variables ===" -ForegroundColor Yellow
 Write-Host ""
 
 $tfvarsFile = Join-Path $terraformDir "terraform.tfvars"
@@ -195,7 +188,7 @@ Write-Host "✅ Updated terraform.tfvars with nginx_ingress_ip = `"$nginxIP`"" -
 # 5. Re-run Terraform to Update APIM
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 5/9: Re-running Terraform to Update APIM Backends ===" -ForegroundColor Yellow
+Write-Host "=== Step 5/8: Re-running Terraform to Update APIM Backends ===" -ForegroundColor Yellow
 Write-Host ""
 
 Push-Location $terraformDir
@@ -231,7 +224,7 @@ Pop-Location
 # 6. Install External Secrets Operator
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 6/9: Installing External Secrets Operator ===" -ForegroundColor Yellow
+Write-Host "=== Step 6/8: Installing External Secrets Operator ===" -ForegroundColor Yellow
 Write-Host ""
 
 $installArgs = @{
@@ -251,7 +244,7 @@ if ($LASTEXITCODE -ne 0) {
 # 7. Setup Workload Identity for ESO
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 7/9: Configuring Workload Identity ===" -ForegroundColor Yellow
+Write-Host "=== Step 7/8: Configuring Workload Identity ===" -ForegroundColor Yellow
 Write-Host ""
 
 $keyVaultName = if ($KeyVaultName) { $KeyVaultName } else { "tccloudgamesdevcr8nkv" }
@@ -269,36 +262,11 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "✅ Workload Identity configured" -ForegroundColor Green
 
 # =============================================================================
-# 8. Install Grafana Agent (Optional)
-# =============================================================================
-if (-not $SkipGrafana) {
-    Write-Host ""
-    Write-Host "=== Step 8/9: Installing Grafana Agent ===" -ForegroundColor Yellow
-    Write-Host ""
-
-    $installArgs = @{
-        ResourceGroup = $ResourceGroup
-        ClusterName = $ClusterName
-    }
-    if ($Force) { $installArgs['Force'] = $true }
-
-    & "$scriptDir\install-grafana-agent.ps1" @installArgs
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "⚠️  Failed to install Grafana Agent (non-critical)" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host ""
-    Write-Host "=== Step 8/9: Skipping Grafana Agent ===" -ForegroundColor Yellow
-    Write-Host ""
-}
-
-# =============================================================================
-# 9. Deploy Applications
+# 8. Deploy Applications
 # =============================================================================
 if (-not $SkipDeploy) {
     Write-Host ""
-    Write-Host "=== Step 9/9: Deploying Applications ===" -ForegroundColor Yellow
+    Write-Host "=== Step 8/8: Deploying Applications ===" -ForegroundColor Yellow
     Write-Host ""
     
     $overlayPath = Join-Path $k8sDir "overlays/$Environment"
@@ -326,7 +294,7 @@ if (-not $SkipDeploy) {
     kubectl get pods -n cloudgames
 } else {
     Write-Host ""
-    Write-Host "=== Step 9/9: Skipping Application Deployment ===" -ForegroundColor Yellow
+    Write-Host "=== Step 8/8: Skipping Application Deployment ===" -ForegroundColor Yellow
     Write-Host ""
 }
 

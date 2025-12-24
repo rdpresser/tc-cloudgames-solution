@@ -25,8 +25,8 @@
   # Installs ArgoCD on AKS
 
 .EXAMPLE
-  .\aks-manager.ps1 install-grafana-agent
-  # Installs Grafana Agent on AKS
+    .\aks-manager.ps1 configure-image-updater
+    # Configures ArgoCD Image Updater
 #>
 
 [CmdletBinding()]
@@ -91,12 +91,10 @@ function Show-Help {
     Write-Host "Installs NGINX Ingress Controller on AKS" -ForegroundColor $Colors.Muted
     Write-Host "    install-eso         " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Installs External Secrets Operator on AKS" -ForegroundColor $Colors.Muted
-    Write-Host "    install-grafana     " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Installs Grafana Agent on AKS" -ForegroundColor $Colors.Muted
     Write-Host "    install-argocd      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Installs ArgoCD on AKS cluster" -ForegroundColor $Colors.Muted
-    Write-Host "    install-argocd-image-updater" -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Installs ArgoCD Image Updater for auto image detection" -ForegroundColor $Colors.Muted
+    Write-Host "    configure-image-updater" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Configures ArgoCD Image Updater (secret or Workload Identity)" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "  🔐 SECRETS & CONFIGURATION:" -ForegroundColor $Colors.Info
@@ -120,7 +118,7 @@ function Show-Help {
     Write-Host "    get-argocd-url      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Get ArgoCD LoadBalancer URL" -ForegroundColor $Colors.Muted
     Write-Host "    logs [component]    " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "View logs (argocd/grafana-agent/eso/nginx)" -ForegroundColor $Colors.Muted
+    Write-Host "View logs (argocd/eso/nginx)" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "  ℹ️  INFORMATION:" -ForegroundColor $Colors.Info
@@ -134,7 +132,6 @@ function Show-Help {
     Write-Host "  .\aks-manager.ps1 connect" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-nginx" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-eso" -ForegroundColor $Colors.Muted
-    Write-Host "  .\aks-manager.ps1 install-grafana" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 get-argocd-url" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 bootstrap prod" -ForegroundColor $Colors.Muted
@@ -229,15 +226,6 @@ function Show-Status {
         Write-Host "   ⚪ ArgoCD: Not installed" -ForegroundColor $Colors.Muted
     }
 
-    # Grafana Agent
-    $grafanaPods = kubectl get pods -n grafana-agent --no-headers 2>$null | Where-Object { $_ -match "Running" }
-    if ($grafanaPods) {
-        Write-Host "   ✅ Grafana Agent: Running" -ForegroundColor $Colors.Success
-    }
-    else {
-        Write-Host "   ⚪ Grafana Agent: Not installed" -ForegroundColor $Colors.Muted
-    }
-
     # External Secrets
     $esoPods = kubectl get pods -n external-secrets --no-headers 2>$null | Where-Object { $_ -match "Running" }
     if ($esoPods) {
@@ -275,17 +263,7 @@ function Show-Menu {
             }
         }
         
-        # Job 2: Check Grafana Agent
-        $jobs += Start-Job -ScriptBlock {
-            try {
-                $pods = kubectl get pods -n grafana-agent --no-headers 2>$null | Where-Object { $_ -match "Running" }
-                return @{ grafana = [bool]$pods }
-            } catch {
-                return @{ grafana = $false }
-            }
-        }
-        
-        # Job 3: Check ESO
+        # Job 2: Check ESO
         $jobs += Start-Job -ScriptBlock {
             try {
                 $pods = kubectl get pods -n external-secrets --no-headers 2>$null | Where-Object { $_ -match "Running" }
@@ -295,7 +273,7 @@ function Show-Menu {
             }
         }
         
-        # Job 4: Check NGINX
+        # Job 3: Check NGINX
         $jobs += Start-Job -ScriptBlock {
             try {
                 $pods = kubectl get pods -n ingress-nginx --no-headers 2>$null | Where-Object { $_ -match "Running" }
@@ -305,7 +283,7 @@ function Show-Menu {
             }
         }
         
-        # Job 5: Check ArgoCD PROD Application
+        # Job 4: Check ArgoCD PROD Application
         $jobs += Start-Job -ScriptBlock {
             try {
                 $app = kubectl get application cloudgames-prod -n argocd --no-headers 2>$null
@@ -315,7 +293,7 @@ function Show-Menu {
             }
         }
         
-        # Job 6: Check ACR tags for all repos
+        # Job 5: Check ACR tags for all repos
         $jobs += Start-Job -ArgumentList $Config.ACRName -ScriptBlock {
             param($acrName)
             $acrTags = @{}
@@ -339,7 +317,7 @@ function Show-Menu {
             return @{ acrTags = $acrTags }
         }
         
-        # Job 7: Check NGINX LoadBalancer IP
+        # Job 6: Check NGINX LoadBalancer IP
         $jobs += Start-Job -ScriptBlock {
             try {
                 $ip = kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
@@ -349,7 +327,7 @@ function Show-Menu {
             }
         }
         
-        # Job 8: Check ArgoCD Image Updater
+        # Job 7: Check ArgoCD Image Updater
         $jobs += Start-Job -ScriptBlock {
             try {
                 $pods = kubectl get pods -n argocd-image-updater --no-headers 2>$null | Where-Object { $_ -match "Running" }
@@ -375,7 +353,6 @@ function Show-Menu {
         # Collect results
         $result = @{
             argocd       = $false
-            grafana      = $false
             eso          = $false
             nginx        = $false
             apps         = $false
@@ -420,14 +397,13 @@ function Show-Menu {
             Write-Host ("       • LoadBalancer IP: {0}" -f $statuses.nginxIP) -ForegroundColor $Colors.Muted
         }
         Write-Host ("  [4] 🔐 Install External Secrets Operator {0}" -f (& $installed $statuses.eso)) -ForegroundColor $(if ($statuses.eso) { $Colors.Success } else { $Colors.Info })
-        Write-Host ("  [5] 📊 Install Grafana Agent {0}" -f (& $installed $statuses.grafana)) -ForegroundColor $(if ($statuses.grafana) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [5] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [6] 🔄 Configure Image Updater {0}" -f (& $installed $statuses.imageUpdater)) -ForegroundColor $(if ($statuses.imageUpdater) { $Colors.Success } else { $Colors.Info })
         Write-Host ""
         
         # ===== ARGOCD & DEPLOYMENT =====
         Write-Host "  📦 ARGOCD & DEPLOYMENT:" -ForegroundColor $Colors.Title
         Write-Host ""
-        Write-Host ("  [6] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
-        Write-Host ("  [6a] 📦 Install ArgoCD Image Updater {0}" -f (& $installed $statuses.imageUpdater)) -ForegroundColor $(if ($statuses.imageUpdater) { $Colors.Success } else { $Colors.Info })
         Write-Host ("  [7] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
         Write-Host ""
         
@@ -465,7 +441,7 @@ function Show-Menu {
         Write-Host ""
         Write-Host " [11] 📝 View logs" -ForegroundColor $Colors.Info
         Write-Host " [12] 🔧 Post-Terraform Complete Setup" -ForegroundColor $Colors.Info
-        Write-Host "       (All-in-one: connect, nginx, ESO, WI, grafana, deploy)" -ForegroundColor $Colors.Muted
+        Write-Host "       (All-in-one: connect, nginx, ESO, WI, deploy)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== EXIT =====
@@ -479,9 +455,8 @@ function Show-Menu {
             "2" { Invoke-Command "status" }
             "3" { Invoke-Command "install-nginx" }
             "4" { Invoke-Command "install-eso" }
-            "5" { Invoke-Command "install-grafana" }
-            "6" { Invoke-Command "install-argocd" }
-            "6a" { Invoke-Command "install-argocd-image-updater" }
+            "5" { Invoke-Command "install-argocd" }
+            "6" { Invoke-Command "configure-image-updater" }
             "7" { Invoke-Command "get-argocd-url" }
             "8" { Invoke-Command "setup-eso-wi" }
             "9" { Invoke-Command "bootstrap" }
@@ -490,7 +465,7 @@ function Show-Menu {
                 Invoke-Command "build-push" $api
             }
             "11" { 
-                $comp = Read-Host "Component (argocd/grafana-agent/eso/nginx)"
+                $comp = Read-Host "Component (argocd/eso/nginx)"
                 Invoke-Command "logs" $comp
             }
             "12" { Invoke-Command "post-terraform-setup" }
@@ -554,19 +529,6 @@ function Invoke-Command($cmd, $arg1 = "") {
             
             & "$scriptPath\install-external-secrets.ps1" @installArgs
         }
-        "install-grafana" {
-            Write-Host "`n📦 Installing Grafana Agent..." -ForegroundColor $Colors.Info
-            $forceResp = Read-Host "Force reinstall (uninstall first)? (y/N)"
-            $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
-            
-            $installArgs = @{
-                ResourceGroup = $Config.ResourceGroup
-                ClusterName = $Config.ClusterName
-            }
-            if ($useForce) { $installArgs['Force'] = $true }
-            
-            & "$scriptPath\install-grafana-agent.ps1" @installArgs
-        }
         "install-argocd-image-updater" {
             Write-Host "`n📦 Installing ArgoCD Image Updater..." -ForegroundColor $Colors.Info
             & "$scriptPath\install-argocd-image-updater.ps1" `
@@ -575,12 +537,46 @@ function Invoke-Command($cmd, $arg1 = "") {
                 -KeyVaultName $Config.KeyVaultName `
                 -ACRLoginServer "$($Config.ACRName).azurecr.io"
         }
-        # Removed legacy individual installers (Grafana Agent, ESO, NGINX).
+        # Removed legacy individual installers (ESO, NGINX).
         # Use "post-terraform-setup" to perform the complete setup.
         # Removed legacy ClusterSecretStore setup. Use setup-eso-wi.
         "setup-eso-wi" {
             Write-Host "`n🔐 Setting up ESO with Workload Identity..." -ForegroundColor $Colors.Info
             & "$scriptPath\setup-eso-workload-identity.ps1" -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName -KeyVaultName $Config.KeyVaultName
+        }
+        { $_ -in "configure-image-updater", "setup-image-updater" } {
+            Write-Host "`n🔄 Configuring ArgoCD Image Updater..." -ForegroundColor $Colors.Info
+            Write-Host ""
+            Write-Host "Choose authentication method:" -ForegroundColor $Colors.Warning
+            Write-Host "  [1] Secret-based (simpler, dev/staging)" -ForegroundColor $Colors.Info
+            Write-Host "  [2] Workload Identity (more secure, production)" -ForegroundColor $Colors.Info
+            Write-Host ""
+            $authChoice = Read-Host "Authentication method (1/2) [2]"
+
+            $useWI = $authChoice -eq "2"
+
+            $scriptArgs = @{
+                ResourceGroup = $Config.ResourceGroup
+                ClusterName = $Config.ClusterName
+                AcrName = $Config.ACRName
+            }
+
+            if ($useWI) {
+                $scriptArgs['UseWorkloadIdentity'] = $true
+                Write-Host "✅ Using Workload Identity" -ForegroundColor $Colors.Success
+            }
+            else {
+                $scriptArgs['UseWorkloadIdentity'] = $false
+                Write-Host "✅ Using Secret-based authentication" -ForegroundColor $Colors.Success
+            }
+
+            $imageUpdaterScript = Join-Path $scriptPath "configure-image-updater.ps1"
+            if (Test-Path $imageUpdaterScript) {
+                & $imageUpdaterScript @scriptArgs
+            }
+            else {
+                Write-Host "❌ Script not found: configure-image-updater.ps1" -ForegroundColor $Colors.Error
+            }
         }
         "get-argocd-url" {
             Write-Host "`n🔗 ArgoCD Access Information:" -ForegroundColor $Colors.Info
@@ -608,7 +604,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "  5. Re-run Terraform to update APIM backends" -ForegroundColor $Colors.Muted
             Write-Host "  6. Install External Secrets Operator" -ForegroundColor $Colors.Muted
             Write-Host "  7. Configure Workload Identity" -ForegroundColor $Colors.Muted
-            Write-Host "  8. Install Grafana Agent (optional)" -ForegroundColor $Colors.Muted
+            Write-Host "  8. Configure ArgoCD Image Updater" -ForegroundColor $Colors.Muted
             Write-Host "  9. Deploy applications via Kustomize" -ForegroundColor $Colors.Muted
             Write-Host ""
             $response = Read-Host "Continue with complete setup? (Y/n)"
@@ -623,7 +619,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "     [N] Upgrade in-place (no downtime, recommended)" -ForegroundColor $Colors.Success
             Write-Host "     [Y] Uninstall + Reinstall (complete cleanup, may cause downtime)" -ForegroundColor $Colors.Warning
             Write-Host ""
-            $forceResp = Read-Host "Force reinstall of components (NGINX/ESO/Grafana)? (y/N)"
+            $forceResp = Read-Host "Force reinstall of components (NGINX/ESO)? (y/N)"
             $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
             
             Write-Host ""
@@ -720,7 +716,6 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "`n📋 Logs for $component..." -ForegroundColor $Colors.Info
             switch ($component) {
                 "argocd" { kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server --tail=50 }
-                "grafana-agent" { kubectl logs -n grafana-agent -l app.kubernetes.io/name=grafana-agent --tail=50 }
                 "eso" { kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets --tail=50 }
                 "nginx" { kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx --tail=50 }
                 default { Write-Host "Unknown component: $component" -ForegroundColor $Colors.Error }

@@ -36,13 +36,7 @@ cd infrastructure/kubernetes/scripts/prod
 5. ✅ Re-runs Terraform to configure APIM backends
 6. ✅ Installs External Secrets Operator
 7. ✅ Configures Workload Identity (passwordless auth)
-8. ✅ Installs Grafana Agent (optional)
-9. ✅ Deploys applications via Kustomize
-
-**Estimated time:** 10-15 minutes
-
-### Option 2: Command Line
-
+8. ✅ Deploys applications via Kustomize
 ```powershell
 # Complete setup
 .\aks-manager.ps1 post-terraform-setup
@@ -50,7 +44,8 @@ cd infrastructure/kubernetes/scripts/prod
 # Individual components
 .\aks-manager.ps1 install-nginx
 .\aks-manager.ps1 install-eso
-.\aks-manager.ps1 install-grafana
+.\aks-manager.ps1 install-argocd
+.\aks-manager.ps1 configure-image-updater
 ```
 
 ---
@@ -64,7 +59,6 @@ aks-manager.ps1 (Main Entry Point)
     │
     ├─► install-nginx-ingress.ps1
     ├─► install-external-secrets.ps1
-    ├─► install-grafana-agent.ps1
     ├─► install-argocd-aks.ps1
     ├─► setup-eso-workload-identity.ps1
     │
@@ -149,10 +143,10 @@ COMPONENT INSTALLATION:
 [3] 📦 Install NGINX Ingress (installed) ✓
     • LoadBalancer IP: 20.x.x.x
 [4] 🔐 Install External Secrets Operator (installed) ✓
-[5] 📊 Install Grafana Agent (not installed)
+[5] 📦 Install ArgoCD (installed) ✓
+[6] 🔄 Configure Image Updater (installed) ✓
 
 ARGOCD & DEPLOYMENT:
-[6] 📦 Install ArgoCD (installed) ✓
 [7] 🔗 Get ArgoCD URL & credentials
 
 CONFIGURATION:
@@ -173,8 +167,8 @@ BUILD & DEPLOY:
 # Individual components
 .\aks-manager.ps1 install-nginx
 .\aks-manager.ps1 install-eso
-.\aks-manager.ps1 install-grafana
 .\aks-manager.ps1 install-argocd
+.\aks-manager.ps1 configure-image-updater
 
 # Configuration
 .\aks-manager.ps1 setup-eso-wi
@@ -241,29 +235,6 @@ Kubernetes Secrets
 Application Pods
 ```
 
-### Grafana Agent
-
-**Purpose:** Metrics, logs, and traces collection
-
-```powershell
-# Install
-.\aks-manager.ps1 install-grafana
-
-# Configure Grafana Cloud credentials
-# See: GRAFANA_CLOUD_SETUP.md (redirects to Terraform module docs)
-
-# Verify
-kubectl get pods -n grafana-agent
-```
-
-**What it monitors:**
-- 📊 API response times and error rates
-- 💾 Resource usage (CPU, memory)
-- 🔗 Database connection pool
-- 📈 Custom application metrics
-
-**📚 Grafana Cloud setup: [GRAFANA_CLOUD_SETUP.md](GRAFANA_CLOUD_SETUP.md)**
-
 ### ArgoCD (GitOps)
 
 **Purpose:** Declarative deployments via Git
@@ -296,7 +267,6 @@ kubectl get pods -n grafana-agent
 # Individual checks
 kubectl get pods -n ingress-nginx
 kubectl get pods -n external-secrets
-kubectl get pods -n grafana-agent
 kubectl get pods -n argocd
 kubectl get pods -n cloudgames
 ```
@@ -411,13 +381,11 @@ kubectl describe pod -n cloudgames <pod-name>
 # Via aks-manager
 .\aks-manager.ps1 logs nginx
 .\aks-manager.ps1 logs eso
-.\aks-manager.ps1 logs grafana-agent
 .\aks-manager.ps1 logs argocd
 
 # Or manually
 kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx --tail=50
 kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets --tail=50
-kubectl logs -n grafana-agent -l app.kubernetes.io/name=grafana-agent --tail=50
 kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server --tail=50
 ```
 
@@ -437,7 +405,6 @@ kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server --tail=50
 .\aks-manager.ps1 install-nginx
 .\aks-manager.ps1 install-eso
 .\aks-manager.ps1 setup-eso-wi
-.\aks-manager.ps1 install-grafana
 .\aks-manager.ps1 bootstrap
 ```
 
@@ -466,7 +433,6 @@ kubectl rollout restart deployment -n cloudgames
 # Direct script call
 .\install-nginx-ingress.ps1 -ResourceGroup "rg" -ClusterName "aks" -Force
 .\install-external-secrets.ps1 -ResourceGroup "rg" -ClusterName "aks" -Force
-.\install-grafana-agent.ps1 -ResourceGroup "rg" -ClusterName "aks" -Force
 ```
 
 ### Update NGINX IP in Terraform
@@ -507,7 +473,6 @@ kubectl get applications -n argocd
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed technical architecture, design principles, and script relationships |
-| [GRAFANA_CLOUD_SETUP.md](GRAFANA_CLOUD_SETUP.md) | Redirect to Grafana Cloud configuration (see Terraform module) |
 | [../../README.md](../../README.md) | Kubernetes overview (dev + prod) |
 
 ---
@@ -519,7 +484,6 @@ kubectl get applications -n argocd
 | **NGINX Ingress** | `ingress-nginx` | LoadBalancer + routing | ✅ Yes |
 | **External Secrets** | `external-secrets` | Key Vault sync | ✅ Yes |
 | **Workload Identity** | System-wide | Passwordless auth | ✅ Yes |
-| **Grafana Agent** | `grafana-agent` | Metrics/logs/traces | ⚠️ Optional |
 | **ArgoCD** | `argocd` | GitOps deployment | ⚠️ Optional |
 
 ---
@@ -550,11 +514,6 @@ aks install-nginx     # Install NGINX
 - ❌ Without NGINX: 3 LoadBalancers × $40 = $120/month
 - ✅ With NGINX: 1 LoadBalancer = $40/month
 - 💰 **Savings: 67%**
-
-**Grafana Agent vs Azure Monitor**
-- Azure Monitor: ~$200-300/month for 3 APIs
-- Grafana Cloud: Free tier (10k series) or ~$50/month
-- 💰 **Savings: 75-85%**
 
 ### Health Check Endpoints
 
@@ -599,7 +558,6 @@ Azure Service Bus ┤
 | `setup-complete-infrastructure.ps1` | Complete post-Terraform setup | ✅ Yes |
 | `install-nginx-ingress.ps1` | NGINX Ingress installation | ✅ Yes |
 | `install-external-secrets.ps1` | ESO installation | ✅ Yes |
-| `install-grafana-agent.ps1` | Grafana Agent installation | ✅ Yes |
 | `install-argocd-aks.ps1` | ArgoCD installation | ✅ Yes |
 | `setup-eso-workload-identity.ps1` | ESO + Workload Identity | ✅ Yes |
 | `build-push-acr.ps1` | Build/push Docker images | ✅ Yes |

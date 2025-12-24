@@ -32,5 +32,6 @@ apis = {
 # NGINX Ingress IP Configuration
 # Update this value after running: .\aks-manager.ps1 install-nginx
 # Then: terraform apply to update APIM backend
+
 nginx_ingress_ip = "130.213.254.162"
 
