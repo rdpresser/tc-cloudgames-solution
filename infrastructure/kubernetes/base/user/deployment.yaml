@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+  labels:
+    app.kubernetes.io/name: user-api
+    app.kubernetes.io/component: user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: user-api
+        app.kubernetes.io/component: user
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 65534  # Allows reading projected tokens
+      serviceAccountName: user-api-sa
+      containers:
+        - name: user-api
+          image: localhost:5000/user-api:latest
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          envFrom:
+            - secretRef:
+                name: user-api-secrets
+          env:
+            # Static environment variables
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: ASPNETCORE_APPL_PATH
+              value: "/user"
+            # OpenTelemetry (OTLP) Configuration
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://grafana-agent.grafana-agent.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
+            - name: OTEL_SERVICE_NAME
+              value: "user-api"
+            # Workload Identity variables
+            - name: AZURE_TENANT_ID
+              value: "084169c0-a779-43c3-970c-487a71a93f88"
+            - name: AZURE_CLIENT_ID
+              value: "cfa0741f-587a-471a-8d85-41bdc75a233d"
+            - name: AZURE_FEDERATED_TOKEN_FILE
+              value: "/var/run/secrets/workload-identity-token/token"
+          volumeMounts:
+            - name: workload-identity-token
+              mountPath: /var/run/secrets/workload-identity-token
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+      volumes:
+        - name: workload-identity-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: api://AzureADTokenExchange
+                  expirationSeconds: 3600
+                  path: token

@@ -60,7 +60,7 @@ resource "azurerm_linux_function_app" "main" {
     application_insights_key               = azurerm_application_insights.function_insights.instrumentation_key
 
     application_stack {
-      dotnet_version = "9.0"
+      dotnet_version = "8.0"
     }
   }
 
@@ -77,9 +77,13 @@ resource "azurerm_linux_function_app" "main" {
     "SENDGRID_EMAIL_NEW_USER_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-new-user-tid)"
     "SENDGRID_EMAIL_PURCHASE_TID" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=sendgrid-email-purchase-tid)"
     
-    # Service Bus settings
+    # Service Bus settings - usando Key Vault reference como fallback
     "SERVICEBUS_CONNECTION" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-connection-string)"
     "SERVICEBUS_NAMESPACE" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-namespace)"
+    
+    # CRÍTICO: Service Bus Trigger com Managed Identity requer esta configuração
+    # Permite que triggers usem Managed Identity automaticamente
+    "AzureWebJobsServiceBus__fullyQualifiedNamespace" = "@Microsoft.KeyVault(VaultName=${split(".", split("/", var.key_vault_uri)[2])[0]};SecretName=servicebus-namespace)"
   }
 
   identity {
@@ -93,6 +97,11 @@ resource "azurerm_linux_function_app" "main" {
       # Ignore changes to app_settings that Azure might modify automatically
       app_settings["WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"],
       app_settings["WEBSITE_CONTENTSHARE"],
+      # Azure may stamp or regenerate these; avoid perpetual drift/noise
+      app_settings["APPINSIGHTS_INSTRUMENTATIONKEY"],
+      app_settings["APPLICATIONINSIGHTS_CONNECTION_STRING"],
+      app_settings["AzureWebJobsStorage"],
+      app_settings["FUNCTIONS_EXTENSION_VERSION"],
       
       # Ignore hidden tags that Azure adds automatically
       tags["hidden-link: /app-insights-resource-id"],
@@ -110,6 +119,16 @@ resource "azurerm_linux_function_app" "main" {
       site_config[0].minimum_tls_version,
       site_config[0].remote_debugging_enabled,
       site_config[0].ftps_state
+      ,
+      # Azure may toggle https_only or stamp ancillary defaults without IaC changes
+      https_only
+      ,
+      # Azure stamps deployment packages (SAS URL) into WEBSITE_RUN_FROM_PACKAGE
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      # Azure may add/remove this placeholder flag automatically
+      app_settings["WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED"],
+      # Runtime isolation flag may toggle depending on platform defaults
+      site_config[0].application_stack[0].use_dotnet_isolated_runtime
     ]
   }
 }

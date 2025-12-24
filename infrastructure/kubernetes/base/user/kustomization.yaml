@@ -1,0 +1,11 @@
+resources:
+  - service-account.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - external-secret.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/component: user

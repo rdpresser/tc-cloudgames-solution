@@ -1,0 +1,27 @@
+# =============================================================================
+# ArgoCD AppProject - CloudGames
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: cloudgames
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: cloudgames
+spec:
+  description: Shared project for CloudGames applications (dev/prod)
+  sourceRepos:
+    - "https://github.com/rdpresser/tc-cloudgames-solution.git"
+  destinations:
+    - namespace: cloudgames
+      server: "https://kubernetes.default.svc"
+    - namespace: cloudgames-dev
+      server: "https://kubernetes.default.svc"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  orphanedResources:
+    warn: false

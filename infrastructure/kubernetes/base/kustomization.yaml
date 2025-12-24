@@ -1,0 +1,12 @@
+resources:
+  - common
+  - user
+  - games
+  - payments
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: cloudgames
+
+# Allow cross-namespace app definitions via overlays
+namespace: default

@@ -1,0 +1,60 @@
+# =============================================================================
+# ArgoCD Application - CloudGames Production
+# =============================================================================
+# This Application deploys the CloudGames microservices to the production
+# namespace using the prod overlay configuration.
+#
+# Prerequisites:
+# 1. AppProject 'cloudgames' must exist
+# 2. External Secrets Operator with Workload Identity configured
+# 3. NGINX Ingress Controller installed
+# 4. Images pushed to Azure Container Registry
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudgames-prod
+  namespace: argocd
+  labels:
+    environment: prod
+    app.kubernetes.io/part-of: cloudgames
+  annotations:
+    # ArgoCD Image Updater Configuration
+    # Monitora 3 images ACR usando digest tracking para tag 'latest'
+    argocd-image-updater.argoproj.io/image-list: "games=tccloudgamesdevcr8nacr.azurecr.io/games-api:latest,users=tccloudgamesdevcr8nacr.azurecr.io/users-api:latest,payments=tccloudgamesdevcr8nacr.azurecr.io/payms-api:latest"
+    argocd-image-updater.argoproj.io/games.update-strategy: "digest"
+    argocd-image-updater.argoproj.io/games.force-update: "true"
+    argocd-image-updater.argoproj.io/users.update-strategy: "digest"
+    argocd-image-updater.argoproj.io/users.force-update: "true"
+    argocd-image-updater.argoproj.io/payments.update-strategy: "digest"
+    argocd-image-updater.argoproj.io/payments.force-update: "true"
+    argocd-image-updater.argoproj.io/write-back-method: "argocd"
+spec:
+  project: cloudgames
+  source:
+    repoURL: "https://github.com/rdpresser/tc-cloudgames-solution.git"
+    targetRevision: feature/phase_04
+    path: "infrastructure/kubernetes/overlays/prod"
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: cloudgames
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+  # Ignore differences that are managed by other controllers
+  ignoreDifferences:
+    # Ignore image tags - allow CI/CD to update them
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/spec/containers/0/image
+    # Ignore replicas - managed by HPA (Horizontal Pod Autoscaler)
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

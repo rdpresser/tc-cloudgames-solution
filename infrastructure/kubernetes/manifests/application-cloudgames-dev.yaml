@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudgames-dev
+  namespace: argocd
+  labels:
+    environment: dev
+  annotations:
+    # ArgoCD Image Updater Configuration
+    # Monitora 3 images ACR e atualiza automaticamente quando detectar novo digest
+    argocd-image-updater.argoproj.io/image-list: "games=tccloudgamesdevcr8nacr.azurecr.io/games-api:latest,users=tccloudgamesdevcr8nacr.azurecr.io/users-api:latest,payments=tccloudgamesdevcr8nacr.azurecr.io/payms-api:latest"
+    argocd-image-updater.argoproj.io/games.update-strategy: "newest-build"
+    argocd-image-updater.argoproj.io/users.update-strategy: "newest-build"
+    argocd-image-updater.argoproj.io/payments.update-strategy: "newest-build"
+    argocd-image-updater.argoproj.io/write-back-method: "argocd"
+    argocd-image-updater.argoproj.io/write-back-target: "kustomization"
+spec:
+  project: cloudgames
+  source:
+    repoURL: "https://github.com/rdpresser/tc-cloudgames-solution.git"
+    targetRevision: feature/phase_04
+    path: "infrastructure/kubernetes/overlays/dev"
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: cloudgames-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  # Ignore differences in image tags - allow CI/CD to update them
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/spec/containers/0/image

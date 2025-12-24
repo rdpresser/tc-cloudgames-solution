@@ -1,0 +1,4 @@
+# ClusterSecretStore is defined in each overlay (dev, prod)
+# because it requires environment-specific configuration
+# and Kustomize patches have issues with CRD resources.
+resources: []

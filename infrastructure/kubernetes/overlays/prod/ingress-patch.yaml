@@ -1,0 +1,74 @@
+# =============================================================================
+# Ingress Patches for Production - NGINX Ingress Controller
+# =============================================================================
+# - Uses NGINX Ingress Controller (deployed via Terraform Helm)
+# - Configures path rewriting to strip prefix before forwarding
+# - NO HOST REQUIREMENT - works with IP address directly
+# - Ready for TLS configuration (add tls block when certificates are ready)
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: user-api
+  annotations:
+    # NGINX Ingress specific annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:  # No host - accepts any host including IP
+        paths:
+          - path: /user(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-api
+                port:
+                  number: 8080
+  # Uncomment when TLS certificates are ready
+  # tls:
+  #   - hosts:
+  #       - api.cloudgames.com
+  #     secretName: cloudgames-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: games-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:  # No host - accepts any host including IP
+        paths:
+          - path: /games(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: games-api
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: payments-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:  # No host - accepts any host including IP
+        paths:
+          - path: /payments(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payments-api
+                port:
+                  number: 8080

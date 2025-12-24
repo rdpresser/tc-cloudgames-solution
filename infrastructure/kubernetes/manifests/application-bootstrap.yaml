@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bootstrap
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rdpresser/tc-cloudgames-solution.git
+    targetRevision: feature/phase_04
+    path: infrastructure/kubernetes/manifests
+    directory:
+      # Deploy AppProjects, Applications, and Image Updater config
+      # Excludes deprecated individual service applications
+      exclude: 'application-{user,games,payments}.yaml,appproject-{user,games,payments}.yaml,application-cloudgames-project.yaml,{auth-configmap,image-updater-*.yaml}'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

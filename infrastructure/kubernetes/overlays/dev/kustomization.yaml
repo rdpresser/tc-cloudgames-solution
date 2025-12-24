@@ -1,0 +1,22 @@
+resources:
+  - ../../base
+  - cluster-secret-store-patch.yaml
+  - traefik-middlewares.yaml
+
+labels:
+  - pairs:
+      environment: dev
+
+images:
+  - name: localhost:5000/user-api
+    newTag: dev
+  - name: localhost:5000/games-api
+    newTag: dev
+  - name: localhost:5000/payments-api
+    newTag: dev
+
+namespace: cloudgames-dev
+
+patches:
+  - path: deployment-env-patch.yaml
+  - path: ingress-patch.yaml

@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=
+# Patch to set environment variables for local k3d cluster
+# - ASPNETCORE_ENVIRONMENT=Development: allows the application to use Connection String authentication instead of MSI
+# - MESSAGE_BROKER_TYPE=AzureServiceBus: tells the application to use Azure Service Bus instead of RabbitMQ
+# Also increases probe timeouts for slower network to Azure resources
+# Note: This is a Strategic Merge Patch for Kustomize, not a complete Deployment resource
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+spec:
+  template:
+    spec:
+      containers:
+        - name: user-api
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 20
+            timeoutSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: games-api
+spec:
+  template:
+    spec:
+      containers:
+        - name: games-api
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 20
+            timeoutSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+spec:
+  template:
+    spec:
+      containers:
+        - name: payments-api
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 20
+            timeoutSeconds: 5
+

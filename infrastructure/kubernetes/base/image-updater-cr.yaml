@@ -1,0 +1,32 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: cloudgames-images
+  namespace: argocd
+spec:
+  namespace: argocd
+  commonUpdateSettings:
+    # Use 'newest-build' instead of deprecated 'latest'
+    # 'newest-build' compares digest timestamps to find truly latest image
+    updateStrategy: newest-build
+  writeBackConfig:
+    # Write back to ArgoCD Application specs (not Git)
+    # Image updater will update the Deployment/Pod spec with latest digest
+    method: argocd
+  applicationRefs:
+  - namePattern: cloudgames-*
+    # Target all applications matching cloudgames-*
+    images:
+    - alias: games-api
+      imageName: tccloudgamesdevcr8nacr.azurecr.io/games-api:latest
+      commonUpdateSettings:
+        updateStrategy: newest-build
+      # Don't specify manifestTargets - let ArgoCD auto-detect via image name
+    - alias: users-api
+      imageName: tccloudgamesdevcr8nacr.azurecr.io/users-api:latest
+      commonUpdateSettings:
+        updateStrategy: newest-build
+    - alias: payments-api
+      imageName: tccloudgamesdevcr8nacr.azurecr.io/payms-api:latest
+      commonUpdateSettings:
+        updateStrategy: newest-build

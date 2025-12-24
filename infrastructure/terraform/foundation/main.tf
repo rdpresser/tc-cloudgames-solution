@@ -1,8 +1,6 @@
-provider "azurerm" {
-  features {}
-}
-
 data "azurerm_client_config" "current" {}
+
+# ArgoCD installed via: infrastructure/kubernetes/scripts/azure/aks-manager.ps1 install-argocd
 
 # =============================================================================
 # Deployment Timing - Start Timestamp
@@ -40,6 +38,10 @@ locals {
     Workspace   = terraform.workspace
     Provider    = "Azure"
   }
+
+  # Force application pool sizes in code to override workspace defaults
+  db_max_pool_size = 20
+  db_min_pool_size = 2
 }
 
 # =============================================================================
@@ -62,6 +64,7 @@ module "postgres" {
   resource_group_name     = module.resource_group.name
   postgres_admin_login    = var.postgres_admin_login
   postgres_admin_password = var.postgres_admin_password
+  postgres_sku            = var.postgres_sku
   tags                    = local.common_tags
 
   depends_on = [
@@ -100,14 +103,17 @@ module "redis" {
 }
 
 # =============================================================================
-# Log Analytics Workspace Module
+# Virtual Network Module (for AKS)
 # =============================================================================
-module "logs" {
-  source              = "../modules/log_analytics"
+module "vnet" {
+  source              = "../modules/virtual_network"
   name_prefix         = local.full_name
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
   tags                = local.common_tags
+
+  # Default: 10.240.0.0/16 for VNet, 10.240.0.0/22 for AKS subnet
+  # Can be overridden via variables if needed
 
   depends_on = [
     module.resource_group
@@ -115,19 +121,173 @@ module "logs" {
 }
 
 # =============================================================================
-# Container App Environment Module
+# AKS Cluster Module
 # =============================================================================
-module "container_app_environment" {
-  source                     = "../modules/container_app_env"
-  name_prefix                = local.full_name
-  location                   = module.resource_group.location
-  resource_group_name        = module.resource_group.name
+module "aks" {
+  source              = "../modules/aks_cluster"
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  kubernetes_version  = var.kubernetes_version
+
+  # Network configuration
+  vnet_subnet_id = module.vnet.aks_subnet_id
+
+  # Monitoring
   log_analytics_workspace_id = module.logs.log_analytics_workspace_id
-  tags                       = local.common_tags
+
+  # System node pool configuration (optimized for dev/test with autoscaling)
+  system_node_count     = var.aks_system_node_count
+  system_node_vm_size   = var.aks_system_node_vm_size
+  enable_auto_scaling   = var.aks_enable_auto_scaling
+  system_node_min_count = var.aks_system_node_min_count
+  system_node_max_count = var.aks_system_node_max_count
+
+  # RBAC configuration
+  admin_group_object_ids = var.aks_admin_group_object_ids
+
+  tags = local.common_tags
 
   depends_on = [
     module.resource_group,
+    module.vnet,
     module.logs
+  ]
+}
+
+# =============================================================================
+# ACR Pull Permission for AKS
+# =============================================================================
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  principal_id         = module.aks.kubelet_identity.object_id
+  role_definition_name = "AcrPull"
+  scope                = module.acr.acr_id
+
+  depends_on = [
+    module.aks,
+    module.acr
+  ]
+}
+
+# =============================================================================
+# NGINX Ingress Controller with Static IP
+# =============================================================================
+# NGINX Ingress instalado manualmente via script PowerShell
+# Ver: infrastructure/kubernetes/scripts/prod/install-nginx-ingress-aks.ps1
+# Motivo: Terraform Cloud não tem acesso ao cluster Kubernetes
+#
+# module "nginx_ingress" {
+#   source              = "../modules/nginx_ingress"
+#   location            = module.resource_group.location
+#   node_resource_group = module.aks.node_resource_group
+#
+#   # Static IP will be created automatically
+#   load_balancer_ip = null # Let module create it
+#
+#   replica_count = 2
+#
+#   enable_metrics         = true
+#   enable_service_monitor = false
+#   enable_pdb             = true
+#   enable_default_backend = true
+#
+#   tags = local.common_tags
+#
+#   depends_on = [
+#     module.aks,
+#     azurerm_role_assignment.aks_acr_pull
+#   ]
+# }
+
+# ArgoCD installed via: aks-manager.ps1 install-argocd
+
+# Grafana Agent installed via: aks-manager.ps1 install-grafana-agent
+
+# =============================================================================
+# User-Assigned Identities for Workload Identity (Applications)
+# =============================================================================
+# Each application gets its own managed identity for Azure service authentication
+# These identities are federated with Kubernetes ServiceAccounts via OIDC
+resource "azurerm_user_assigned_identity" "user_api" {
+  name                = "${local.full_name}-user-api-identity"
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [module.aks]
+}
+
+resource "azurerm_user_assigned_identity" "games_api" {
+  name                = "${local.full_name}-games-api-identity"
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [module.aks]
+}
+
+resource "azurerm_user_assigned_identity" "payments_api" {
+  name                = "${local.full_name}-payments-api-identity"
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  tags                = local.common_tags
+
+  depends_on = [module.aks]
+}
+
+# =============================================================================
+# Federated Identity Credentials for Workload Identity
+# =============================================================================
+# Links Azure AD managed identities to Kubernetes ServiceAccounts via OIDC
+# This enables pods to authenticate to Azure services without secrets
+resource "azurerm_federated_identity_credential" "user_api" {
+  name                = "${local.full_name}-user-api-fic"
+  resource_group_name = module.resource_group.name
+  parent_id           = azurerm_user_assigned_identity.user_api.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks.oidc_issuer_url
+  subject             = "system:serviceaccount:cloudgames:user-api-sa"
+
+  depends_on = [azurerm_user_assigned_identity.user_api]
+}
+
+resource "azurerm_federated_identity_credential" "games_api" {
+  name                = "${local.full_name}-games-api-fic"
+  resource_group_name = module.resource_group.name
+  parent_id           = azurerm_user_assigned_identity.games_api.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks.oidc_issuer_url
+  subject             = "system:serviceaccount:cloudgames:games-api-sa"
+
+  depends_on = [azurerm_user_assigned_identity.games_api]
+}
+
+resource "azurerm_federated_identity_credential" "payments_api" {
+  name                = "${local.full_name}-payments-api-fic"
+  resource_group_name = module.resource_group.name
+  parent_id           = azurerm_user_assigned_identity.payments_api.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks.oidc_issuer_url
+  subject             = "system:serviceaccount:cloudgames:payments-api-sa"
+
+  depends_on = [azurerm_user_assigned_identity.payments_api]
+}
+
+# =============================================================================
+# Log Analytics Workspace Module
+# =============================================================================
+module "logs" {
+  source              = "../modules/log_analytics"
+  name_prefix         = local.full_name
+  location            = module.resource_group.location
+  resource_group_name = module.resource_group.name
+  sku                 = var.log_analytics_sku
+  retention_in_days   = var.log_analytics_retention_in_days
+  daily_quota_gb      = var.log_analytics_daily_quota_gb
+  tags                = local.common_tags
+
+  depends_on = [
+    module.resource_group
   ]
 }
 
@@ -189,6 +349,11 @@ module "key_vault" {
   sendgrid_api_key            = var.sendgrid_api_key
   sendgrid_email_new_user_tid = var.sendgrid_email_new_user_tid
   sendgrid_email_purchase_tid = var.sendgrid_email_purchase_tid
+
+  # App DB pool sizes (forced to 20/2 via locals to avoid workspace overrides)
+  db_max_pool_size      = local.db_max_pool_size
+  db_min_pool_size      = local.db_min_pool_size
+  db_connection_timeout = 60
 
   depends_on = [
     module.resource_group,
@@ -284,11 +449,93 @@ module "servicebus" {
   }
   create_sql_filter_rules = true
 
-  # RBAC será configurado separadamente para evitar ciclo de dependência
-  managed_identity_principal_ids = []
+  # RBAC: Atribuir Azure Service Bus Data Owner às Managed Identities das APIs
+  managed_identity_principal_ids = [
+    azurerm_user_assigned_identity.user_api.principal_id,
+    azurerm_user_assigned_identity.games_api.principal_id,
+    azurerm_user_assigned_identity.payments_api.principal_id
+  ]
 
   depends_on = [
     module.resource_group
+  ]
+}
+
+# =============================================================================
+# Service Bus RBAC for Workload Identity (Applications)
+# =============================================================================
+# Grant minimum required permissions: Data Sender + Data Receiver
+# Each application can send and receive messages from Service Bus topics/queues
+
+# User API - Azure Service Bus Data Sender
+resource "azurerm_role_assignment" "user_api_sb_sender" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Azure Service Bus Data Sender"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.servicebus
+  ]
+}
+
+# User API - Azure Service Bus Data Receiver
+resource "azurerm_role_assignment" "user_api_sb_receiver" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.servicebus
+  ]
+}
+
+# Games API - Azure Service Bus Data Sender
+resource "azurerm_role_assignment" "games_api_sb_sender" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Azure Service Bus Data Sender"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.servicebus
+  ]
+}
+
+# Games API - Azure Service Bus Data Receiver
+resource "azurerm_role_assignment" "games_api_sb_receiver" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.servicebus
+  ]
+}
+
+# Payments API - Azure Service Bus Data Sender
+resource "azurerm_role_assignment" "payments_api_sb_sender" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Azure Service Bus Data Sender"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.servicebus
+  ]
+}
+
+# Payments API - Azure Service Bus Data Receiver
+resource "azurerm_role_assignment" "payments_api_sb_receiver" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  scope                = module.servicebus.namespace_id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.servicebus
   ]
 }
 
@@ -334,182 +581,7 @@ module "function_app" {
   ]
 }
 
-# =============================================================================
-# Container Apps (Single-Shot) - RBAC propagation wait aumentado para 90s
-# =============================================================================
-module "users_api_container_app" {
-  source = "../modules/container_app_single_shot"
-
-  name_prefix                  = local.full_name
-  service_name                 = "users-api"
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  location                     = module.resource_group.location
-
-  container_image_acr       = "${module.acr.acr_login_server}/users-api:latest"
-  container_registry_server = module.acr.acr_login_server
-  container_registry_id     = module.acr.acr_id
-
-  key_vault_name = module.key_vault.key_vault_name
-  key_vault_id   = module.key_vault.key_vault_id
-  key_vault_uri  = module.key_vault.key_vault_uri
-
-  tags = local.common_tags
-
-  # Environment variables and secret refs are configured via GitHub Actions pipeline
-
-  rbac_propagation_wait_seconds = 300 # 5 minutos para garantir propagação
-
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault,
-    module.postgres,
-    module.redis,
-    module.servicebus
-  ]
-}
-
-module "games_api_container_app" {
-  source = "../modules/container_app_single_shot"
-
-  name_prefix                  = local.full_name
-  service_name                 = "games-api"
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  location                     = module.resource_group.location
-
-  container_image_acr       = "${module.acr.acr_login_server}/games-api:latest"
-  container_registry_server = module.acr.acr_login_server
-  container_registry_id     = module.acr.acr_id
-
-  key_vault_name = module.key_vault.key_vault_name
-  key_vault_id   = module.key_vault.key_vault_id
-  key_vault_uri  = module.key_vault.key_vault_uri
-
-  tags = local.common_tags
-
-  # Environment variables and secret refs are configured via GitHub Actions pipeline
-
-  rbac_propagation_wait_seconds = 300 # 5 minutos para garantir propagação
-
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault,
-    module.postgres
-  ]
-}
-
-module "payments_api_container_app" {
-  source = "../modules/container_app_single_shot"
-
-  name_prefix                  = local.full_name
-  service_name                 = "payms-api"
-  resource_group_name          = module.resource_group.name
-  container_app_environment_id = module.container_app_environment.container_app_environment_id
-  location                     = module.resource_group.location
-
-  container_image_acr       = "${module.acr.acr_login_server}/payments-api:latest"
-  container_registry_server = module.acr.acr_login_server
-  container_registry_id     = module.acr.acr_id
-
-  key_vault_name = module.key_vault.key_vault_name
-  key_vault_id   = module.key_vault.key_vault_id
-  key_vault_uri  = module.key_vault.key_vault_uri
-
-  tags = local.common_tags
-
-  # Environment variables and secret refs are configured via GitHub Actions pipeline
-  # using azure/container-apps-deploy-action@v2 with secretref pattern
-
-  rbac_propagation_wait_seconds = 300 # 5 minutos para garantir propagação
-
-  depends_on = [
-    module.container_app_environment,
-    module.acr,
-    module.key_vault,
-    module.postgres
-  ]
-}
-
-# =============================================================================
-# Service Bus RBAC: Azure Service Bus Data Owner para Container Apps
-# =============================================================================
-resource "azurerm_role_assignment" "users_api_servicebus_owner" {
-  principal_id         = module.users_api_container_app.system_assigned_identity_principal_id
-  role_definition_name = "Azure Service Bus Data Owner"
-  scope                = module.servicebus.namespace_id
-
-  depends_on = [
-    module.servicebus,
-    module.users_api_container_app
-  ]
-}
-
-resource "azurerm_role_assignment" "games_api_servicebus_owner" {
-  principal_id         = module.games_api_container_app.system_assigned_identity_principal_id
-  role_definition_name = "Azure Service Bus Data Owner"
-  scope                = module.servicebus.namespace_id
-
-  depends_on = [
-    module.servicebus,
-    module.games_api_container_app
-  ]
-}
-
-resource "azurerm_role_assignment" "payments_api_servicebus_owner" {
-  principal_id         = module.payments_api_container_app.system_assigned_identity_principal_id
-  role_definition_name = "Azure Service Bus Data Owner"
-  scope                = module.servicebus.namespace_id
-
-  depends_on = [
-    module.servicebus,
-    module.payments_api_container_app
-  ]
-}
-
-# =============================================================================
-# API Management Module
-# =============================================================================
-
-module "apim" {
-  source              = "../modules/apim"
-  name_prefix         = local.full_name
-  location            = module.resource_group.location
-  resource_group_name = module.resource_group.name
-
-  tags = local.common_tags
-
-  depends_on = [
-    module.resource_group
-  ]
-}
-
-# =============================================================================
-# APIM APIs - COMMENTED OUT TO PRESERVE MANUALLY CONFIGURED APIs
-# =============================================================================
-# APIs são gerenciadas manualmente via Portal Azure ou Azure CLI
-# Para evitar conflitos com configurações manuais de Swagger/OpenAPI
-
-# module "apim_api" {
-#   source   = "../modules/apim_api"
-#   for_each = var.apis
-#
-#   name_prefix        = each.value.name
-#   display_name       = each.value.display_name
-#   path               = each.value.path
-#   swagger_url        = each.value.swagger_url
-#   api_policy         = lookup(each.value, "api_policy", null)
-#   operation_policies = lookup(each.value, "operation_policies", {})
-#
-#   api_management_name = module.apim.name
-#   resource_group_name = module.apim.resource_group_name
-#
-#   depends_on = [
-#     module.apim
-#   ]
-# }
+# External Secrets Operator installed via: aks-manager.ps1 install-eso
 
 # =============================================================================
 # Deployment Timing - End Timestamp and Duration Calculation

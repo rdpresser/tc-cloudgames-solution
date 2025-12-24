@@ -32,6 +32,18 @@ resource "azurerm_key_vault" "key_vault" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    # Avoid perpetual drift when Azure adds/changes tags or network ACL defaults
+    ignore_changes = [
+      tags,
+      network_acls,
+      # Azure platform may adjust retention settings; ignore unless we explicitly change IaC
+      soft_delete_retention_days,
+      # Tenant ID is fetched via data source; suppress noisy re-stamp when unchanged
+      tenant_id
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -183,6 +195,27 @@ resource "azurerm_key_vault_secret" "db_connection_timeout" {
   key_vault_id = azurerm_key_vault.key_vault.id
   name         = "db-connection-timeout"
   value        = var.db_connection_timeout
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+# DB Connection Pool Size
+resource "azurerm_key_vault_secret" "db_max_pool_size" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-max-pool-size"
+  value        = tostring(var.db_max_pool_size)
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "db_min_pool_size" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "db-min-pool-size"
+  value        = tostring(var.db_min_pool_size)
 
   depends_on = [
     azurerm_role_assignment.service_principal_kv_admin

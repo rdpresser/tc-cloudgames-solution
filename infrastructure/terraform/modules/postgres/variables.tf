@@ -33,7 +33,7 @@ variable "postgres_admin_password" {
 variable "postgres_sku" {
   type        = string
   description = "SKU for PostgreSQL server"
-  default     = "B_Standard_B1ms"
+  default     = "B_Standard_B2s"
 }
 
 # PostgreSQL version

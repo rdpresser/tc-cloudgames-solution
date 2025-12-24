@@ -64,12 +64,26 @@ namespace TC.CloudGames.Functions.Extensions
                                .WithCredential(new DefaultAzureCredential());
                     });
                     
-                    // Configurar a variável para o trigger funcionar com namespace
+                    // CRÍTICO: Service Bus Trigger precisa de ambas as configurações
+                    // Formato: AzureWebJobsServiceBus__fullyQualifiedNamespace
                     Environment.SetEnvironmentVariable("AzureWebJobsServiceBus__fullyQualifiedNamespace", fullyQualifiedNamespace);
+                    
+                    // IMPORTANTE: Também deve ter credential configurada no host
+                    // Isso permite que o trigger use Managed Identity automaticamente
+                }
+                else if (!string.IsNullOrEmpty(connectionString))
+                {
+                    // Fallback: se namespace não estiver configurado mas connection string sim (Key Vault)
+                    Console.WriteLine("🔑 [Production Fallback] Configurando Service Bus com Connection String do Key Vault");
+                    services.AddAzureClients(builder =>
+                    {
+                        builder.AddServiceBusClient(connectionString);
+                    });
+                    Environment.SetEnvironmentVariable("AzureWebJobsServiceBus", connectionString);
                 }
                 else
                 {
-                    throw new InvalidOperationException("⚠️ SERVICEBUS_NAMESPACE é obrigatório em ambiente de produção (Azure)");
+                    throw new InvalidOperationException("⚠️ SERVICEBUS_NAMESPACE ou SERVICEBUS_CONNECTION é obrigatório em ambiente de produção (Azure)");
                 }
             }
 

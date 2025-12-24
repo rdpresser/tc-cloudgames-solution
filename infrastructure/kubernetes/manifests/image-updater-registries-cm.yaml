@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd-image-updater
+data:
+  argocd.serverAddress: "http://argocd-server.argocd.svc.cluster.local:80"
+  log.level: "info"
+  registries.conf: |
+    registries:
+      - name: ACR Dev
+        prefix: tccloudgamesdevcr8nacr.azurecr.io
+        api_url: https://tccloudgamesdevcr8nacr.azurecr.io
+        ping: true
+        insecure: false
+        credentials: ext:/app/auth/auth.sh
+        credsexpire: 1h
+        limit: 20

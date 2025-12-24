@@ -54,6 +54,24 @@ variable "postgres_admin_password" {
   sensitive   = true
 }
 
+# PostgreSQL SKU (compute tier/size). Defaults to B_Standard_B2s for cost optimization.
+variable "postgres_sku" {
+  type        = string
+  description = "PostgreSQL Flexible Server SKU (e.g., B_Standard_B1ms, B_Standard_B2s, GP_Standard_D2s_v3)"
+  default     = "B_Standard_B2s"
+}
+
+variable "db_max_pool_size" {
+  description = "Application DB max pool size"
+  type        = number
+  default     = 5
+}
+
+variable "db_min_pool_size" {
+  description = "Application DB min pool size"
+  type        = number
+  default     = 0
+}
 # =============================================================================
 # RBAC Access Control Variables (Object IDs for Key Vault permissions)
 # =============================================================================
@@ -84,6 +102,128 @@ variable "use_keyvault_secrets" {
   description = "Enable Key Vault secrets gradually to avoid RBAC propagation issues. Deploy ACR first (false), then enable secrets (true) after RBAC propagates."
   default     = false
 }
+
+# =============================================================================
+# AKS (Azure Kubernetes Service) Configuration
+# =============================================================================
+
+variable "kubernetes_version" {
+  description = "Kubernetes version for the AKS cluster"
+  type        = string
+  default     = "1.34.1"
+
+  validation {
+    condition     = can(regex("^1\\.(30|31|32|33|34)(\\.\\d+)?$", var.kubernetes_version))
+    error_message = "Kubernetes version must be 1.30, 1.31, 1.32, 1.33, or 1.34.x"
+  }
+}
+
+# System Node Pool (B2s - minimum for Azure, hosts system + application workloads)
+variable "aks_system_node_count" {
+  description = "Number of nodes in the AKS system node pool"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.aks_system_node_count >= 1 && var.aks_system_node_count <= 10
+    error_message = "AKS system node count must be between 1 and 10"
+  }
+}
+
+variable "aks_system_node_vm_size" {
+  description = "VM size for AKS system node pool (B2s = 2 vCPU, 4 GB RAM - minimum for AKS, also hosts workloads)"
+  type        = string
+  default     = "Standard_B2s"
+}
+
+variable "aks_enable_auto_scaling" {
+  description = "Enable auto-scaling for AKS system node pool (scales nodes based on workload demand for cost optimization)"
+  type        = bool
+  default     = true
+}
+
+variable "aks_system_node_min_count" {
+  description = "Minimum number of nodes when auto-scaling is enabled (1 is minimum for system pool)"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.aks_system_node_min_count >= 1 && var.aks_system_node_min_count <= 10
+    error_message = "AKS minimum node count must be between 1 and 10"
+  }
+}
+
+variable "aks_system_node_max_count" {
+  description = "Maximum number of nodes when auto-scaling is enabled (scales up during high load)"
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.aks_system_node_max_count >= 1 && var.aks_system_node_max_count <= 100
+    error_message = "AKS maximum node count must be between 1 and 100"
+  }
+}
+
+variable "aks_admin_group_object_ids" {
+  description = "List of Azure AD group object IDs that will have admin access to the AKS cluster"
+  type        = list(string)
+  default     = []
+}
+
+# =============================================================================
+# Log Analytics Controls
+# =============================================================================
+variable "log_analytics_sku" {
+  description = "SKU for Log Analytics (only PerGB2018 supported; Standard/Premium deprecated by Azure)"
+  type        = string
+  default     = "PerGB2018"
+
+  validation {
+    condition     = var.log_analytics_sku == "PerGB2018"
+    error_message = "Only PerGB2018 is supported. Standard and Premium are deprecated by Azure."
+  }
+}
+
+variable "log_analytics_retention_in_days" {
+  description = "Log retention in days (30-730, minimum enforced by Azure)"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.log_analytics_retention_in_days >= 30 && var.log_analytics_retention_in_days <= 730
+    error_message = "Retention must be between 30 and 730 days."
+  }
+}
+
+variable "log_analytics_daily_quota_gb" {
+  description = "Daily ingestion quota in GB (0 = unlimited, min 0.023 GB = ~24 MB/day if set)"
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.log_analytics_daily_quota_gb == 0 || var.log_analytics_daily_quota_gb >= 0.023
+    error_message = "Daily quota must be 0 (unlimited) or >= 0.023 GB."
+  }
+}
+
+
+# =============================================================================
+# ArgoCD Configuration
+# =============================================================================
+# REMOVED: ArgoCD is now installed manually via install-argocd-aks.ps1 script.
+# This variable is no longer used by Terraform.
+# =============================================================================
+# variable "argocd_admin_password" {
+#   description = "ArgoCD admin password (minimum 8 characters)"
+#   type        = string
+#   sensitive   = true
+#   default     = "ChangeMe123!"
+#
+#   validation {
+#     condition     = length(var.argocd_admin_password) >= 8
+#     error_message = "ArgoCD admin password must be at least 8 characters long"
+#   }
+# }
 
 # =============================================================================
 # ELASTICSEARCH Variables
@@ -180,21 +320,59 @@ variable "sendgrid_email_purchase_tid" {
 }
 
 # =============================================================================
-# API MANAGEMENT Variables
+# Grafana Cloud Configuration
 # =============================================================================
-variable "apis" {
-  description = "Lista de APIs a serem importadas no API Management"
-  type = map(object({
-    name               = string
-    display_name       = string
-    path               = string
-    swagger_url        = string
-    api_policy         = optional(string)
-    operation_policies = optional(map(string))
-  }))
+# These variables are used to configure the Grafana Agent to send metrics
+# from the AKS cluster to Grafana Cloud.
+# 
+# To get these values:
+# 1. Go to https://grafana.com and login to your Grafana Cloud account
+# 2. Navigate to Connections → Add new connection → Prometheus
+# 3. Copy the Remote Write Endpoint URL, Username, and generate an API Key
+# 
+# Add these as sensitive variables in Terraform Cloud workspace.
 
-  # Default vazio - valores serão fornecidos via terraform.tfvars ou terraform.tfvars.json
-  default = {}
+variable "grafana_cloud_prometheus_url" {
+  description = "Grafana Cloud Prometheus remote write URL (e.g., https://prometheus-prod-01-eu-west-0.grafana.net)"
+  type        = string
+  default     = ""
 }
 
+variable "grafana_cloud_prometheus_username" {
+  description = "Grafana Cloud Prometheus username (Instance ID, e.g., 123456)"
+  type        = string
+  default     = ""
+}
+
+variable "grafana_cloud_prometheus_api_key" {
+  description = "Grafana Cloud Prometheus API key (starts with glc_)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "grafana_cloud_loki_url" {
+  description = "Grafana Cloud Loki URL for logs (optional, e.g., https://logs-prod-eu-west-0.grafana.net)"
+  type        = string
+  default     = ""
+}
+
+variable "grafana_cloud_loki_username" {
+  description = "Grafana Cloud Loki username (optional, usually same as Prometheus username)"
+  type        = string
+  default     = ""
+}
+
+variable "grafana_cloud_loki_api_key" {
+  description = "Grafana Cloud Loki API key (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "enable_grafana_agent" {
+  description = "Enable Grafana Agent for monitoring (requires Grafana Cloud credentials)"
+  type        = bool
+  default     = false
+}
 

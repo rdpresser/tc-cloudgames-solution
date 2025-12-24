@@ -1,0 +1,195 @@
+# =============================================================================
+# ServiceAccount Patches for Workload Identity
+# =============================================================================
+# Each deployment uses a dedicated ServiceAccount annotated with the
+# Azure Workload Identity client ID. This enables passwordless authentication
+# to Azure services (Service Bus, Key Vault) without connection strings.
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+spec:
+  template:
+    metadata:
+      annotations:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: user-api-sa
+      containers:
+        - name: user-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: games-api
+spec:
+  template:
+    metadata:
+      annotations:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: games-api-sa
+      containers:
+        - name: games-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+spec:
+  template:
+    metadata:
+      annotations:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: payments-api-sa
+      containers:
+        - name: payments-api
+---
+# =============================================================================
+# Deployment Environment Patches for Production
+# =============================================================================
+# - ASPNETCORE_ENVIRONMENT=Production for production-ready behavior
+# - MESSAGE_BROKER_TYPE=AzureServiceBus for cloud messaging
+# - Resource limits and requests for production workloads
+# - Production-appropriate probe timeouts
+# - AZURE_CLIENT_ID removed: Workload Identity injects it automatically
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+spec:
+  template:
+    spec:
+      containers:
+        - name: user-api
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: games-api
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: games-api
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+spec:
+  template:
+    spec:
+      containers:
+        - name: payments-api
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: MESSAGE_BROKER_TYPE
+              value: "AzureServiceBus"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3

@@ -226,3 +226,5 @@ site/
 !.gitignore
 !scripts/
 !docs/
+#! Whitelist Kubernetes infrastructure manifests and folders
+!infrastructure/kubernetes/**
