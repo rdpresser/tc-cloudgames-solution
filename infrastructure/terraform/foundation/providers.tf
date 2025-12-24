@@ -49,7 +49,7 @@ provider "azurerm" {
 }
 
 # =============================================================================
-# Kubernetes Components (ArgoCD, ESO, NGINX, Grafana Agent)
+# Kubernetes Components (ArgoCD, ESO, NGINX)
 # =============================================================================
 # Installed via: infrastructure/kubernetes/scripts/azure/aks-manager.ps1
 

@@ -177,7 +177,7 @@ variable "log_analytics_sku" {
   description = "SKU for Log Analytics (only PerGB2018 supported; Standard/Premium deprecated by Azure)"
   type        = string
   default     = "PerGB2018"
-  
+
   validation {
     condition     = var.log_analytics_sku == "PerGB2018"
     error_message = "Only PerGB2018 is supported. Standard and Premium are deprecated by Azure."
@@ -188,7 +188,7 @@ variable "log_analytics_retention_in_days" {
   description = "Log retention in days (30-730, minimum enforced by Azure)"
   type        = number
   default     = 30
-  
+
   validation {
     condition     = var.log_analytics_retention_in_days >= 30 && var.log_analytics_retention_in_days <= 730
     error_message = "Retention must be between 30 and 730 days."
@@ -199,7 +199,7 @@ variable "log_analytics_daily_quota_gb" {
   description = "Daily ingestion quota in GB (0 = unlimited, min 0.023 GB = ~24 MB/day if set)"
   type        = number
   default     = 0
-  
+
   validation {
     condition     = var.log_analytics_daily_quota_gb == 0 || var.log_analytics_daily_quota_gb >= 0.023
     error_message = "Daily quota must be 0 (unlimited) or >= 0.023 GB."
@@ -320,24 +320,6 @@ variable "sendgrid_email_purchase_tid" {
 }
 
 # =============================================================================
-# API MANAGEMENT Variables
-# =============================================================================
-variable "apis" {
-  description = "Lista de APIs a serem importadas no API Management"
-  type = map(object({
-    name               = string
-    display_name       = string
-    path               = string
-    swagger_url        = string
-    api_policy         = optional(string)
-    operation_policies = optional(map(string))
-  }))
-
-  # Default vazio - valores serão fornecidos via terraform.tfvars ou terraform.tfvars.json
-  default = {}
-}
-
-# =============================================================================
 # Grafana Cloud Configuration
 # =============================================================================
 # These variables are used to configure the Grafana Agent to send metrics
@@ -394,35 +376,3 @@ variable "enable_grafana_agent" {
   default     = false
 }
 
-# =============================================================================
-# Azure API Management Variables
-# =============================================================================
-variable "apim_publisher_name" {
-  description = "Publisher name for APIM"
-  type        = string
-  default     = "CloudGames Team"
-}
-
-variable "apim_publisher_email" {
-  description = "Publisher email for APIM"
-  type        = string
-  default     = "admin@cloudgames.com"
-}
-
-variable "apim_sku_name" {
-  description = "SKU for APIM (Consumption_0, Developer_1, Basic_1, etc)"
-  type        = string
-  default     = "Consumption_0"
-}
-
-variable "apim_require_subscription" {
-  description = "Require subscription key for API access"
-  type        = bool
-  default     = false
-}
-
-variable "nginx_ingress_ip" {
-  description = "IP address of NGINX Ingress LoadBalancer (obtained after manual installation)"
-  type        = string
-  default     = ""
-}

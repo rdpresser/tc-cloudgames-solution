@@ -7,11 +7,9 @@
   1. Connects to AKS cluster
   2. Installs NGINX Ingress Controller
   3. Retrieves LoadBalancer IP
-  4. Updates Terraform with NGINX IP
-  5. Re-runs Terraform to configure APIM backends
-    6. Installs External Secrets Operator
-    7. Configures Workload Identity
-    8. Deploys applications via Kustomize
+  4. Installs External Secrets Operator
+  5. Configures Workload Identity
+  6. Deploys applications via Kustomize
   
 .PARAMETER ResourceGroup
   Azure Resource Group name.
@@ -30,13 +28,13 @@
   Skip application deployment.
 
 .PARAMETER Force
-        Reinstalls components (NGINX/ESO) even if already installed.
+  Reinstalls components (NGINX/ESO) even if already installed.
   
 .EXAMPLE
   .\setup-complete-infrastructure.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks"
   
 .EXAMPLE
-    .\setup-complete-infrastructure.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks" -SkipNginx
+  .\setup-complete-infrastructure.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks" -SkipNginx
 #>
 
 [CmdletBinding()]
@@ -66,7 +64,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$terraformDir = Join-Path (Split-Path (Split-Path (Split-Path $scriptDir -Parent) -Parent) -Parent) "terraform/foundation"
 $k8sDir = Split-Path (Split-Path $scriptDir -Parent) -Parent
 
 Write-Host ""
@@ -83,7 +80,7 @@ Write-Host ""
 # 1. Connect to AKS
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 1/8: Connecting to AKS ===" -ForegroundColor Yellow
+Write-Host "=== Step 1/6: Connecting to AKS ===" -ForegroundColor Yellow
 Write-Host ""
 
 az aks get-credentials --resource-group $ResourceGroup --name $ClusterName --overwrite-existing
@@ -103,7 +100,7 @@ $nginxIP = $null
 
 if (-not $SkipNginx) {
     Write-Host ""
-    Write-Host "=== Step 2/8: Installing NGINX Ingress Controller ===" -ForegroundColor Yellow
+    Write-Host "=== Step 2/6: Installing NGINX Ingress Controller ===" -ForegroundColor Yellow
     Write-Host ""
 
     $installArgs = @{
@@ -120,7 +117,7 @@ if (-not $SkipNginx) {
     }
 } else {
     Write-Host ""
-    Write-Host "=== Step 2/8: Skipping NGINX Ingress (already installed) ===" -ForegroundColor Yellow
+    Write-Host "=== Step 2/6: Skipping NGINX Ingress (already installed) ===" -ForegroundColor Yellow
     Write-Host ""
 }
 
@@ -128,7 +125,7 @@ if (-not $SkipNginx) {
 # 3. Get NGINX LoadBalancer IP
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 3/8: Getting NGINX LoadBalancer IP ===" -ForegroundColor Yellow
+Write-Host "=== Step 3/6: Getting NGINX LoadBalancer IP ===" -ForegroundColor Yellow
 Write-Host ""
 
 $maxAttempts = 30
@@ -155,76 +152,10 @@ if (-not $nginxIP) {
 Write-Host "✅ NGINX LoadBalancer IP: $nginxIP" -ForegroundColor Green
 
 # =============================================================================
-# 4. Update Terraform Variables
+# 4. Install External Secrets Operator
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 4/8: Updating Terraform Variables ===" -ForegroundColor Yellow
-Write-Host ""
-
-$tfvarsFile = Join-Path $terraformDir "terraform.tfvars"
-
-# Check if terraform.tfvars exists
-if (-not (Test-Path $tfvarsFile)) {
-    Write-Host "Creating terraform.tfvars file..." -ForegroundColor Cyan
-    "" | Out-File -Encoding UTF8 $tfvarsFile
-}
-
-# Read existing content
-$tfvarsContent = Get-Content $tfvarsFile -Raw -ErrorAction SilentlyContinue
-if (-not $tfvarsContent) { $tfvarsContent = "" }
-
-# Remove old nginx_ingress_ip if exists
-$tfvarsContent = $tfvarsContent -replace 'nginx_ingress_ip\s*=\s*"[^"]*"', ''
-
-# Add new nginx_ingress_ip
-$tfvarsContent = $tfvarsContent.TrimEnd() + "`n`nnginx_ingress_ip = `"$nginxIP`"`n"
-
-# Write back
-$tfvarsContent | Out-File -Encoding UTF8 $tfvarsFile
-
-Write-Host "✅ Updated terraform.tfvars with nginx_ingress_ip = `"$nginxIP`"" -ForegroundColor Green
-
-# =============================================================================
-# 5. Re-run Terraform to Update APIM
-# =============================================================================
-Write-Host ""
-Write-Host "=== Step 5/8: Re-running Terraform to Update APIM Backends ===" -ForegroundColor Yellow
-Write-Host ""
-
-Push-Location $terraformDir
-
-Write-Host "Running terraform plan..." -ForegroundColor Cyan
-terraform plan -out=tfplan
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Terraform plan failed" -ForegroundColor Red
-    Pop-Location
-    exit 1
-}
-
-Write-Host ""
-$response = Read-Host "Apply Terraform changes to update APIM backends? (Y/n)"
-if ($response -ne "n" -and $response -ne "N") {
-    terraform apply tfplan
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Terraform apply failed" -ForegroundColor Red
-        Pop-Location
-        exit 1
-    }
-    
-    Write-Host "✅ Terraform apply completed" -ForegroundColor Green
-} else {
-    Write-Host "⚠️  Skipped Terraform apply. APIM backends may not be configured correctly." -ForegroundColor Yellow
-}
-
-Pop-Location
-
-# =============================================================================
-# 6. Install External Secrets Operator
-# =============================================================================
-Write-Host ""
-Write-Host "=== Step 6/8: Installing External Secrets Operator ===" -ForegroundColor Yellow
+Write-Host "=== Step 4/6: Installing External Secrets Operator ===" -ForegroundColor Yellow
 Write-Host ""
 
 $installArgs = @{
@@ -241,10 +172,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # =============================================================================
-# 7. Setup Workload Identity for ESO
+# 5. Setup Workload Identity for ESO
 # =============================================================================
 Write-Host ""
-Write-Host "=== Step 7/8: Configuring Workload Identity ===" -ForegroundColor Yellow
+Write-Host "=== Step 5/6: Configuring Workload Identity ===" -ForegroundColor Yellow
 Write-Host ""
 
 $keyVaultName = if ($KeyVaultName) { $KeyVaultName } else { "tccloudgamesdevcr8nkv" }
@@ -262,11 +193,11 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "✅ Workload Identity configured" -ForegroundColor Green
 
 # =============================================================================
-# 8. Deploy Applications
+# 6. Deploy Applications
 # =============================================================================
 if (-not $SkipDeploy) {
     Write-Host ""
-    Write-Host "=== Step 8/8: Deploying Applications ===" -ForegroundColor Yellow
+    Write-Host "=== Step 6/6: Deploying Applications ===" -ForegroundColor Yellow
     Write-Host ""
     
     $overlayPath = Join-Path $k8sDir "overlays/$Environment"
@@ -294,7 +225,7 @@ if (-not $SkipDeploy) {
     kubectl get pods -n cloudgames
 } else {
     Write-Host ""
-    Write-Host "=== Step 8/8: Skipping Application Deployment ===" -ForegroundColor Yellow
+    Write-Host "=== Step 6/6: Skipping Application Deployment ===" -ForegroundColor Yellow
     Write-Host ""
 }
 
@@ -324,5 +255,5 @@ Write-Host "  curl http://$nginxIP/health -H 'Host: games-api.cloudgames.local'"
 Write-Host "  curl http://$nginxIP/health -H 'Host: user-api.cloudgames.local'" -ForegroundColor White
 Write-Host "  curl http://$nginxIP/health -H 'Host: payments-api.cloudgames.local'" -ForegroundColor White
 Write-Host ""
-Write-Host "📚 Documentation: infrastructure/kubernetes/scripts/prod/POST-TERRAFORM-SETUP.md" -ForegroundColor Cyan
+Write-Host "📚 Documentation: infrastructure/kubernetes/scripts/prod/README.md" -ForegroundColor Cyan
 Write-Host ""

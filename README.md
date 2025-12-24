@@ -182,7 +182,6 @@ The complete messaging infrastructure includes dedicated topics and subscription
 
 ### Observability & Monitoring
 - **Serilog**: Structured logging framework
-- **Grafana Loki**: Log aggregation and querying
 - **Application Insights**: Application performance monitoring
 - **Health Checks**: Service health monitoring
 

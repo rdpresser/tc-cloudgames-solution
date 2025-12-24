@@ -131,15 +131,13 @@ infrastructure/kubernetes/scripts/prod/
 
 **Purpose**: Complete post-Terraform infrastructure setup
 
-**Workflow** (8 steps):
+**Workflow** (6 steps):
 1. ✅ Connect to AKS cluster
 2. ✅ Install NGINX Ingress (calls `install-nginx-ingress.ps1`)
 3. ✅ Get LoadBalancer IP
-4. ✅ Update Terraform variables
-5. ✅ Re-run Terraform to update APIM backends
-6. ✅ Install External Secrets Operator (calls `install-external-secrets.ps1`)
-7. ✅ Configure Workload Identity (calls `setup-eso-workload-identity.ps1`)
-8. ✅ Deploy applications via Kustomize
+4. ✅ Install External Secrets Operator (calls `install-external-secrets.ps1`)
+5. ✅ Configure Workload Identity (calls `setup-eso-workload-identity.ps1`)
+6. ✅ Deploy applications via Kustomize
 
 **Features**:
 - ✅ Modular: Calls standalone scripts (DRY)

@@ -32,11 +32,9 @@ cd infrastructure/kubernetes/scripts/prod
 1. ✅ Connects to AKS cluster
 2. ✅ Installs NGINX Ingress Controller
 3. ✅ Obtains LoadBalancer IP
-4. ✅ Updates Terraform with NGINX IP
-5. ✅ Re-runs Terraform to configure APIM backends
-6. ✅ Installs External Secrets Operator
-7. ✅ Configures Workload Identity (passwordless auth)
-8. ✅ Deploys applications via Kustomize
+4. ✅ Installs External Secrets Operator
+5. ✅ Configures Workload Identity (passwordless auth)
+6. ✅ Deploys applications via Kustomize
 ```powershell
 # Complete setup
 .\aks-manager.ps1 post-terraform-setup
@@ -88,7 +86,6 @@ aks-manager.ps1 (Main Entry Point)
 - Azure Key Vault with secrets
 - Azure Container Registry (ACR)
 - Azure Service Bus (messaging)
-- Azure API Management (APIM)
 
 **Verify Prerequisites:**
 
@@ -146,17 +143,14 @@ COMPONENT INSTALLATION:
 [5] 📦 Install ArgoCD (installed) ✓
 [6] 🔄 Configure Image Updater (installed) ✓
 
-ARGOCD & DEPLOYMENT:
-[7] 🔗 Get ArgoCD URL & credentials
-
 CONFIGURATION:
-[8] 🔐 Setup ESO with Workload Identity
-[9] 📋 Bootstrap ArgoCD PROD app
+[7] 🔐 Setup ESO with Workload Identity
+[8] 📋 Bootstrap ArgoCD app
 
 BUILD & DEPLOY:
-[10] 🐳 Build & Push images to ACR
-[11] 📝 View logs
-[12] 🔧 Post-Terraform Complete Setup
+[9] 🐳 Build & Push images to ACR
+[10] 📝 View logs
+[11] 🔧 Post-Terraform Complete Setup
 
 [0] ❌ Exit
 ```

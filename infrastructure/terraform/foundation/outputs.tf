@@ -237,7 +237,7 @@ output "deployment_summary" {
     environment          = local.environment
     location             = module.resource_group.location
     resource_group       = module.resource_group.name
-    total_resources      = 13 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + key_vault + vnet + aks + apim + 2 role_assignments
+    total_resources      = 12 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + function_app_service_plan + key_vault + vnet + aks + role_assignment
     deployment_timestamp = timestamp()
   }
 }
@@ -262,7 +262,7 @@ output "deployment_performance_summary" {
     # Basic deployment info
     environment         = var.environment
     terraform_workspace = terraform.workspace
-    resource_count      = 13 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + key_vault + vnet + aks + apim + 2 role_assignments
+    resource_count      = 12 # rg + postgres + acr + redis + log_analytics + servicebus + function_app + function_app_service_plan + key_vault + vnet + aks + role_assignment
     deployment_method   = "Pure Terraform via Terraform Cloud"
 
     # Deployment metadata
@@ -281,37 +281,6 @@ output "deployment_performance_summary" {
     timing_note = "Actual deployment duration measured by GitHub Actions pipeline with start/end timestamps. AKS creation adds ~5-10 minutes to total time."
   }
 }
-
-# =============================================================================
-# API Management
-# =============================================================================
-
-output "apim_info" {
-  description = "Azure API Management details"
-  value = {
-    name           = module.apim.apim_name
-    id             = module.apim.apim_id
-    location       = module.apim.apim_location
-    gateway_url    = module.apim.apim_gateway_url
-    portal_url     = module.apim.apim_portal_url
-    management_url = module.apim.apim_management_api_url
-    resource_group = module.apim.resource_group_name
-  }
-}
-
-# APIM APIs outputs commented out since APIs are managed manually
-# output "apim_apis_info" {
-#   description = "API Management APIs details"
-#   value = {
-#     for key, api in module.apim_api : key => {
-#       name         = api.api_name
-#       id           = api.api_id
-#       display_name = api.api_display_name
-#       path         = api.api_path
-#       revision     = api.api_revision
-#     }
-#   }
-# }
 
 # =============================================================================
 # Virtual Network
@@ -377,30 +346,3 @@ output "aks_get_credentials_command" {
 #   value       = module.nginx_ingress.load_balancer_ip
 # }
 
-# =============================================================================
-# APIM Outputs
-# =============================================================================
-output "apim_gateway_url" {
-  description = "Azure APIM Gateway URL"
-  value       = module.apim.apim_gateway_url
-}
-
-output "apim_portal_url" {
-  description = "Azure APIM Developer Portal URL"
-  value       = module.apim.apim_portal_url
-}
-
-output "apim_games_api_url" {
-  description = "Full URL for Games API via APIM"
-  value       = module.apim.games_api_url
-}
-
-output "apim_user_api_url" {
-  description = "Full URL for User API via APIM"
-  value       = module.apim.user_api_url
-}
-
-output "apim_payments_api_url" {
-  description = "Full URL for Payments API via APIM"
-  value       = module.apim.payments_api_url
-}

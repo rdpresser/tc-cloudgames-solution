@@ -199,39 +199,6 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
 #   ]
 # }
 
-# =============================================================================
-# Azure API Management
-# =============================================================================
-module "apim" {
-  source              = "../modules/apim"
-  name_prefix         = local.name_prefix
-  location            = module.resource_group.location
-  resource_group_name = module.resource_group.name
-
-  publisher_name  = var.apim_publisher_name
-  publisher_email = var.apim_publisher_email
-  sku_name        = var.apim_sku_name
-
-  # Backend URL configured with NGINX Ingress IP
-  # IP obtained after manual NGINX installation via: .\aks-manager.ps1 install-nginx
-  backend_url          = var.nginx_ingress_ip != "" ? "http://${var.nginx_ingress_ip}" : null
-  require_subscription = var.apim_require_subscription
-
-  # Swagger URLs from Container Apps (development) - imported to get operation definitions
-  user_swagger_url  = lookup(var.apis["users"], "swagger_url", null)
-  games_swagger_url = lookup(var.apis["games"], "swagger_url", null)
-
-  # API Policies from apis variable (includes rate limiting, CORS, etc)
-  user_api_policy  = lookup(var.apis["users"], "api_policy", null)
-  games_api_policy = lookup(var.apis["games"], "api_policy", null)
-
-  tags = local.common_tags
-
-  depends_on = [
-    module.resource_group
-  ]
-}
-
 # ArgoCD installed via: aks-manager.ps1 install-argocd
 
 # Grafana Agent installed via: aks-manager.ps1 install-grafana-agent
