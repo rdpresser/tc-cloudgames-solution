@@ -398,7 +398,8 @@ function Show-Menu {
         }
         Write-Host ("  [4] 🔐 Install External Secrets Operator {0}" -f (& $installed $statuses.eso)) -ForegroundColor $(if ($statuses.eso) { $Colors.Success } else { $Colors.Info })
         Write-Host ("  [5] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
-        Write-Host ("  [6] 🔄 Configure Image Updater {0}" -f (& $installed $statuses.imageUpdater)) -ForegroundColor $(if ($statuses.imageUpdater) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [6] 🔄 Configure Image Updater (Workload Identity) {0}" -f (& $installed $statuses.imageUpdater)) -ForegroundColor $(if ($statuses.imageUpdater) { $Colors.Success } else { $Colors.Info })
+        Write-Host "       • Uses Managed Identity (no secrets required)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== ARGOCD & DEPLOYMENT =====

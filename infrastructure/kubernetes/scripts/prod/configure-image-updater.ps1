@@ -320,23 +320,25 @@ if ($UseWorkloadIdentity) {
     
     Write-Status "OIDC Issuer: $oidcIssuerUrl" 'Info'
     
-    # Create/Get Azure application
+    # Create/Get Azure application (idempotent: reuse if exists, no warning)
     $appName = "image-updater-$ClusterName"
-    $existingApp = az ad app list --filter "displayName eq '$appName'" --query "[0].appId" -o tsv 2>$null
-    
-    if ([string]::IsNullOrWhiteSpace($existingApp)) {
+    $app = az ad app list --filter "displayName eq '$appName'" --query "[0]" -o json 2>$null | ConvertFrom-Json
+    if (-not $app) {
         Write-Status "Creating Azure AD application..." 'Info'
         $app = az ad app create --display-name $appName -o json | ConvertFrom-Json
-        $appId = $app.appId
-        Write-Status "✓ Application created: $appId" 'Success'
-        
-        # Criar Service Principal
-        az ad sp create --id $appId 2>&1 | Out-Null
-        Start-Sleep -Seconds 10
+        Write-Status "✓ Application created: $($app.appId)" 'Success'
     }
     else {
-        $appId = $existingApp
-        Write-Status "✓ Using existing application: $appId" 'Success'
+        Write-Status "✓ Using existing application: $($app.appId)" 'Success'
+    }
+    $appId = $app.appId
+
+    # Ensure Service Principal exists (idempotent)
+    $sp = az ad sp show --id $appId -o json 2>$null | ConvertFrom-Json
+    if (-not $sp) {
+        az ad sp create --id $appId 2>&1 | Out-Null
+        Start-Sleep -Seconds 10
+        Write-Status "✓ Service Principal created" 'Success'
     }
     
     # Atribuir AcrPull role
@@ -484,7 +486,7 @@ else {
     Write-Status "Pod status: $podStatus" 'Warning'
 }
 
-$crCount = kubectl get imageupdater -n argocd -o jsonpath='{.items | length}' 2>&1
+$crCount = kubectl get imageupdater -n argocd -o go-template='{{len .items}}' 2>&1
 Write-Status "ImageUpdater CRs found: $crCount" 'Info'
 
 # =====================================================================

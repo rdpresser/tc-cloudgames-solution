@@ -10,8 +10,9 @@ spec:
     targetRevision: feature/phase_04
     path: infrastructure/kubernetes/manifests
     directory:
-      # Only deploy the unified Application and AppProject, not the deprecated separate ones
-      exclude: 'application-{user,games,payments}.yaml,appproject-{user,games,payments}.yaml,application-cloudgames-project.yaml'
+      # Deploy AppProjects, Applications, and Image Updater config
+      # Excludes deprecated individual service applications
+      exclude: 'application-{user,games,payments}.yaml,appproject-{user,games,payments}.yaml,application-cloudgames-project.yaml,{auth-configmap,image-updater-*.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

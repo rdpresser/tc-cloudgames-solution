@@ -1,0 +1,37 @@
+# =============================================================================
+# ArgoCD Application - Image Updater Configuration
+# =============================================================================
+# This Application deploys ArgoCD Image Updater configuration resources:
+# - auth-configmap.yaml: Workload Identity auth script for ACR
+# - image-updater-registries-cm.yaml: Registry configuration
+# - image-updater-deployment-patch.yaml: Deployment patch with volumes/env
+#
+# These resources are applied to the argocd-image-updater namespace and will
+# be automatically deployed when the cluster is created/recreated via bootstrap.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/component: image-updater
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rdpresser/tc-cloudgames-solution.git
+    targetRevision: feature/phase_04
+    path: infrastructure/kubernetes/manifests
+    directory:
+      include: '{auth-configmap,image-updater-*.yaml}'
+  destination:
+    server: https://kubernetes.default.svc
+    # Resources will be applied to their defined namespaces (argocd-image-updater)
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
