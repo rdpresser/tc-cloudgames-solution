@@ -5,11 +5,6 @@ metadata:
   labels:
     app.kubernetes.io/name: user-api
     app.kubernetes.io/component: user
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: user=tccloudgamesdevcr8nacr.azurecr.io/users-api
-    argocd-image-updater.argoproj.io/user.update-strategy: latest
-    argocd-image-updater.argoproj.io/user.write-back-method: git
-    argocd-image-updater.argoproj.io/user.write-back-target: kustomization
 spec:
   replicas: 1
   selector:
