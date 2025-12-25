@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-headers
+  namespace: default
+data:
+  X-Forwarded-Prefix-Games: "/games"
+  X-Forwarded-Prefix-Payments: "/payments"
+  X-Forwarded-Prefix-User: "/user"
