@@ -606,6 +606,48 @@ resource "azurerm_role_assignment" "payments_api_appinsights_metrics" {
 }
 
 # =============================================================================
+# Application Insights RBAC - Monitoring Reader (for Live Metrics stability)
+# =============================================================================
+# "Monitoring Reader" provides read access to monitoring data and is recommended
+# for stable Live Metrics connectivity with AAD authentication
+
+# User API - Monitoring Reader
+resource "azurerm_role_assignment" "user_api_appinsights_reader" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Monitoring Reader"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.app_insights
+  ]
+}
+
+# Games API - Monitoring Reader
+resource "azurerm_role_assignment" "games_api_appinsights_reader" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Monitoring Reader"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.app_insights
+  ]
+}
+
+# Payments API - Monitoring Reader
+resource "azurerm_role_assignment" "payments_api_appinsights_reader" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Monitoring Reader"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.app_insights
+  ]
+}
+
+# =============================================================================
 # App Service Plan for Azure Functions
 # =============================================================================
 module "function_app_service_plan" {
