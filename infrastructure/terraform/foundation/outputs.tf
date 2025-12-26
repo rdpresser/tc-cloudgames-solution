@@ -81,6 +81,25 @@ output "log_analytics_info" {
 }
 
 # =============================================================================
+# Application Insights (APM)
+# =============================================================================
+
+output "app_insights_info" {
+  description = "Application Insights details for APM (Azure Monitor OpenTelemetry)"
+  value = {
+    name   = module.app_insights.name
+    id     = module.app_insights.id
+    app_id = module.app_insights.app_id
+  }
+}
+
+output "app_insights_connection_string" {
+  description = "Application Insights connection string for APPLICATIONINSIGHTS_CONNECTION_STRING env var"
+  value       = module.app_insights.connection_string
+  sensitive   = true
+}
+
+# =============================================================================
 # Key Vault
 # =============================================================================
 

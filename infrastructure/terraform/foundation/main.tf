@@ -292,6 +292,25 @@ module "logs" {
 }
 
 # =============================================================================
+# Application Insights (APM - Azure Monitor OpenTelemetry)
+# =============================================================================
+module "app_insights" {
+  source                     = "../modules/application_insights"
+  name_prefix                = local.full_name
+  location                   = module.resource_group.location
+  resource_group_name        = module.resource_group.name
+  log_analytics_workspace_id = module.logs.log_analytics_workspace_id
+  sampling_percentage        = var.app_insights_sampling_percentage
+  daily_data_cap_in_gb       = var.app_insights_daily_cap_gb
+  tags                       = local.common_tags
+
+  depends_on = [
+    module.resource_group,
+    module.logs
+  ]
+}
+
+# =============================================================================
 # Key Vault Module (Terraform RBAC)
 # =============================================================================
 module "key_vault" {
@@ -350,6 +369,9 @@ module "key_vault" {
   sendgrid_email_new_user_tid = var.sendgrid_email_new_user_tid
   sendgrid_email_purchase_tid = var.sendgrid_email_purchase_tid
 
+  # Application Insights (APM)
+  app_insights_connection_string = module.app_insights.connection_string
+
   # App DB pool sizes (forced to 20/2 via locals to avoid workspace overrides)
   db_max_pool_size      = local.db_max_pool_size
   db_min_pool_size      = local.db_min_pool_size
@@ -360,7 +382,8 @@ module "key_vault" {
     module.acr,
     module.postgres,
     module.redis,
-    module.servicebus
+    module.servicebus,
+    module.app_insights
   ]
 }
 

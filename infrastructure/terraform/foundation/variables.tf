@@ -206,6 +206,32 @@ variable "log_analytics_daily_quota_gb" {
   }
 }
 
+# =============================================================================
+# Application Insights (APM) Configuration
+# =============================================================================
+
+variable "app_insights_sampling_percentage" {
+  description = "Percentage of telemetry to collect (0-100). 100 = no sampling. Lower values reduce costs but may miss data."
+  type        = number
+  default     = 100
+
+  validation {
+    condition     = var.app_insights_sampling_percentage >= 0 && var.app_insights_sampling_percentage <= 100
+    error_message = "Sampling percentage must be between 0 and 100."
+  }
+}
+
+variable "app_insights_daily_cap_gb" {
+  description = "Daily data cap in GB (0 = no cap). Recommended: 1-5 GB for dev, 10+ for production."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.app_insights_daily_cap_gb >= 0
+    error_message = "Daily cap must be 0 (no cap) or a positive number."
+  }
+}
+
 
 # =============================================================================
 # ArgoCD Configuration

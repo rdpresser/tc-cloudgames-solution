@@ -566,3 +566,16 @@ resource "azurerm_key_vault_secret" "sendgrid_email_purchase_tid" {
     azurerm_role_assignment.service_principal_kv_admin
   ]
 }
+
+# =============================================================================
+# Application Insights (APM) Secret
+# =============================================================================
+resource "azurerm_key_vault_secret" "app_insights_connection_string" {
+  key_vault_id = azurerm_key_vault.key_vault.id
+  name         = "app-insights-connection-string"
+  value        = var.app_insights_connection_string
+
+  depends_on = [
+    azurerm_role_assignment.service_principal_kv_admin
+  ]
+}
