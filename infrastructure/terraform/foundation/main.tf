@@ -563,6 +563,49 @@ resource "azurerm_role_assignment" "payments_api_sb_receiver" {
 }
 
 # =============================================================================
+# Application Insights RBAC for Live Metrics (Workload Identity)
+# =============================================================================
+# Grant "Monitoring Metrics Publisher" role to each API's managed identity
+# This is required for Azure Monitor Live Metrics when using AAD authentication
+# via DefaultAzureCredential in Azure.Monitor.OpenTelemetry.AspNetCore
+
+# User API - Monitoring Metrics Publisher (Live Metrics)
+resource "azurerm_role_assignment" "user_api_appinsights_metrics" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.app_insights
+  ]
+}
+
+# Games API - Monitoring Metrics Publisher (Live Metrics)
+resource "azurerm_role_assignment" "games_api_appinsights_metrics" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.app_insights
+  ]
+}
+
+# Payments API - Monitoring Metrics Publisher (Live Metrics)
+resource "azurerm_role_assignment" "payments_api_appinsights_metrics" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.app_insights
+  ]
+}
+
+# =============================================================================
 # App Service Plan for Azure Functions
 # =============================================================================
 module "function_app_service_plan" {
