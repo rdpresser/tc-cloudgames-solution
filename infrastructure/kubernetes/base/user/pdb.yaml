@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-api
+  labels:
+    app.kubernetes.io/name: user-api
+    app.kubernetes.io/component: user
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-api

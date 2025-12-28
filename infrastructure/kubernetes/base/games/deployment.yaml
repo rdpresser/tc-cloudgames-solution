@@ -19,6 +19,7 @@ spec:
         runAsNonRoot: true
         fsGroup: 65534  # Allows reading projected tokens
       serviceAccountName: games-api-sa
+      terminationGracePeriodSeconds: 30
       containers:
         - name: games-api
           image: localhost:5000/games-api:latest
@@ -69,18 +70,20 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
+            failureThreshold: 5
           resources:
             requests:
               cpu: 100m
               memory: 384Mi
             limits:
               cpu: 500m
-              memory: 768Mi
+              memory: 1Gi
       volumes:
         - name: workload-identity-token
           projected:
