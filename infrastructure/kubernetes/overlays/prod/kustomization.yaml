@@ -34,17 +34,13 @@ images:
     newTag: latest
 
 # =============================================================================
-# Replicas - Production Scale
+# Replicas - Managed by HPA
 # =============================================================================
-# NOTE: Reduced to 1 replica due to PostgreSQL connection limit (50 max)
-# TODO: Increase PostgreSQL tier to support more connections, then scale to 3
-replicas:
-  - name: user-api
-    count: 1
-  - name: games-api
-    count: 1
-  - name: payments-api
-    count: 1
+# HPA (HorizontalPodAutoscaler) manages replicas automatically:
+# - minReplicas: 1
+# - maxReplicas: 2
+# - Based on CPU utilization (70% target)
+# Do NOT define replicas here or it will conflict with HPA
 
 # =============================================================================
 # Patches - Production Configuration
