@@ -6,7 +6,6 @@ metadata:
     app.kubernetes.io/name: games-api
     app.kubernetes.io/component: games
 spec:
-  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: games-api

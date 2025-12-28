@@ -6,7 +6,6 @@ metadata:
     app.kubernetes.io/name: user-api
     app.kubernetes.io/component: user
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: user-api
