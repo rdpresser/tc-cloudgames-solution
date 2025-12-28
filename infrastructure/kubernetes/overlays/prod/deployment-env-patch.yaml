@@ -94,14 +94,14 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
-            failureThreshold: 3
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
             timeoutSeconds: 3
-            failureThreshold: 3
+            failureThreshold: 5
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -139,14 +139,14 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
-            failureThreshold: 3
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
             timeoutSeconds: 3
-            failureThreshold: 3
+            failureThreshold: 5
 ---
 apiVersion: apps/v1
 kind: Deployment
