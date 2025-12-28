@@ -54,7 +54,7 @@ variable "eso_namespace" {
 variable "eso_service_account_name" {
   description = "Name of the ServiceAccount for External Secrets Operator"
   type        = string
-  default     = "external-secrets"
+  default     = "external-secrets-operator"
 }
 
 variable "eso_chart_version" {
