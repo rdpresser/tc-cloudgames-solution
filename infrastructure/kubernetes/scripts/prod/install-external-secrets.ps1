@@ -1,10 +1,14 @@
 <#
 .SYNOPSIS
-  Installs External Secrets Operator on AKS cluster.
+  Validates External Secrets Operator installation on AKS cluster.
 
 .DESCRIPTION
-  Installs External Secrets Operator using Helm with production-ready configuration.
-  Supports idempotent operations with -Force parameter for reinstallation.
+  ⚠️  DEPRECATION NOTICE:
+  This script is now DEPRECATED. External Secrets Operator should be installed
+  via ArgoCD Application (application-external-secrets.yaml) for GitOps consistency.
+  
+  This script now only VALIDATES that ESO is installed and provides guidance.
+  It will NOT perform installation via Helm anymore.
 
 .PARAMETER ResourceGroup
   Azure Resource Group name.
@@ -13,14 +17,15 @@
   AKS cluster name.
 
 .PARAMETER Force
-  Forces reinstallation by uninstalling existing release first.
-  Default behavior is to upgrade in-place.
+  (DEPRECATED) This parameter is no longer used.
 
 .EXAMPLE
   .\install-external-secrets.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks"
+  # Validates ESO installation and provides guidance
 
-.EXAMPLE
-  .\install-external-secrets.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks" -Force
+.NOTES
+  For installation, ensure the ArgoCD Application 'external-secrets-operator' is synced:
+  kubectl get application external-secrets-operator -n argocd
 #>
 
 [CmdletBinding()]
@@ -38,30 +43,19 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
-Write-Host "================================================================" -ForegroundColor Cyan
-Write-Host "  External Secrets Operator Installation" -ForegroundColor Cyan
-Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Yellow
+Write-Host "  External Secrets Operator - Validation & Guidance" -ForegroundColor Yellow
+Write-Host "================================================================" -ForegroundColor Yellow
 Write-Host ""
-
-# =============================================================================
-# Prerequisites Check
-# =============================================================================
-Write-Host "Checking prerequisites..." -ForegroundColor Yellow
-
-foreach ($cmd in @("az", "kubectl", "helm")) {
-    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-        Write-Host "❌ ERROR: '$cmd' not found. Please install it first." -ForegroundColor Red
-        exit 1
-    }
-}
-
-Write-Host "✅ All prerequisites available" -ForegroundColor Green
+Write-Host "⚠️  DEPRECATION NOTICE:" -ForegroundColor Yellow
+Write-Host "   This script no longer installs ESO via Helm." -ForegroundColor Yellow
+Write-Host "   ESO should be installed via ArgoCD for GitOps consistency." -ForegroundColor Yellow
+Write-Host ""
 
 # =============================================================================
 # Connect to AKS
 # =============================================================================
-Write-Host ""
-Write-Host "Connecting to AKS cluster..." -ForegroundColor Yellow
+Write-Host "Connecting to AKS cluster..." -ForegroundColor Cyan
 
 az aks get-credentials --resource-group $ResourceGroup --name $ClusterName --overwrite-existing 2>$null
 
@@ -71,115 +65,96 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "✅ Connected to cluster: $ClusterName" -ForegroundColor Green
-
-# =============================================================================
-# Check Existing Installation
-# =============================================================================
-$namespace = "external-secrets"
-$chartVersion = "0.9.11"
-
 Write-Host ""
-Write-Host "Checking for existing External Secrets installation..." -ForegroundColor Yellow
 
-$existingRelease = helm list -n $namespace -q 2>$null | Where-Object { $_ -match "external-secrets" }
+# =============================================================================
+# Check ArgoCD Application
+# =============================================================================
+Write-Host "Checking ArgoCD Application for ESO..." -ForegroundColor Cyan
 
-if ($existingRelease) {
-    if ($Force) {
-        Write-Host "🔄 Force mode: Uninstalling existing ESO release..." -ForegroundColor Yellow
-        helm uninstall $existingRelease -n $namespace --wait 2>$null
-        
-        Write-Host "   Deleting namespace..." -ForegroundColor Gray
-        kubectl delete namespace $namespace --timeout=60s 2>$null
-        
-        Start-Sleep -Seconds 5
-        Write-Host "✅ Existing installation removed" -ForegroundColor Green
-    } else {
-        Write-Host "ℹ️  External Secrets already installed - performing in-place upgrade" -ForegroundColor Cyan
+$argoApp = kubectl get application external-secrets-operator -n argocd -o json 2>$null
+if ($LASTEXITCODE -eq 0 -and $argoApp) {
+    $appData = $argoApp | ConvertFrom-Json
+    $health = $appData.status.health.status
+    $sync = $appData.status.sync.status
+    
+    Write-Host "✅ ArgoCD Application 'external-secrets-operator' found" -ForegroundColor Green
+    Write-Host "   Health: $health" -ForegroundColor $(if ($health -eq "Healthy") { "Green" } else { "Yellow" })
+    Write-Host "   Sync:   $sync" -ForegroundColor $(if ($sync -eq "Synced") { "Green" } else { "Yellow" })
+    
+    if ($health -ne "Healthy" -or $sync -ne "Synced") {
+        Write-Host ""
+        Write-Host "⚠️  Application needs attention:" -ForegroundColor Yellow
+        Write-Host "   kubectl get application external-secrets-operator -n argocd" -ForegroundColor Gray
+        Write-Host "   argocd app sync external-secrets-operator" -ForegroundColor Gray
     }
 } else {
-    Write-Host "ℹ️  No existing installation found - performing fresh install" -ForegroundColor Cyan
-}
-
-# =============================================================================
-# Add Helm Repository
-# =============================================================================
-Write-Host ""
-Write-Host "Configuring Helm repository..." -ForegroundColor Yellow
-
-helm repo add external-secrets https://charts.external-secrets.io 2>$null
-helm repo update
-
-Write-Host "✅ Helm repository configured" -ForegroundColor Green
-
-# =============================================================================
-# Create Namespace
-# =============================================================================
-Write-Host ""
-Write-Host "Ensuring namespace exists..." -ForegroundColor Yellow
-
-kubectl create namespace $namespace --dry-run=client -o yaml | kubectl apply -f -
-
-Write-Host "✅ Namespace ready: $namespace" -ForegroundColor Green
-
-# =============================================================================
-# Install/Upgrade External Secrets Operator
-# =============================================================================
-Write-Host ""
-Write-Host "Installing External Secrets Operator (version $chartVersion)..." -ForegroundColor Yellow
-Write-Host ""
-
-helm upgrade --install external-secrets external-secrets/external-secrets `
-    --namespace $namespace `
-    --version $chartVersion `
-    --set installCRDs=true `
-    --set webhook.port=9443 `
-    --set resources.limits.cpu=200m `
-    --set resources.limits.memory=256Mi `
-    --set resources.requests.cpu=100m `
-    --set resources.requests.memory=128Mi `
-    --wait `
-    --timeout 5m
-
-if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ ArgoCD Application 'external-secrets-operator' NOT found" -ForegroundColor Red
     Write-Host ""
-    Write-Host "❌ Helm installation failed" -ForegroundColor Red
+    Write-Host "📋 To install ESO via ArgoCD:" -ForegroundColor Yellow
+    Write-Host "   1. Ensure application-external-secrets.yaml is in manifests/" -ForegroundColor Gray
+    Write-Host "   2. Apply it:" -ForegroundColor Gray
+    Write-Host "      kubectl apply -f infrastructure/kubernetes/manifests/application-external-secrets.yaml" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "   Or commit and let bootstrap Application sync it automatically." -ForegroundColor Gray
+    Write-Host ""
     exit 1
 }
 
-# =============================================================================
-# Wait for Pods
-# =============================================================================
 Write-Host ""
-Write-Host "Waiting for pods to be ready..." -ForegroundColor Yellow
-Start-Sleep -Seconds 5
+
+# =============================================================================
+# Check ESO Pods
+# =============================================================================
+Write-Host "Checking ESO pods..." -ForegroundColor Cyan
+
+$namespace = "external-secrets"
+$esoPods = kubectl get pods -n $namespace --no-headers 2>$null
+
+if ($esoPods) {
+    $runningPods = $esoPods | Where-Object { $_ -match "Running" }
+    $totalPods = ($esoPods | Measure-Object).Count
+    $runningCount = ($runningPods | Measure-Object).Count
+    
+    Write-Host "✅ Found $runningCount/$totalPods pods running in namespace '$namespace'" -ForegroundColor Green
+    Write-Host ""
+    kubectl get pods -n $namespace
+} else {
+    Write-Host "❌ No pods found in namespace '$namespace'" -ForegroundColor Red
+    Write-Host "   The ArgoCD Application may need to sync." -ForegroundColor Yellow
+}
 
 Write-Host ""
-Write-Host "✅ External Secrets Operator installed successfully" -ForegroundColor Green
+
+# =============================================================================
+# Check CRDs
+# =============================================================================
+Write-Host "Checking External Secrets CRDs..." -ForegroundColor Cyan
+
+$crds = kubectl get crds 2>$null | Select-String "external-secrets"
+if ($crds) {
+    Write-Host "✅ External Secrets CRDs installed:" -ForegroundColor Green
+    $crds | ForEach-Object { Write-Host "   $_" -ForegroundColor Gray }
+} else {
+    Write-Host "❌ External Secrets CRDs not found" -ForegroundColor Red
+}
+
+Write-Host ""
 
 # =============================================================================
 # Summary
 # =============================================================================
-Write-Host ""
-Write-Host "================================================================" -ForegroundColor Green
-Write-Host "  Installation Complete!" -ForegroundColor Green
-Write-Host "================================================================" -ForegroundColor Green
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "  Validation Complete" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "📋 Next Steps:" -ForegroundColor Yellow
-Write-Host "  1. Configure Workload Identity for ESO" -ForegroundColor Gray
-Write-Host "     Run: .\setup-eso-workload-identity.ps1" -ForegroundColor Gray
+Write-Host "  1. Configure Workload Identity for ESO:" -ForegroundColor Gray
+Write-Host "     .\aks-manager.ps1 setup-eso-wi" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  2. Create ClusterSecretStore to connect to Azure Key Vault" -ForegroundColor Gray
+Write-Host "  2. Verify ClusterSecretStore (applied via overlays):" -ForegroundColor Gray
+Write-Host "     kubectl get clustersecretstore azure-keyvault" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  3. Create ExternalSecret resources in your namespaces" -ForegroundColor Gray
-Write-Host ""
-
-# =============================================================================
-# Verification
-# =============================================================================
-Write-Host "📊 Current Status:" -ForegroundColor Cyan
-Write-Host ""
-kubectl get pods -n $namespace
-Write-Host ""
-kubectl get crds | Select-String "external-secrets"
-
+Write-Host "  3. Check ExternalSecrets in application namespaces:" -ForegroundColor Gray
+Write-Host "     kubectl get externalsecrets -A" -ForegroundColor Gray
 Write-Host ""

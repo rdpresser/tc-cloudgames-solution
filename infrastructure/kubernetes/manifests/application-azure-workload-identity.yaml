@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: azure-workload-identity
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: cloudgames
+    app.kubernetes.io/component: platform
+    environment: prod
+spec:
+  project: default
+  source:
+    repoURL: https://azure.github.io/azure-workload-identity/charts
+    chart: workload-identity-webhook
+    # Pin to a stable 1.x release of the webhook
+    targetRevision: 1.1.0
+    helm:
+      values: |
+        azureTenantID: "084169c0-a779-43c3-970c-487a71a93f88"
+        replicaCount: 2
+        nodeSelector:
+          kubernetes.io/os: linux
+        tolerations: []
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: azure-workload-identity-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

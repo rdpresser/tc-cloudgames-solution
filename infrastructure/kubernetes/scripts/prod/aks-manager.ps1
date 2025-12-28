@@ -90,7 +90,7 @@ function Show-Help {
     Write-Host "    install-nginx       " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Installs NGINX Ingress Controller on AKS" -ForegroundColor $Colors.Muted
     Write-Host "    install-eso         " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Installs External Secrets Operator on AKS" -ForegroundColor $Colors.Muted
+    Write-Host "Validates ESO installation (installed via ArgoCD)" -ForegroundColor $Colors.Muted
     Write-Host "    install-argocd      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Installs ArgoCD on AKS cluster" -ForegroundColor $Colors.Muted
     Write-Host "    configure-image-updater" -NoNewline -ForegroundColor $Colors.Success
@@ -396,7 +396,8 @@ function Show-Menu {
         if ($statuses.nginxIP) {
             Write-Host ("       • LoadBalancer IP: {0}" -f $statuses.nginxIP) -ForegroundColor $Colors.Muted
         }
-        Write-Host ("  [4] 🔐 Install External Secrets Operator {0}" -f (& $installed $statuses.eso)) -ForegroundColor $(if ($statuses.eso) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [4] 🔐 Validate External Secrets Operator {0}" -f (& $installed $statuses.eso)) -ForegroundColor $(if ($statuses.eso) { $Colors.Success } else { $Colors.Info })
+        Write-Host "       • Installed via ArgoCD (application-external-secrets.yaml)" -ForegroundColor $Colors.Muted
         Write-Host ("  [5] 📦 Install ArgoCD {0}" -f (& $installed $statuses.argocd)) -ForegroundColor $(if ($statuses.argocd) { $Colors.Success } else { $Colors.Info })
         Write-Host ("  [6] 🔄 Configure Image Updater (Workload Identity) {0}" -f (& $installed $statuses.imageUpdater)) -ForegroundColor $(if ($statuses.imageUpdater) { $Colors.Success } else { $Colors.Info })
         Write-Host "       • Uses Managed Identity (no secrets required)" -ForegroundColor $Colors.Muted
@@ -518,15 +519,14 @@ function Invoke-Command($cmd, $arg1 = "") {
             & "$scriptPath\install-nginx-ingress.ps1" @installArgs
         }
         "install-eso" {
-            Write-Host "`n📦 Installing External Secrets Operator..." -ForegroundColor $Colors.Info
-            $forceResp = Read-Host "Force reinstall (uninstall first)? (y/N)"
-            $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
+            Write-Host "`n� Validating External Secrets Operator..." -ForegroundColor $Colors.Info
+            Write-Host "   (ESO is now installed via ArgoCD Application)" -ForegroundColor $Colors.Muted
+            Write-Host ""
             
             $installArgs = @{
                 ResourceGroup = $Config.ResourceGroup
                 ClusterName = $Config.ClusterName
             }
-            if ($useForce) { $installArgs['Force'] = $true }
             
             & "$scriptPath\install-external-secrets.ps1" @installArgs
         }
