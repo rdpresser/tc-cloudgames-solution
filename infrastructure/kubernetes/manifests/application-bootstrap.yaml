@@ -10,9 +10,16 @@ spec:
     targetRevision: feature/phase_04
     path: infrastructure/kubernetes/manifests
     directory:
-      # Deploy AppProjects, Applications, and Image Updater config
-      # Excludes deprecated individual service applications
-      exclude: 'application-{user,games,payments}.yaml,appproject-{user,games,payments}.yaml,application-cloudgames-project.yaml,{auth-configmap,image-updater-*.yaml}'
+      # Deploy AppProjects and Applications for platform + PROD only.
+      # Properly exclude DEV apps and image-updater raw resources to avoid duplication.
+      # Argo CD uses RE2 regex for exclude patterns.
+      exclude: |
+        ^application-cloudgames-dev\.yaml$|
+        ^application-cloudgames-project-dev\.yaml$|
+        ^application-(user|games|payments)\.yaml$|
+        ^appproject-(user|games|payments)\.yaml$|
+        ^auth-configmap\.yaml$|
+        ^image-updater-.*\.yaml$
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
