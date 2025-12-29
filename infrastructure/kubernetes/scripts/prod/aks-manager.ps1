@@ -86,11 +86,11 @@ function Show-Help {
     Write-Host "Shows complete cluster status" -ForegroundColor $Colors.Muted
     Write-Host ""
 
-    Write-Host "  📦 COMPONENT INSTALLATION:" -ForegroundColor $Colors.Info
+    Write-Host "  📦 COMPONENT INSTALLATION (ArgoCD-managed):" -ForegroundColor $Colors.Info
     Write-Host "    install-nginx       " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Installs NGINX Ingress Controller on AKS" -ForegroundColor $Colors.Muted
+    Write-Host "Validate NGINX Ingress (installed via ArgoCD/Helm)" -ForegroundColor $Colors.Muted
     Write-Host "    install-eso         " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Validates ESO installation (installed via ArgoCD)" -ForegroundColor $Colors.Muted
+    Write-Host "Validate ESO (installed via ArgoCD/Helm)" -ForegroundColor $Colors.Muted
     Write-Host "    install-argocd      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Installs ArgoCD on AKS cluster" -ForegroundColor $Colors.Muted
     Write-Host "    configure-image-updater" -NoNewline -ForegroundColor $Colors.Success
@@ -130,8 +130,8 @@ function Show-Help {
 
     Write-Host "📝 EXAMPLES:" -ForegroundColor $Colors.Title
     Write-Host "  .\aks-manager.ps1 connect" -ForegroundColor $Colors.Muted
-    Write-Host "  .\aks-manager.ps1 install-nginx" -ForegroundColor $Colors.Muted
-    Write-Host "  .\aks-manager.ps1 install-eso" -ForegroundColor $Colors.Muted
+    Write-Host "  .\aks-manager.ps1 install-nginx  # validate (ArgoCD-managed)" -ForegroundColor $Colors.Muted
+    Write-Host "  .\aks-manager.ps1 install-eso    # validate (ArgoCD-managed)" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 get-argocd-url" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 bootstrap prod" -ForegroundColor $Colors.Muted
@@ -390,9 +390,9 @@ function Show-Menu {
         Write-Host ""
         
         # ===== COMPONENT INSTALLATION =====
-        Write-Host "  🔧 COMPONENT INSTALLATION:" -ForegroundColor $Colors.Title
+        Write-Host "  🔧 COMPONENT INSTALLATION (ArgoCD-managed):" -ForegroundColor $Colors.Title
         Write-Host ""
-        Write-Host ("  [3] 📦 Install NGINX Ingress {0}" -f (& $installed $statuses.nginx)) -ForegroundColor $(if ($statuses.nginx) { $Colors.Success } else { $Colors.Info })
+        Write-Host ("  [3] 📦 Validate NGINX Ingress {0}" -f (& $installed $statuses.nginx)) -ForegroundColor $(if ($statuses.nginx) { $Colors.Success } else { $Colors.Info })
         if ($statuses.nginxIP) {
             Write-Host ("       • LoadBalancer IP: {0}" -f $statuses.nginxIP) -ForegroundColor $Colors.Muted
         }
@@ -506,16 +506,11 @@ function Invoke-Command($cmd, $arg1 = "") {
             & "$scriptPath\install-argocd-aks.ps1" -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName
         }
         "install-nginx" {
-            Write-Host "`n📦 Installing NGINX Ingress..." -ForegroundColor $Colors.Info
-            $forceResp = Read-Host "Force reinstall (uninstall first)? (y/N)"
-            $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
-            
+            Write-Host "`n📦 Validating NGINX Ingress (ArgoCD-managed)..." -ForegroundColor $Colors.Info
             $installArgs = @{
                 ResourceGroup = $Config.ResourceGroup
-                ClusterName = $Config.ClusterName
+                ClusterName   = $Config.ClusterName
             }
-            if ($useForce) { $installArgs['Force'] = $true }
-            
             & "$scriptPath\install-nginx-ingress.ps1" @installArgs
         }
         "install-eso" {
@@ -599,14 +594,13 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host ""
             Write-Host "This will execute the complete setup after Terraform apply:" -ForegroundColor $Colors.Warning
             Write-Host "  1. Connect to AKS cluster" -ForegroundColor $Colors.Muted
-            Write-Host "  2. Install NGINX Ingress Controller" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Ensure ArgoCD Applications (NGINX/ESO) are present" -ForegroundColor $Colors.Muted
             Write-Host "  3. Get NGINX LoadBalancer IP" -ForegroundColor $Colors.Muted
             Write-Host "  4. Update Terraform variables with NGINX IP" -ForegroundColor $Colors.Muted
             Write-Host "  5. Re-run Terraform to update APIM backends" -ForegroundColor $Colors.Muted
-            Write-Host "  6. Install External Secrets Operator" -ForegroundColor $Colors.Muted
-            Write-Host "  7. Configure Workload Identity" -ForegroundColor $Colors.Muted
-            Write-Host "  8. Configure ArgoCD Image Updater" -ForegroundColor $Colors.Muted
-            Write-Host "  9. Deploy applications via Kustomize" -ForegroundColor $Colors.Muted
+            Write-Host "  6. Configure Workload Identity (ESO)" -ForegroundColor $Colors.Muted
+            Write-Host "  7. Configure ArgoCD Image Updater" -ForegroundColor $Colors.Muted
+            Write-Host "  8. Deploy applications via ArgoCD (cloudgames-prod)" -ForegroundColor $Colors.Muted
             Write-Host ""
             $response = Read-Host "Continue with complete setup? (Y/n)"
             if ($response -eq "n" -or $response -eq "N") {
@@ -618,16 +612,13 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host ""
             Write-Host "  ℹ️  Force Reinstall Options:" -ForegroundColor $Colors.Info
             Write-Host "     [N] Upgrade in-place (no downtime, recommended)" -ForegroundColor $Colors.Success
-            Write-Host "     [Y] Uninstall + Reinstall (complete cleanup, may cause downtime)" -ForegroundColor $Colors.Warning
+            Write-Host "     [Y] (deprecated) Not applicable; managed by ArgoCD" -ForegroundColor $Colors.Warning
             Write-Host ""
-            $forceResp = Read-Host "Force reinstall of components (NGINX/ESO)? (y/N)"
-            $useForce = $forceResp -eq "y" -or $forceResp -eq "Y"
+            $useForce = $false
             
             Write-Host ""
-            Write-Host "  ℹ️  Deploy via Kustomize (Step 9):"-ForegroundColor $Colors.Info
-            Write-Host "     If using ArgoCD/GitOps, you should skip manual deploy" -ForegroundColor $Colors.Muted
-            $skipDeployResp = Read-Host "Skip Kustomize deploy? (Y/n)"
-            $skipDeploy = $skipDeployResp -ne "n" -and $skipDeployResp -ne "N"
+            Write-Host "  ℹ️  Deploy via ArgoCD (cloudgames-prod):"-ForegroundColor $Colors.Info
+            $skipDeploy = $true
             
             $setupScript = Join-Path $scriptPath "setup-complete-infrastructure.ps1"
             
