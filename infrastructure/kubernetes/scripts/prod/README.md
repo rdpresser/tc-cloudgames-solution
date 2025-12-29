@@ -12,6 +12,7 @@
 - [Verification](#-verification)
 - [Troubleshooting](#-troubleshooting)
 - [Common Workflows](#-common-workflows)
+- [Helm Version Management](HELM_VERSION_MANAGEMENT.md) - Update Helm charts
 
 ---
 
@@ -256,6 +257,37 @@ kubectl -n default get secret argocd-initial-admin-secret -o jsonpath="{.data.pa
 **Credentials:**
 - Username: admin
 - Password: initial value from `argocd-initial-admin-secret` (see command above)
+
+---
+
+## 📊 Helm Chart Version Management
+
+**Check for Helm chart updates:**
+
+```powershell
+# Via aks-manager
+.\aks-manager.ps1 check-versions
+
+# Or directly
+.\check-helm-chart-versions.ps1
+```
+
+**Update a Helm chart:**
+
+```powershell
+# Update specific chart
+.\update-helm-chart-version.ps1 -Chart ingress-nginx -Version 4.12.0
+
+# Via aks-manager
+.\aks-manager.ps1 update-chart
+```
+
+**Managed Helm Charts:**
+- NGINX Ingress Controller (ingress-nginx)
+- External Secrets Operator (external-secrets)
+- Azure Workload Identity (workload-identity-webhook)
+
+📚 **Full guide**: [HELM_VERSION_MANAGEMENT.md](HELM_VERSION_MANAGEMENT.md)
 
 ---
 

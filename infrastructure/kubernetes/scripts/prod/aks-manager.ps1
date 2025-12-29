@@ -119,6 +119,10 @@ function Show-Help {
     Write-Host "Get ArgoCD LoadBalancer URL" -ForegroundColor $Colors.Muted
     Write-Host "    logs [component]    " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "View logs (argocd/eso/nginx)" -ForegroundColor $Colors.Muted
+    Write-Host "    check-versions      " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Check Helm chart versions for updates" -ForegroundColor $Colors.Muted
+    Write-Host "    update-chart        " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Update Helm chart version in manifest" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "  ℹ️  INFORMATION:" -ForegroundColor $Colors.Info
@@ -135,6 +139,7 @@ function Show-Help {
     Write-Host "  .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 get-argocd-url" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 bootstrap prod" -ForegroundColor $Colors.Muted
+    Write-Host "  .\aks-manager.ps1 check-versions # Check Helm chart updates" -ForegroundColor $Colors.Muted
     Write-Host ""
 }
 
@@ -444,6 +449,8 @@ function Show-Menu {
         Write-Host " [11] 📝 View logs" -ForegroundColor $Colors.Info
         Write-Host " [12] 🔧 Post-Terraform Complete Setup" -ForegroundColor $Colors.Info
         Write-Host "       (All-in-one: connect, nginx, ESO, WI, deploy)" -ForegroundColor $Colors.Muted
+        Write-Host " [13] 📊 Check Helm chart versions" -ForegroundColor $Colors.Info
+        Write-Host "       (Check for updates to ingress-nginx, ESO, workload-identity)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== EXIT =====
@@ -471,6 +478,7 @@ function Show-Menu {
                 Invoke-Command "logs" $comp
             }
             "12" { Invoke-Command "post-terraform-setup" }
+            "13" { Invoke-Command "check-versions" }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
                 exit 0
@@ -717,6 +725,55 @@ function Invoke-Command($cmd, $arg1 = "") {
                 "eso" { kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets --tail=50 }
                 "nginx" { kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx --tail=50 }
                 default { Write-Host "Unknown component: $component" -ForegroundColor $Colors.Error }
+            }
+        }
+        { $_ -in "check-versions", "check-helm-versions" } {
+            Write-Host "`n📊 Checking Helm chart versions..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "check-helm-chart-versions.ps1"
+            if (Test-Path $script) {
+                & $script
+            }
+            else {
+                Write-Host "❌ Script not found: check-helm-chart-versions.ps1" -ForegroundColor $Colors.Error
+            }
+        }
+        { $_ -in "update-chart", "update-helm-chart" } {
+            Write-Host "`n📝 Update Helm chart version..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "update-helm-chart-version.ps1"
+            if (Test-Path $script) {
+                Write-Host ""
+                Write-Host "Available charts:" -ForegroundColor $Colors.Info
+                Write-Host "  1. ingress-nginx" -ForegroundColor $Colors.Muted
+                Write-Host "  2. external-secrets" -ForegroundColor $Colors.Muted
+                Write-Host "  3. workload-identity-webhook" -ForegroundColor $Colors.Muted
+                Write-Host ""
+                
+                $chartInput = Read-Host "Chart name or number (1-3)"
+                
+                # Map number to chart name
+                $chartMap = @{
+                    "1" = "ingress-nginx"
+                    "2" = "external-secrets"
+                    "3" = "workload-identity-webhook"
+                }
+                
+                $chartName = if ($chartMap.ContainsKey($chartInput)) {
+                    $chartMap[$chartInput]
+                } else {
+                    $chartInput
+                }
+                
+                $version = Read-Host "Target version"
+                
+                if ($chartName -and $version) {
+                    & $script -Chart $chartName -Version $version
+                }
+                else {
+                    Write-Host "❌ Chart name and version are required" -ForegroundColor $Colors.Error
+                }
+            }
+            else {
+                Write-Host "❌ Script not found: update-helm-chart-version.ps1" -ForegroundColor $Colors.Error
             }
         }
         { $_ -in "help", "--help", "-h", "/?" } {
