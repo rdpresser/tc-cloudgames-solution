@@ -81,7 +81,7 @@ variable "system_node_min_count" {
 variable "system_node_max_count" {
   description = "Maximum number of nodes when auto-scaling is enabled (scales up during high load)"
   type        = number
-  default     = 3
+  default     = 5
 
   validation {
     condition     = var.system_node_max_count >= 1 && var.system_node_max_count <= 100

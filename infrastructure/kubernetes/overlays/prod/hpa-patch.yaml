@@ -14,7 +14,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: user-api
 spec:
-  minReplicas: 1  # Temporarily reduce to 1 to relieve scheduling pressure
+  minReplicas: 2  # Restored after AKS capacity expansion to 5 nodes
   maxReplicas: 5  # Scale up to 5 during peak (was 2)
   behavior:
     scaleUp:
@@ -52,7 +52,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: games-api
 spec:
-  minReplicas: 1
+  minReplicas: 2
   maxReplicas: 5
   behavior:
     scaleUp:
@@ -90,7 +90,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: payments-api
 spec:
-  minReplicas: 1
+  minReplicas: 2
   maxReplicas: 5
   behavior:
     scaleUp:
