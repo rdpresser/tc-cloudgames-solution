@@ -1,7 +1,8 @@
 import { localEnv } from './dotenv.js';
 
 function pick(name) {
-  return __ENV[name] || localEnv[name];
+  // Prefer localEnv (.env file) first, then __ENV (CLI args)
+  return localEnv[name] || __ENV[name];
 }
 
 export function baseUrl() {

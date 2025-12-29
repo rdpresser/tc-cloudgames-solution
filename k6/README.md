@@ -18,15 +18,16 @@ Root for smoke, load, and performance (breakpoint) tests against the AKS product
 
 ## Local env file (.env)
 - File: `k6/.env` (placeholders, no secrets). Variables:
-  - BASE_URL=https://REPLACE_ME
-  - USERNAME=REPLACE_ME
-  - PASSWORD=REPLACE_ME
-  - AUTH_TOKEN_PATH=/api/auth/token
+  - BASE_URL=http://130.256.256.256 (or your NGINX LoadBalancer IP)
+  - USERNAME=admin@admin.com (or your test user email)
+  - PASSWORD=Admin@123 (or your test user password)
+  - AUTH_TOKEN_PATH=/user/auth/login
   - AUTH_HEADER=
-  - TIMEOUT_MS=2000
+  - TIMEOUT_MS=5000
 - Usage:
-  - The scripts read `__ENV` first, then fall back to k6/.env automatically (no CLI flag needed).
+  - The scripts read `.env` first (highest priority), then fall back to `__ENV` (CLI args).
   - Override any var explicitly via `-e VAR=...` if you need to change a single value.
+  - The dotenv parser automatically handles quoted values and comments.
 
 ## Configuring auth
 - Scripts can fetch a token via POST to AUTH_TOKEN_PATH (default `/api/auth/token`) using USERNAME/PASSWORD env vars.
@@ -40,11 +41,16 @@ Root for smoke, load, and performance (breakpoint) tests against the AKS product
 - TIMEOUT_MS: request timeout in ms (default 2000)
 
 ## Running locally
-- Smoke (uses k6/.env fallback): `k6 run k6/smoke/users-smoke.js`
+- Smoke (uses k6/.env fallback + prewarm): `k6 run k6/smoke/users-smoke.js`
 - Load: `k6 run k6/load/users-load.js`
 - Performance: `k6 run k6/performance/users-performance.js`
 - To override inline: `k6 run -e BASE_URL=https://host -e USERNAME=u -e PASSWORD=p k6/smoke/users-smoke.js`
 - Export summary: add `--summary-export=k6/output/summary.json`
+
+## Prewarm, retries, and thresholds
+- All suites perform a setup prewarm on `/health` with retries to reduce cold start impact.
+- Warmup requests are tagged with `warmup:true` and thresholds target only non-warmup traffic via filters like `http_req_failed{warmup:false}`.
+- Default timeout is increased to 5000 ms (override via `TIMEOUT_MS`).
 
 ## GitHub Actions (prod only)
 - Workflow: `.github/workflows/perf-k6.yml` (manual trigger, optional schedule)
