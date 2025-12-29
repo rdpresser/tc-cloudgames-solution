@@ -74,11 +74,11 @@ spec:
               value: "AzureServiceBus"
           resources:
             requests:
-              cpu: "200m"      # Doubled for better baseline performance
-              memory: "512Mi"  # Increased to prevent memory pressure
+              cpu: "100m"
+              memory: "384Mi"
             limits:
-              cpu: "1000m"     # 1 full core for burst traffic
-              memory: "1Gi"    # Doubled headroom for spikes
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
@@ -119,11 +119,11 @@ spec:
               value: "AzureServiceBus"
           resources:
             requests:
-              cpu: "200m"      # Doubled for better baseline performance
-              memory: "768Mi"  # Increased (games may need more for caching)
+              cpu: "150m"
+              memory: "512Mi"
             limits:
-              cpu: "1000m"     # 1 full core for burst traffic
-              memory: "1536Mi" # 1.5Gi for games data
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
@@ -164,11 +164,11 @@ spec:
               value: "AzureServiceBus"
           resources:
             requests:
-              cpu: "200m"      # Doubled for better baseline performance
-              memory: "512Mi"  # Increased to prevent memory pressure
+              cpu: "100m"
+              memory: "384Mi"
             limits:
-              cpu: "1000m"     # 1 full core for burst traffic
-              memory: "1Gi"    # Doubled headroom for spikes
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health

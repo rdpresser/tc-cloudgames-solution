@@ -14,7 +14,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: user-api
 spec:
-  minReplicas: 2  # Always 2 replicas for HA + baseline capacity
+  minReplicas: 1  # Temporarily reduce to 1 to relieve scheduling pressure
   maxReplicas: 5  # Scale up to 5 during peak (was 2)
   behavior:
     scaleUp:
@@ -52,7 +52,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: games-api
 spec:
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 5
   behavior:
     scaleUp:
@@ -90,7 +90,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: payments-api
 spec:
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 5
   behavior:
     scaleUp:
