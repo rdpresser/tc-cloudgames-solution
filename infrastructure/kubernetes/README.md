@@ -317,6 +317,31 @@ kubectl get pods -n cloudgames-dev
 
 ---
 
+### Production (AKS) – Argo CD via YAML
+
+Argo CD on AKS can be installed using YAML with a configurable namespace (avoids Terraform/Helm needing direct cluster access):
+
+```powershell
+cd infrastructure\kubernetes\scripts\prod
+
+# Install Argo CD in the default namespace
+./aks-manager.ps1 install-argocd
+
+# Or install into a different namespace (won't overwrite existing install)
+./aks-manager.ps1 install-argocd argocd-test
+
+# Access via port-forward
+kubectl port-forward svc/argocd-server -n default 8080:80
+
+# Retrieve initial admin password
+kubectl -n default get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d | Out-String
+
+# Bootstrap applications
+./aks-manager.ps1 bootstrap
+```
+
+---
+
 ## 🔧 Cluster Configuration
 
 | Component | Value |

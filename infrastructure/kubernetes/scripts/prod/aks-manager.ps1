@@ -92,7 +92,7 @@ function Show-Help {
     Write-Host "    install-eso         " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Validate ESO (installed via ArgoCD/Helm)" -ForegroundColor $Colors.Muted
     Write-Host "    install-argocd      " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "Installs ArgoCD on AKS cluster" -ForegroundColor $Colors.Muted
+    Write-Host "Install Argo CD via YAML (kubectl). Usage: install-argocd [namespace]" -ForegroundColor $Colors.Muted
     Write-Host "    configure-image-updater" -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Configures ArgoCD Image Updater (secret or Workload Identity)" -ForegroundColor $Colors.Muted
     Write-Host ""
@@ -502,8 +502,14 @@ function Invoke-Command($cmd, $arg1 = "") {
             Show-Status
         }
         "install-argocd" {
-            Write-Host "`n📦 Installing ArgoCD..." -ForegroundColor $Colors.Info
-            & "$scriptPath\install-argocd-aks.ps1" -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName
+            $ns = if ([string]::IsNullOrWhiteSpace($arg1)) { "default" } else { $arg1 }
+            Write-Host "`n📦 Installing Argo CD via YAML into namespace '$ns'..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "install-argocd-aks.ps1"
+            if (Test-Path $script) {
+                & $script -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName -Namespace $ns
+            } else {
+                Write-Host "❌ Script not found: install-argocd-aks.ps1" -ForegroundColor $Colors.Error
+            }
         }
         "install-nginx" {
             Write-Host "`n📦 Validating NGINX Ingress (ArgoCD-managed)..." -ForegroundColor $Colors.Info

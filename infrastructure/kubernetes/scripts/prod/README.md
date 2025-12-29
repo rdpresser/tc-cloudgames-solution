@@ -15,9 +15,9 @@
 
 ---
 
-## ⚡ Quick Start
+# ⚡ Quick Start
 
-### Option 1: Automated Complete Setup (Recommended)
+### Option 1: Install Argo CD via YAML (Recommended)
 
 ```powershell
 cd infrastructure/kubernetes/scripts/prod
@@ -25,7 +25,9 @@ cd infrastructure/kubernetes/scripts/prod
 # Interactive menu
 .\aks-manager.ps1
 
-# Choose option [12] Post-Terraform Complete Setup
+# From the menu, you can:
+# - Install Argo CD via YAML: [5]
+# - Bootstrap Argo apps: [9]
 ```
 
 **What it does:**
@@ -36,14 +38,14 @@ cd infrastructure/kubernetes/scripts/prod
 5. ✅ Configures Workload Identity (passwordless auth)
 6. ✅ Deploys applications via Kustomize
 ```powershell
-# Complete setup
-.\aks-manager.ps1 post-terraform-setup
-
-# Individual components
-.\aks-manager.ps1 install-nginx
-.\aks-manager.ps1 install-eso
+# Install Argo CD via YAML (default namespace "default")
 .\aks-manager.ps1 install-argocd
-.\aks-manager.ps1 configure-image-updater
+
+# Install Argo CD into a custom namespace (to avoid overwriting an existing install)
+.\aks-manager.ps1 install-argocd argocd-test
+
+# Bootstrap Argo CD applications (projects/apps)
+.\aks-manager.ps1 bootstrap
 ```
 
 ---
@@ -237,16 +239,23 @@ Application Pods
 # Install
 .\aks-manager.ps1 install-argocd
 
-# Get URL & credentials
-.\aks-manager.ps1 get-argocd-url
+# Install into a custom namespace (to avoid overwriting an existing install)
+.\aks-manager.ps1 install-argocd argocd-test
+
+# Access via port-forward
+kubectl port-forward svc/argocd-server -n default 8080:80
+# Open http://localhost:8080
+
+# Retrieve initial admin password
+kubectl -n default get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d | Out-String
 
 # Bootstrap applications
 .\aks-manager.ps1 bootstrap
 ```
 
-**Default Credentials:**
-- Username: `admin`
-- Password: `Argo@AKS123!`
+**Credentials:**
+- Username: admin
+- Password: initial value from `argocd-initial-admin-secret` (see command above)
 
 ---
 
