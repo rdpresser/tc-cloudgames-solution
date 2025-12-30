@@ -70,7 +70,8 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
-            failureThreshold: 5
+            timeoutSeconds: 30
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
@@ -82,8 +83,8 @@ spec:
               cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 1000m
+              memory: 1Gi
       volumes:
         - name: workload-identity-token
           projected:
