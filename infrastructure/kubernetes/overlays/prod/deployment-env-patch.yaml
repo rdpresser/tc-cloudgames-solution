@@ -119,43 +119,43 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 5
         - name: pgbouncer
-          image: edoburu/pgbouncer:1.21.0-p1
+          image: edoburu/pgbouncer:latest
           ports:
             - containerPort: 6432
               name: pgbouncer
               protocol: TCP
           env:
-            - name: POSTGRESQL_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: user-api-secrets
-                  key: DB_HOST
-            - name: POSTGRESQL_PORT
-              value: "5432"
-            - name: POSTGRESQL_USERNAME
+            - name: DATABASE_URL
+              value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):5432/$(DB_NAME)"
+            - name: DB_USER
               valueFrom:
                 secretKeyRef:
                   name: user-api-secrets
                   key: DB_USER
-            - name: POSTGRESQL_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: user-api-secrets
                   key: DB_PASSWORD
-            - name: POSTGRESQL_DATABASE
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: user-api-secrets
+                  key: DB_HOST
+            - name: DB_NAME
               valueFrom:
                 secretKeyRef:
                   name: user-api-secrets
                   key: DB_NAME
-            - name: PGBOUNCER_POOL_MODE
+            - name: POOL_MODE
               value: "transaction"
-            - name: PGBOUNCER_MAX_CLIENT_CONN
+            - name: MAX_CLIENT_CONN
               value: "100"
-            - name: PGBOUNCER_DEFAULT_POOL_SIZE
+            - name: DEFAULT_POOL_SIZE
               value: "25"
-            - name: PGBOUNCER_MAX_DB_CONNECTIONS
+            - name: MAX_DB_CONNECTIONS
               value: "30"
-            - name: PGBOUNCER_IGNORE_STARTUP_PARAMETERS
+            - name: IGNORE_STARTUP_PARAMETERS
               value: "extra_float_digits"
           resources:
             requests:
