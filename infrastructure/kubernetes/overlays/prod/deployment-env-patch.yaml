@@ -120,6 +120,10 @@ spec:
             failureThreshold: 5
         - name: pgbouncer
           image: edoburu/pgbouncer:latest
+          securityContext:
+            runAsUser: 70
+            runAsGroup: 70
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 6432
               name: pgbouncer
