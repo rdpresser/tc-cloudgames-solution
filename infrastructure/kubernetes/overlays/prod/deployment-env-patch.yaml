@@ -72,10 +72,16 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
+            - name: DB_MIN_POOL_SIZE
+              value: "5"
+            - name: DB_MAX_POOL_SIZE
+              value: "20"
+            - name: DB_CONNECTION_TIMEOUT
+              value: "30"
           resources:
             requests:
-              cpu: "150m"
-              memory: "512Mi"
+              cpu: "100m"
+              memory: "384Mi"
             limits:
               cpu: "1000m"
               memory: "1Gi"
@@ -117,10 +123,16 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
+            - name: DB_MIN_POOL_SIZE
+              value: "5"
+            - name: DB_MAX_POOL_SIZE
+              value: "20"
+            - name: DB_CONNECTION_TIMEOUT
+              value: "30"
           resources:
             requests:
-              cpu: "200m"
-              memory: "768Mi"
+              cpu: "150m"
+              memory: "512Mi"
             limits:
               cpu: "1000m"
               memory: "1Gi"
@@ -162,10 +174,16 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
+            - name: DB_MIN_POOL_SIZE
+              value: "5"
+            - name: DB_MAX_POOL_SIZE
+              value: "20"
+            - name: DB_CONNECTION_TIMEOUT
+              value: "30"
           resources:
             requests:
-              cpu: "150m"
-              memory: "512Mi"
+              cpu: "100m"
+              memory: "384Mi"
             limits:
               cpu: "1000m"
               memory: "1Gi"
