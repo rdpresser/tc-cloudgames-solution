@@ -79,15 +79,11 @@ spec:
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
             - name: DB_MIN_POOL_SIZE
-              value: "5"
+              value: "10"
             - name: DB_MAX_POOL_SIZE
-              value: "40"
+              value: "80"
             - name: DB_CONNECTION_TIMEOUT
-              value: "30"
-            - name: DB_HOST
-              value: "localhost"
-            - name: DB_PORT
-              value: "6432"
+              value: "45"
           resources:
             requests:
               cpu: "100m"
@@ -118,66 +114,6 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 10
             failureThreshold: 5
-        - name: pgbouncer
-          image: edoburu/pgbouncer:latest
-          securityContext:
-            runAsUser: 70
-            runAsGroup: 70
-            allowPrivilegeEscalation: false
-          ports:
-            - containerPort: 6432
-              name: pgbouncer
-              protocol: TCP
-          env:
-            - name: DATABASE_URL
-              value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):5432/$(DB_NAME)"
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: user-api-secrets
-                  key: DB_USER
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: user-api-secrets
-                  key: DB_PASSWORD
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: user-api-secrets
-                  key: DB_HOST
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: user-api-secrets
-                  key: DB_NAME
-            - name: POOL_MODE
-              value: "transaction"
-            - name: MAX_CLIENT_CONN
-              value: "100"
-            - name: DEFAULT_POOL_SIZE
-              value: "25"
-            - name: MAX_DB_CONNECTIONS
-              value: "30"
-            - name: IGNORE_STARTUP_PARAMETERS
-              value: "extra_float_digits"
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "64Mi"
-            limits:
-              cpu: "200m"
-              memory: "128Mi"
-          livenessProbe:
-            tcpSocket:
-              port: 6432
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          readinessProbe:
-            tcpSocket:
-              port: 6432
-            initialDelaySeconds: 5
-            periodSeconds: 5
 ---
 apiVersion: apps/v1
 kind: Deployment
