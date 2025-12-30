@@ -119,7 +119,7 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 5
         - name: pgbouncer
-          image: bitnami/pgbouncer:1.23.1
+          image: pgbouncer/pgbouncer:1.23.1
           ports:
             - containerPort: 6432
               name: pgbouncer
