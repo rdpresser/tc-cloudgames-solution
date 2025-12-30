@@ -84,6 +84,10 @@ spec:
               value: "40"
             - name: DB_CONNECTION_TIMEOUT
               value: "30"
+            - name: DB_HOST
+              value: "localhost"
+            - name: DB_PORT
+              value: "6432"
           resources:
             requests:
               cpu: "100m"
@@ -114,6 +118,62 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 10
             failureThreshold: 5
+        - name: pgbouncer
+          image: bitnami/pgbouncer:1.21.0
+          ports:
+            - containerPort: 6432
+              name: pgbouncer
+              protocol: TCP
+          env:
+            - name: POSTGRESQL_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: user-api-secrets
+                  key: DB_HOST
+            - name: POSTGRESQL_PORT
+              value: "5432"
+            - name: POSTGRESQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: user-api-secrets
+                  key: DB_USER
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: user-api-secrets
+                  key: DB_PASSWORD
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: user-api-secrets
+                  key: DB_NAME
+            - name: PGBOUNCER_POOL_MODE
+              value: "transaction"
+            - name: PGBOUNCER_MAX_CLIENT_CONN
+              value: "100"
+            - name: PGBOUNCER_DEFAULT_POOL_SIZE
+              value: "25"
+            - name: PGBOUNCER_MAX_DB_CONNECTIONS
+              value: "30"
+            - name: PGBOUNCER_IGNORE_STARTUP_PARAMETERS
+              value: "extra_float_digits"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          livenessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 5
+            periodSeconds: 5
 ---
 apiVersion: apps/v1
 kind: Deployment
