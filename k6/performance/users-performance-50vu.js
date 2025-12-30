@@ -8,10 +8,9 @@ const REGISTER_PATH = '/user/auth/register';
 
 export const options = {
   stages: [
-    { duration: '2m', target: 20 },
+    { duration: '2m', target: 10 },
+    { duration: '5m', target: 30 },
     { duration: '5m', target: 50 },
-    { duration: '5m', target: 80 },
-    { duration: '3m', target: 100 },
     { duration: '3m', target: 0 },
   ],
   thresholds: {
@@ -19,8 +18,6 @@ export const options = {
     http_req_duration: ['p(95)<1500'],
   },
 };
-
-let sharedToken = null;
 
 export function setup() {
   const base = baseUrl();
@@ -62,7 +59,7 @@ export default function (data) {
   const operation = Math.floor(Math.random() * 3);
 
   if (operation === 0) {
-    // GET user list
+    // GET user list (requires Admin token)
     const listRes = http.get(`${base}${USERS_PATH}?pageNumber=1&pageSize=10`, { headers, timeout });
     check(listRes, { 'list status ok': (r) => [200, 401, 403].includes(r.status) });
   } else if (operation === 1) {
