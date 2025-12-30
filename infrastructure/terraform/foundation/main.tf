@@ -65,6 +65,7 @@ module "postgres" {
   postgres_admin_login    = var.postgres_admin_login
   postgres_admin_password = var.postgres_admin_password
   postgres_sku            = var.postgres_sku
+  max_connections         = var.postgres_max_connections
   tags                    = local.common_tags
 
   depends_on = [

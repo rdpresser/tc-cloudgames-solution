@@ -62,12 +62,12 @@ export default function (data) {
     const loginRes = http.post(`${base}${LOGIN_PATH}`, loginPayload, { headers: { 'Content-Type': 'application/json' }, timeout });
     check(loginRes, { 'login status ok': (r) => [200, 404].includes(r.status) });
   } else {
-    // Register new user (will likely fail with 400 due to duplicate, but tests write load)
+    // Register new user (with valid payload to pass validation)
     const regPayload = JSON.stringify({
-      name: `PerfUser${__VU}${__ITER}`,
-      email: `perfuser${__VU}${__ITER}@test.com`,
-      username: `perfuser${__VU}${__ITER}`,
-      password: 'Test@123',
+      name: `PerfTest User ${__VU}`,
+      email: `perftest${__VU}${__ITER}@test.com`,
+      username: `perftest${__VU}${__ITER}`,
+      password: `TestPass${__VU}@!`,
       role: 'User',
     });
     const regRes = http.post(`${base}${REGISTER_PATH}`, regPayload, { headers: { 'Content-Type': 'application/json' }, timeout });

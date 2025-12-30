@@ -66,3 +66,17 @@ variable "tags" {
   type        = map(string)
   description = "Common tags applied to PostgreSQL resources"
 }
+
+# Maximum number of concurrent connections to PostgreSQL
+# B_Standard_B2s supports up to 429 connections by default
+# Set conservatively to allow headroom for monitoring, admin, and scaling
+variable "max_connections" {
+  type        = number
+  description = "Maximum number of concurrent database connections"
+  default     = 250
+
+  validation {
+    condition     = var.max_connections >= 50 && var.max_connections <= 5000
+    error_message = "max_connections must be between 50 and 5000"
+  }
+}

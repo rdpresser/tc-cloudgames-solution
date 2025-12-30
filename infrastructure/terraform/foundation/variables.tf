@@ -61,6 +61,20 @@ variable "postgres_sku" {
   default     = "B_Standard_B2s"
 }
 
+# PostgreSQL max_connections parameter
+# B_Standard_B2s supports up to 429 connections
+# Default: 250 (allows 3 services × 4 pods × 15 connections + admin/monitoring)
+variable "postgres_max_connections" {
+  type        = number
+  description = "Maximum concurrent connections to PostgreSQL (default 250 for B2s SKU)"
+  default     = 300
+
+  validation {
+    condition     = var.postgres_max_connections >= 50 && var.postgres_max_connections <= 5000
+    error_message = "postgres_max_connections must be between 50 and 5000"
+  }
+}
+
 variable "db_max_pool_size" {
   description = "Application DB max pool size"
   type        = number

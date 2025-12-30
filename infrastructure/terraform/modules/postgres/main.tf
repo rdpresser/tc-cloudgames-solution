@@ -53,3 +53,15 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "client_ip" {
   start_ip_address = "179.216.21.147"
   end_ip_address   = "179.216.21.147"
 }
+
+# =============================================================================
+# PostgreSQL Configuration Parameters
+# =============================================================================
+# max_connections: Controls the maximum number of concurrent connections
+# B2s SKU supports up to 429 connections by default, but we set it conservatively
+# to 250 to allow for monitoring, admin connections, and future scaling
+resource "azurerm_postgresql_flexible_server_configuration" "max_connections" {
+  name      = "max_connections"
+  server_id = azurerm_postgresql_flexible_server.postgres_server.id
+  value     = var.max_connections
+}
