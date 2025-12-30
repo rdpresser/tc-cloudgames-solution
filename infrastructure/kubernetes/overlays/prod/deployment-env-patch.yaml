@@ -63,6 +63,12 @@ kind: Deployment
 metadata:
   name: user-api
 spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     spec:
       containers:
@@ -73,9 +79,9 @@ spec:
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
             - name: DB_MIN_POOL_SIZE
-              value: "5"
+              value: "2"
             - name: DB_MAX_POOL_SIZE
-              value: "20"
+              value: "10"
             - name: DB_CONNECTION_TIMEOUT
               value: "30"
           resources:
@@ -114,6 +120,12 @@ kind: Deployment
 metadata:
   name: games-api
 spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     spec:
       containers:
@@ -124,9 +136,9 @@ spec:
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
             - name: DB_MIN_POOL_SIZE
-              value: "5"
+              value: "2"
             - name: DB_MAX_POOL_SIZE
-              value: "20"
+              value: "10"
             - name: DB_CONNECTION_TIMEOUT
               value: "30"
           resources:
@@ -165,6 +177,12 @@ kind: Deployment
 metadata:
   name: payments-api
 spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     spec:
       containers:
@@ -175,9 +193,9 @@ spec:
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
             - name: DB_MIN_POOL_SIZE
-              value: "5"
+              value: "2"
             - name: DB_MAX_POOL_SIZE
-              value: "20"
+              value: "10"
             - name: DB_CONNECTION_TIMEOUT
               value: "30"
           resources:
