@@ -33,7 +33,7 @@ spec:
           admissionWebhooks:
             enabled: true
             patch:
-              enabled: true
+              enabled: false
           resources:
             requests:
               cpu: 250m
