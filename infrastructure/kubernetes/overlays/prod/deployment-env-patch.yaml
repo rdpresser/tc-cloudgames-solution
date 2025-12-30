@@ -119,7 +119,7 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 5
         - name: pgbouncer
-          image: pgbouncer/pgbouncer:1.23.1
+          image: edoburu/pgbouncer:1.21.0-p1
           ports:
             - containerPort: 6432
               name: pgbouncer
