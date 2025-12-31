@@ -13,7 +13,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   # Note: In provider 4.x, you must use EITHER node_count OR (min_count + max_count)
   # Using dynamic block to avoid defining both simultaneously
   default_node_pool {
-    name                         = "system"
+    name                         = "nodepool1"
     vm_size                      = var.system_node_vm_size
     min_count                    = var.system_node_min_count
     max_count                    = var.system_node_max_count

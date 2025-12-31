@@ -123,8 +123,14 @@ function Show-Help {
     Write-Host "Check Helm chart versions for updates" -ForegroundColor $Colors.Muted
     Write-Host "    update-chart        " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Update Helm chart version in manifest" -ForegroundColor $Colors.Muted
+    Write-Host "    fix-argocd-sync     " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Recover ArgoCD sync issues (manual webhook fix)" -ForegroundColor $Colors.Muted
+    Write-Host "    cleanup-audit       " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Analyze what can be safely deleted from cluster" -ForegroundColor $Colors.Muted
     Write-Host "    reset-cluster       " -NoNewline -ForegroundColor $Colors.Success
-    Write-Host "⚠️  DANGEROUS: Clean AKS cluster (keep only default namespace)" -ForegroundColor $Colors.Muted
+    Write-Host "⚠️  DANGEROUS: Clean AKS cluster (keep only system namespaces)" -ForegroundColor $Colors.Muted
+    Write-Host "    force-delete-ns [name]" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Force delete namespace stuck in Terminating" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "  ℹ️  INFORMATION:" -ForegroundColor $Colors.Info
@@ -455,8 +461,14 @@ function Show-Menu {
         Write-Host "       (Check for updates to ingress-nginx, ESO, workload-identity)" -ForegroundColor $Colors.Muted
         Write-Host " [14] 🔄 Check ArgoCD Updates" -ForegroundColor $Colors.Info
         Write-Host "       (View available ArgoCD versions from GitHub)" -ForegroundColor $Colors.Muted
-        Write-Host " [15] 🗑️  Reset Cluster (DANGEROUS)" -ForegroundColor $Colors.Error
+        Write-Host " [15] � Cleanup Audit" -ForegroundColor $Colors.Info
+        Write-Host "       (Analyze what can be safely deleted)" -ForegroundColor $Colors.Muted
+        Write-Host " [16] 🗑️  Reset Cluster (DANGEROUS)" -ForegroundColor $Colors.Error
         Write-Host "       (Delete all workloads, keep only system namespaces)" -ForegroundColor $Colors.Muted
+        Write-Host " [17] 💥 Force Delete Namespace" -ForegroundColor $Colors.Error
+        Write-Host "       (Force delete stuck Terminating namespace)" -ForegroundColor $Colors.Muted
+        Write-Host " [18] 🔄 Recover ArgoCD Sync" -ForegroundColor $Colors.Info
+        Write-Host "       (Manually fix webhook sync issues if needed)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== EXIT =====
@@ -486,7 +498,18 @@ function Show-Menu {
             "12" { Invoke-Command "post-terraform-setup" }
             "13" { Invoke-Command "check-versions" }
             "14" { Invoke-Command "check-argocd-updates" }
-            "15" { Invoke-Command "reset-cluster" }
+            "15" { Invoke-Command "cleanup-audit" }
+            "16" { Invoke-Command "reset-cluster" }
+            "17" { 
+                $ns = Read-Host "Namespace name"
+                Invoke-Command "force-delete-ns" $ns
+            }
+            "17" {
+                Invoke-Command "force-delete-ns"
+            }
+            "18" {
+                & "$PSScriptRoot\fix-argocd-sync.ps1"
+            }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
                 exit 0
@@ -723,6 +746,10 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             
             Write-Host ""
+            Write-Host "Ensuring all ArgoCD applications are synced before completion..." -ForegroundColor $Colors.Info
+            & "$PSScriptRoot\fix-argocd-sync.ps1"
+            
+            Write-Host ""
             Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
             Write-Host "✅ Complete Infrastructure Setup Finished!" -ForegroundColor $Colors.Success
             Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
@@ -864,21 +891,19 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Error
             Write-Host ""
             Write-Host "This will DELETE all resources except:" -ForegroundColor $Colors.Warning
-            Write-Host "  • kube-system namespace" -ForegroundColor $Colors.Muted
-            Write-Host "  • kube-public namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  • System namespaces (kube-system, kube-public, kube-node-lease)" -ForegroundColor $Colors.Muted
             Write-Host "  • default namespace" -ForegroundColor $Colors.Muted
             Write-Host ""
             Write-Host "This will be DELETED:" -ForegroundColor $Colors.Error
-            Write-Host "  ✗ argocd namespace" -ForegroundColor $Colors.Muted
-            Write-Host "  ✗ cloudgames namespace" -ForegroundColor $Colors.Muted
-            Write-Host "  ✗ ingress-nginx namespace" -ForegroundColor $Colors.Muted
-            Write-Host "  ✗ external-secrets namespace" -ForegroundColor $Colors.Muted
-            Write-Host "  ✗ azure-workload-identity-system namespace" -ForegroundColor $Colors.Muted
-            Write-Host "  ✗ argocd-image-updater namespace" -ForegroundColor $Colors.Muted
-            Write-Host "  ✗ All CRDs (Applications, ExternalSecrets, etc)" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ All custom namespaces" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ All ClusterRoles/ClusterRoleBindings (non-system)" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ All ServiceAccounts (non-system)" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ All CRDs and their instances" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ All Webhooks (Validation, Mutation)" -ForegroundColor $Colors.Muted
             Write-Host "  ✗ All Helm releases" -ForegroundColor $Colors.Muted
             Write-Host ""
             Write-Host "This WILL NOT affect:" -ForegroundColor $Colors.Success
+            Write-Host "  ✓ System namespaces and core components" -ForegroundColor $Colors.Muted
             Write-Host "  ✓ Azure infrastructure (AKS, ACR, Key Vault, etc)" -ForegroundColor $Colors.Muted
             Write-Host "  ✓ Terraform state" -ForegroundColor $Colors.Muted
             Write-Host "  ✓ Node pools and node data" -ForegroundColor $Colors.Muted
@@ -893,7 +918,141 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "`n🔄 Starting cluster reset..." -ForegroundColor $Colors.Warning
             Write-Host ""
             
-            # Step 1: Delete namespaces in order (inverse of creation)
+            # ⚠️ CRITICAL: Delete Webhooks FIRST (they block resource deletion!)
+            Write-Host "⚠️  CRITICAL STEP - Deleting Webhooks FIRST..." -ForegroundColor $Colors.Error
+            Write-Host "   (Webhooks prevent deletion of ExternalSecrets, ImageUpdaters, etc)" -ForegroundColor $Colors.Muted
+            
+            $webhooksToDelete = @(
+                "externalsecret-validate",
+                "secretstore-validate",
+                "ingress-nginx-admission",
+                "azure-wi-webhook-mutating-webhook-configuration",
+                "eso-webhook"
+            )
+            
+            foreach ($webhook in $webhooksToDelete) {
+                try {
+                    kubectl delete validatingwebhookconfiguration $webhook --ignore-not-found 2>$null
+                    kubectl delete mutatingwebhookconfiguration $webhook --ignore-not-found 2>$null
+                } catch {
+                    # Continue
+                }
+            }
+            Write-Host "   ✅ Webhooks deleted" -ForegroundColor $Colors.Success
+            Write-Host ""
+            
+            # Helper function to delete with timeout
+            function Delete-WithTimeout {
+                param([string]$resource, [string]$name, [string]$namespace = $null, [int]$timeout = 10)
+                
+                try {
+                    if ($namespace) {
+                        timeout /t $timeout /nobreak > $null 2>&1 &
+                        kubectl delete $resource $name -n $namespace --wait=false --ignore-not-found 2>$null
+                    } else {
+                        kubectl delete $resource $name --wait=false --ignore-not-found 2>$null
+                    }
+                    return $true
+                } catch {
+                    return $false
+                }
+            }
+            
+            # Step 1: Delete ArgoCD Applications FIRST (they can recreate resources)
+            Write-Host "🗑️  Step 2/9: Deleting ArgoCD Applications..." -ForegroundColor $Colors.Info
+            try {
+                $argoApps = kubectl get applications -n argocd --no-headers 2>$null | ForEach-Object { ($_ -split '\s+')[0] }
+                if ($argoApps) {
+                    foreach ($app in $argoApps) {
+                        Write-Host "   🗑️  Deleting: $app" -ForegroundColor $Colors.Warning
+                        kubectl delete application $app -n argocd --wait=false 2>$null
+                    }
+                    Write-Host "   ✅ ArgoCD Applications deleted" -ForegroundColor $Colors.Success
+                } else {
+                    Write-Host "   ⭕ No ArgoCD Applications found" -ForegroundColor $Colors.Muted
+                }
+            } catch {
+                Write-Host "   ⚠️  Error deleting applications (continuing)" -ForegroundColor $Colors.Warning
+            }
+            Write-Host ""
+            
+            # Step 2: Delete CRD instances BEFORE CRDs
+            Write-Host "🗑️  Step 3/9: Deleting CRD instances..." -ForegroundColor $Colors.Info
+            try {
+                Write-Host "   🗑️  ExternalSecrets..." -ForegroundColor $Colors.Warning
+                kubectl delete externalsecrets --all --all-namespaces --wait=false --ignore-not-found 2>$null
+                
+                Write-Host "   🗑️  ClusterSecretStores..." -ForegroundColor $Colors.Warning
+                kubectl delete clustersecretstores --all --wait=false --ignore-not-found 2>$null
+                
+                Write-Host "   🗑️  SecretStores..." -ForegroundColor $Colors.Warning
+                kubectl delete secretstores --all --all-namespaces --wait=false --ignore-not-found 2>$null
+                
+                Write-Host "   🗑️  ImageUpdaters..." -ForegroundColor $Colors.Warning
+                kubectl delete imageupdaters --all --all-namespaces --wait=false --ignore-not-found 2>$null
+                
+                Write-Host "   ✅ CRD instances deleted" -ForegroundColor $Colors.Success
+            } catch {
+                Write-Host "   ⚠️  Error deleting CRD instances (continuing)" -ForegroundColor $Colors.Warning
+            }
+            Write-Host ""
+            
+            # Step 3: Delete ClusterRoles and ClusterRoleBindings (non-system)
+            Write-Host "🗑️  Step 4/9: Deleting ClusterRoles/ClusterRoleBindings..." -ForegroundColor $Colors.Info
+            $systemPrefixes = @("system:", "kubeadm:", "azure:", "addon-")
+            
+            try {
+                # ClusterRoles
+                $clusterRoles = kubectl get clusterroles --no-headers 2>$null | ForEach-Object { ($_ -split '\s+')[0] }
+                foreach ($role in $clusterRoles) {
+                    $isSystem = $systemPrefixes | Where-Object { $role -like "$_*" }
+                    if (-not $isSystem) {
+                        kubectl delete clusterrole $role --ignore-not-found 2>$null
+                        Write-Host "   🗑️  ClusterRole: $role" -ForegroundColor $Colors.Muted
+                    }
+                }
+                
+                # ClusterRoleBindings
+                $clusterRoleBindings = kubectl get clusterrolebindings --no-headers 2>$null | ForEach-Object { ($_ -split '\s+')[0] }
+                foreach ($binding in $clusterRoleBindings) {
+                    $isSystem = $systemPrefixes | Where-Object { $binding -like "$_*" }
+                    if (-not $isSystem) {
+                        kubectl delete clusterrolebinding $binding --ignore-not-found 2>$null
+                        Write-Host "   🗑️  ClusterRoleBinding: $binding" -ForegroundColor $Colors.Muted
+                    }
+                }
+                
+                Write-Host "   ✅ ClusterRoles/ClusterRoleBindings deleted" -ForegroundColor $Colors.Success
+            } catch {
+                Write-Host "   ⚠️  Error deleting cluster roles (continuing)" -ForegroundColor $Colors.Warning
+            }
+            Write-Host ""
+            
+            # Step 4: Delete ServiceAccounts (non-system)
+            Write-Host "🗑️  Step 5/9: Deleting ServiceAccounts..." -ForegroundColor $Colors.Info
+            $systemNamespaces = @("kube-system", "kube-public", "kube-node-lease", "default")
+            
+            try {
+                $allNs = kubectl get namespaces --no-headers 2>$null | ForEach-Object { ($_ -split '\s+')[0] }
+                foreach ($ns in $allNs) {
+                    if ($ns -notin $systemNamespaces) {
+                        $sas = kubectl get serviceaccounts -n $ns --no-headers 2>$null | ForEach-Object { ($_ -split '\s+')[0] }
+                        foreach ($sa in $sas) {
+                            if ($sa -ne "default") {
+                                kubectl delete serviceaccount $sa -n $ns --ignore-not-found 2>$null
+                                Write-Host "   🗑️  SA: $ns/$sa" -ForegroundColor $Colors.Muted
+                            }
+                        }
+                    }
+                }
+                Write-Host "   ✅ ServiceAccounts deleted" -ForegroundColor $Colors.Success
+            } catch {
+                Write-Host "   ⚠️  Error deleting service accounts (continuing)" -ForegroundColor $Colors.Warning
+            }
+            Write-Host ""
+            
+            # Step 5: Delete namespaces
+            Write-Host "🗑️  Step 6/9: Deleting namespaces..." -ForegroundColor $Colors.Info
             $namespacesToDelete = @(
                 "argocd-image-updater",
                 "azure-workload-identity-system",
@@ -904,82 +1063,122 @@ function Invoke-Command($cmd, $arg1 = "") {
             )
             
             foreach ($ns in $namespacesToDelete) {
-                Write-Host "🗑️  Deleting namespace: $ns" -ForegroundColor $Colors.Warning
+                Write-Host "   🗑️  Namespace: $ns" -ForegroundColor $Colors.Warning
                 $nsExists = kubectl get namespace $ns --no-headers 2>$null
                 if ($nsExists) {
-                    kubectl delete namespace $ns --wait=true --timeout=60s 2>$null
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Host "   ✅ Deleted: $ns" -ForegroundColor $Colors.Success
-                    } else {
-                        Write-Host "   ⚠️  Failed to delete: $ns (may still be terminating)" -ForegroundColor $Colors.Warning
-                    }
+                    kubectl delete namespace $ns --wait=false 2>$null
+                    Write-Host "      ⏳ Deletion initiated" -ForegroundColor $Colors.Muted
                 } else {
-                    Write-Host "   ⭕ Already absent: $ns" -ForegroundColor $Colors.Muted
+                    Write-Host "      ⭕ Already absent" -ForegroundColor $Colors.Muted
                 }
-                Start-Sleep -Milliseconds 500
             }
             
-            Write-Host ""
-            Write-Host "🗑️  Cleaning up CRDs..." -ForegroundColor $Colors.Warning
+            Write-Host "   ⏳ Waiting for namespaces to terminate (15s)..." -ForegroundColor $Colors.Info
+            Start-Sleep -Seconds 15
             
-            # Step 2: Delete CRDs (these can leave dangling resources)
+            # Force cleanup of stuck namespaces
+            foreach ($ns in $namespacesToDelete) {
+                $nsStatus = kubectl get namespace $ns --no-headers 2>$null
+                if ($nsStatus -match "Terminating") {
+                    Write-Host "      ⚠️  $ns stuck - forcing cleanup..." -ForegroundColor $Colors.Warning
+                    kubectl patch namespace $ns -p '{\"spec\":{\"finalizers\":null}}' --type=merge 2>$null
+                }
+            }
+            Write-Host "   ✅ Namespace deletion initiated" -ForegroundColor $Colors.Success
+            Write-Host ""
+            
+            # Step 6: Delete CRDs
+            Write-Host "🗑️  Step 7/9: Deleting CRDs..." -ForegroundColor $Colors.Info
+            
             $crds = @(
                 "applications.argoproj.io",
+                "applicationsets.argoproj.io",
+                "appprojects.argoproj.io",
                 "externalsecrets.external-secrets.io",
                 "clustersecretstores.external-secrets.io",
-                "clustersecretstore.external-secrets.io"
+                "secretstores.external-secrets.io",
+                "clusterexternalsecrets.external-secrets.io",
+                "pushsecrets.external-secrets.io",
+                "imageupdaters.argocd-image-updater.argoproj.io",
+                "imageupdaterentries.argocd-image-updater.argoproj.io"
             )
             
             foreach ($crd in $crds) {
-                $crdExists = kubectl get crd $crd --no-headers 2>$null
-                if ($crdExists) {
-                    kubectl delete crd $crd --ignore-not-found 2>$null
-                    if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq 254) {
-                        Write-Host "   ✅ Deleted CRD: $crd" -ForegroundColor $Colors.Success
+                try {
+                    $exists = kubectl get crd $crd --no-headers 2>$null
+                    if ($exists) {
+                        kubectl delete crd $crd --ignore-not-found --wait=false 2>$null
+                        Write-Host "   ✅ CRD: $crd" -ForegroundColor $Colors.Success
                     }
+                } catch {
+                    # Continue on error
                 }
             }
-            
+            Write-Host "   ✅ CRDs deletion initiated" -ForegroundColor $Colors.Success
             Write-Host ""
-            Write-Host "🗑️  Cleaning up Helm releases..." -ForegroundColor $Colors.Warning
             
-            # Step 3: List and note any remaining Helm releases
-            $helmReleases = helm list --all-namespaces 2>$null | Select-Object -Skip 1
-            if ($helmReleases) {
-                foreach ($release in $helmReleases) {
-                    $parts = $release -split '\s+' | Where-Object { $_ }
-                    if ($parts.Count -ge 2) {
-                        $releaseName = $parts[0]
-                        $namespace = $parts[1]
-                        Write-Host "   ℹ️  Release $releaseName in namespace $namespace (will be removed with namespace)" -ForegroundColor $Colors.Muted
+            # Step 7: Check Helm releases
+            Write-Host "🗑️  Step 8/9: Checking Helm releases..." -ForegroundColor $Colors.Info
+            try {
+                $helmReleases = helm list --all-namespaces 2>$null | Select-Object -Skip 1
+                if ($helmReleases) {
+                    Write-Host "   ℹ️  Remaining releases (will auto-remove with namespaces):" -ForegroundColor $Colors.Muted
+                    foreach ($release in $helmReleases) {
+                        $parts = $release -split '\s+' | Where-Object { $_ }
+                        if ($parts.Count -ge 2) {
+                            Write-Host "      • $($parts[0]) in $($parts[1])" -ForegroundColor $Colors.Muted
+                        }
                     }
-                }
-            } else {
-                Write-Host "   ⭕ No Helm releases found" -ForegroundColor $Colors.Muted
-            }
-            
-            Write-Host ""
-            Write-Host "🧹 Verifying cluster state..." -ForegroundColor $Colors.Info
-            
-            # Step 4: Verify clean state
-            $allNamespaces = kubectl get namespaces --no-headers 2>$null | awk '{print $1}'
-            Write-Host "   📋 Remaining namespaces:" -ForegroundColor $Colors.Info
-            foreach ($ns in $allNamespaces) {
-                if ($ns -in @("default", "kube-system", "kube-public", "kube-node-lease")) {
-                    Write-Host "      ✓ $ns (system)" -ForegroundColor $Colors.Success
                 } else {
-                    Write-Host "      ! $ns (unexpected)" -ForegroundColor $Colors.Warning
+                    Write-Host "   ✅ No Helm releases found" -ForegroundColor $Colors.Success
+                }
+            } catch {
+                Write-Host "   ⚠️  Error checking Helm (continuing)" -ForegroundColor $Colors.Warning
+            }
+            Write-Host ""
+            
+            # Step 8: Final verification
+            Write-Host "🧹 Step 9/9: Final cluster state..." -ForegroundColor $Colors.Info
+            
+            $allNamespaces = kubectl get namespaces --no-headers 2>$null
+            Write-Host "   📋 Namespaces:" -ForegroundColor $Colors.Info
+            
+            $systemNs = @("default", "kube-system", "kube-public", "kube-node-lease")
+            $hasIssues = $false
+            
+            foreach ($line in $allNamespaces) {
+                $nsName = ($line -split '\s+')[0]
+                $nsStatus = ($line -split '\s+')[1]
+                
+                if ($nsName -in $systemNs) {
+                    Write-Host "      ✓ $nsName (system)" -ForegroundColor $Colors.Success
+                } elseif ($nsStatus -eq "Terminating") {
+                    Write-Host "      ⚠️  $nsName (Terminating)" -ForegroundColor $Colors.Warning
+                    $hasIssues = $true
+                } else {
+                    Write-Host "      ! $nsName" -ForegroundColor $Colors.Warning
+                    $hasIssues = $true
                 }
             }
             
             Write-Host ""
-            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
-            Write-Host "✅ Cluster reset complete!" -ForegroundColor $Colors.Success
-            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
+            if ($hasIssues) {
+                Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Warning
+                Write-Host "⚠️  Reset completed with warnings" -ForegroundColor $Colors.Warning
+                Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Warning
+                Write-Host ""
+                Write-Host "Some resources may need manual cleanup:" -ForegroundColor $Colors.Warning
+                Write-Host "  • Use: .\force-delete-namespace.ps1 <namespace>" -ForegroundColor $Colors.Muted
+                Write-Host "  • Or delete via Azure Portal" -ForegroundColor $Colors.Muted
+            } else {
+                Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
+                Write-Host "✅ Cluster reset complete!" -ForegroundColor $Colors.Success
+                Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
+            }
             Write-Host ""
             Write-Host "Next steps:" -ForegroundColor $Colors.Info
             Write-Host "  1. .\aks-manager.ps1 post-terraform-setup" -ForegroundColor $Colors.Muted
-            Write-Host "  2. Verify status with: .\aks-manager.ps1 status" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Verify: .\aks-manager.ps1 status" -ForegroundColor $Colors.Muted
             Write-Host ""
         }
         "logs" {
@@ -1049,6 +1248,47 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             else {
                 Write-Host "❌ Script not found: update-helm-chart-version.ps1" -ForegroundColor $Colors.Error
+            }
+        }
+        "cleanup-audit" {
+            Write-Host "`n🔍 Running cleanup audit..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "cluster-cleanup-audit.ps1"
+            if (Test-Path $script) {
+                & $script
+            }
+            else {
+                Write-Host "❌ Script not found: cluster-cleanup-audit.ps1" -ForegroundColor $Colors.Error
+            }
+        }
+        { $_ -in "force-delete-ns", "force-delete-namespace" } {
+            if ($arg1) {
+                Write-Host "`n🗑️  Force deleting namespace: $arg1" -ForegroundColor $Colors.Warning
+                $script = Join-Path $scriptPath "force-delete-namespace.ps1"
+                if (Test-Path $script) {
+                    & $script $arg1
+                }
+                else {
+                    Write-Host "❌ Script not found: force-delete-namespace.ps1" -ForegroundColor $Colors.Error
+                }
+            } else {
+                Write-Host "`n📋 Checking for terminating namespaces..." -ForegroundColor $Colors.Info
+                $script = Join-Path $scriptPath "force-delete-namespace.ps1"
+                if (Test-Path $script) {
+                    & $script
+                }
+                else {
+                    Write-Host "❌ Script not found: force-delete-namespace.ps1" -ForegroundColor $Colors.Error
+                }
+            }
+        }
+        "fix-argocd-sync" {
+            Write-Host "`n🔄 Running ArgoCD sync recovery..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "fix-argocd-sync.ps1"
+            if (Test-Path $script) {
+                & $script
+            }
+            else {
+                Write-Host "❌ Script not found: fix-argocd-sync.ps1" -ForegroundColor $Colors.Error
             }
         }
         { $_ -in "help", "--help", "-h", "/?" } {

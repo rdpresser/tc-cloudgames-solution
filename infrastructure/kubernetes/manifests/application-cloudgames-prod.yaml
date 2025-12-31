@@ -46,6 +46,8 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
+      - ServerSideApply=true  # Avoid webhook conflicts during sync
+      - RespectIgnoreDifferences=true
   # Ignore differences that are managed by other controllers
   ignoreDifferences:
     # Ignore image tags - allow CI/CD to update them

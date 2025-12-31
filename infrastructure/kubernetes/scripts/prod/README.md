@@ -13,10 +13,68 @@
 - [Troubleshooting](#-troubleshooting)
 - [Common Workflows](#-common-workflows)
 - [Helm Version Management](HELM_VERSION_MANAGEMENT.md) - Update Helm charts
+- [⚠️ Cluster Reset](RESET_CLUSTER_GUIDE.md) - Clean installation
 
 ---
 
 # ⚡ Quick Start
+
+### 🔄 One-Shot Complete Setup (Recommended)
+
+```powershell
+cd infrastructure/kubernetes/scripts/prod
+
+# Option A: Fresh clean installation
+.\aks-manager.ps1 reset-cluster        # Safely clean all workloads
+.\aks-manager.ps1 post-terraform-setup # Complete setup
+
+# Option B: Direct setup (if cluster is already clean)
+.\aks-manager.ps1 post-terraform-setup
+```
+
+**What it does:**
+1. ✅ Connects to AKS cluster
+2. ✅ Installs ArgoCD via YAML
+3. ✅ Bootstraps all ArgoCD Applications (Azure WI, NGINX, ESO, Apps)
+4. ✅ Configures Workload Identity (passwordless auth)
+5. ✅ Configures Image Updater for automatic deployments
+
+**See [PRODUCTION_SETUP_GUIDE.md](PRODUCTION_SETUP_GUIDE.md) for complete details.**
+
+---
+
+### 🗑️ Clean Installation (Reset + Setup)
+
+For a completely fresh installation (like K3D local):
+
+```powershell
+# Reset cluster to clean state (deletes workloads, preserves infrastructure)
+.\aks-manager.ps1 reset-cluster
+
+# Fresh installation
+.\aks-manager.ps1 post-terraform-setup
+
+# Verify status
+.\aks-manager.ps1 status
+```
+
+**See [RESET_CLUSTER_GUIDE.md](RESET_CLUSTER_GUIDE.md) for complete details.**
+
+---
+
+### 📋 Interactive Menu
+
+```powershell
+# Interactive menu
+.\aks-manager.ps1
+
+# From the menu, you can:
+# - Install Argo CD via YAML: [5]
+# - Bootstrap Argo apps: [9]
+# - Reset cluster: [15] ⚠️
+```
+
+---
 
 ### Option 1: Install Argo CD via YAML (Recommended)
 
