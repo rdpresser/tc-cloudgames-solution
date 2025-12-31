@@ -11,7 +11,7 @@ kind: Deployment
 metadata:
   name: user-api
 spec:
-  replicas: 1  # Temporarily reduced from 4 for cluster scale-down (will restore to 4 after upgrade)
+  replicas: 4  # Restore to 4 replicas after cluster upgrade completes
   template:
     metadata:
       annotations:
