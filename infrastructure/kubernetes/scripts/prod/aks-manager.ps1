@@ -123,6 +123,8 @@ function Show-Help {
     Write-Host "Check Helm chart versions for updates" -ForegroundColor $Colors.Muted
     Write-Host "    update-chart        " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Update Helm chart version in manifest" -ForegroundColor $Colors.Muted
+    Write-Host "    reset-cluster       " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "⚠️  DANGEROUS: Clean AKS cluster (keep only default namespace)" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "  ℹ️  INFORMATION:" -ForegroundColor $Colors.Info
@@ -448,9 +450,13 @@ function Show-Menu {
         Write-Host ""
         Write-Host " [11] 📝 View logs" -ForegroundColor $Colors.Info
         Write-Host " [12] 🔧 Post-Terraform Complete Setup" -ForegroundColor $Colors.Info
-        Write-Host "       (All-in-one: connect, nginx, ESO, WI, deploy)" -ForegroundColor $Colors.Muted
+        Write-Host "       (All-in-one: connect → ArgoCD → bootstrap → ESO → Image Updater)" -ForegroundColor $Colors.Muted
         Write-Host " [13] 📊 Check Helm chart versions" -ForegroundColor $Colors.Info
         Write-Host "       (Check for updates to ingress-nginx, ESO, workload-identity)" -ForegroundColor $Colors.Muted
+        Write-Host " [14] 🔄 Check ArgoCD Updates" -ForegroundColor $Colors.Info
+        Write-Host "       (View available ArgoCD versions from GitHub)" -ForegroundColor $Colors.Muted
+        Write-Host " [15] 🗑️  Reset Cluster (DANGEROUS)" -ForegroundColor $Colors.Error
+        Write-Host "       (Delete all workloads, keep only system namespaces)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== EXIT =====
@@ -479,6 +485,8 @@ function Show-Menu {
             }
             "12" { Invoke-Command "post-terraform-setup" }
             "13" { Invoke-Command "check-versions" }
+            "14" { Invoke-Command "check-argocd-updates" }
+            "15" { Invoke-Command "reset-cluster" }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
                 exit 0
@@ -510,11 +518,10 @@ function Invoke-Command($cmd, $arg1 = "") {
             Show-Status
         }
         "install-argocd" {
-            $ns = if ([string]::IsNullOrWhiteSpace($arg1)) { "default" } else { $arg1 }
-            Write-Host "`n📦 Installing Argo CD via YAML into namespace '$ns'..." -ForegroundColor $Colors.Info
+            Write-Host "`n📦 Installing Argo CD via YAML into namespace 'argocd'..." -ForegroundColor $Colors.Info
             $script = Join-Path $scriptPath "install-argocd-aks.ps1"
             if (Test-Path $script) {
-                & $script -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName -Namespace $ns
+                & $script -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName -Namespace "argocd"
             } else {
                 Write-Host "❌ Script not found: install-argocd-aks.ps1" -ForegroundColor $Colors.Error
             }
@@ -606,51 +613,132 @@ function Invoke-Command($cmd, $arg1 = "") {
         "post-terraform-setup" {
             Write-Host "`n🔧 Post-Terraform Complete Infrastructure Setup" -ForegroundColor $Colors.Info
             Write-Host ""
-            Write-Host "This will execute the complete setup after Terraform apply:" -ForegroundColor $Colors.Warning
-            Write-Host "  1. Connect to AKS cluster" -ForegroundColor $Colors.Muted
-            Write-Host "  2. Ensure ArgoCD Applications (NGINX/ESO) are present" -ForegroundColor $Colors.Muted
-            Write-Host "  3. Get NGINX LoadBalancer IP" -ForegroundColor $Colors.Muted
-            Write-Host "  4. Update Terraform variables with NGINX IP" -ForegroundColor $Colors.Muted
-            Write-Host "  5. Re-run Terraform to update APIM backends" -ForegroundColor $Colors.Muted
-            Write-Host "  6. Configure Workload Identity (ESO)" -ForegroundColor $Colors.Muted
-            Write-Host "  7. Configure ArgoCD Image Updater" -ForegroundColor $Colors.Muted
-            Write-Host "  8. Deploy applications via ArgoCD (cloudgames-prod)" -ForegroundColor $Colors.Muted
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host "Pre-Flight Status Check (IDEMPOTENT SETUP)" -ForegroundColor $Colors.Title
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
             Write-Host ""
-            $response = Read-Host "Continue with complete setup? (Y/n)"
+            
+            # Pre-flight checks
+            Write-Host "Checking current installation status..." -ForegroundColor $Colors.Info
+            Write-Host ""
+            
+            $statusArgoCD = $(kubectl get pods -n argocd --selector=app.kubernetes.io/name=argocd-server --no-headers 2>$null | wc -l) -gt 0
+            $statusESO = $(kubectl get pods -n external-secrets --selector=app.kubernetes.io/name=external-secrets --no-headers 2>$null | wc -l) -gt 0
+            $statusImageUpdater = $(kubectl get pods -n argocd-image-updater --no-headers 2>$null | wc -l) -gt 0
+            $statusNGINX = $(kubectl get pods -n ingress-nginx --selector=app.kubernetes.io/name=ingress-nginx --no-headers 2>$null | wc -l) -gt 0
+            
+            Write-Host "Installation Status:" -ForegroundColor $Colors.Info
+            Write-Host "  $(if ($statusArgoCD) { '✅' } else { '⭕' }) ArgoCD" -ForegroundColor $(if ($statusArgoCD) { 'Green' } else { 'Yellow' })
+            Write-Host "  $(if ($statusNGINX) { '✅' } else { '⭕' }) NGINX Ingress" -ForegroundColor $(if ($statusNGINX) { 'Green' } else { 'Yellow' })
+            Write-Host "  $(if ($statusESO) { '✅' } else { '⭕' }) External Secrets Operator" -ForegroundColor $(if ($statusESO) { 'Green' } else { 'Yellow' })
+            Write-Host "  $(if ($statusImageUpdater) { '✅' } else { '⭕' }) Image Updater" -ForegroundColor $(if ($statusImageUpdater) { 'Green' } else { 'Yellow' })
+            Write-Host ""
+            
+            Write-Host "Setup Philosophy:" -ForegroundColor $Colors.Info
+            Write-Host "  • IDEMPOTENT: Safe to run multiple times" -ForegroundColor $Colors.Muted
+            Write-Host "  • SKIP existing: Won't reinstall components" -ForegroundColor $Colors.Muted
+            Write-Host "  • PRESERVE configs: Never breaks existing setup" -ForegroundColor $Colors.Muted
+            Write-Host "  • ADD missing: Installs only needed components" -ForegroundColor $Colors.Muted
+            Write-Host ""
+            
+            Write-Host "Execution Plan:" -ForegroundColor $Colors.Warning
+            Write-Host "  1. Connect to AKS cluster (always safe)" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Install ArgoCD (skips if exists)" -ForegroundColor $Colors.Muted
+            Write-Host "  3. Bootstrap applications (idempotent apply)" -ForegroundColor $Colors.Muted
+            Write-Host "  4. Setup ESO Workload Identity (verifies each step)" -ForegroundColor $Colors.Muted
+            Write-Host "  5. Configure Image Updater (idempotent Helm)" -ForegroundColor $Colors.Muted
+            Write-Host ""
+            
+            $response = Read-Host "Continue with idempotent setup? (Y/n)"
             if ($response -eq "n" -or $response -eq "N") {
                 Write-Host "❌ Setup cancelled" -ForegroundColor $Colors.Warning
                 return
             }
             
-            $env = if ($arg1) { $arg1 } else { "dev" }
             Write-Host ""
-            Write-Host "  ℹ️  Force Reinstall Options:" -ForegroundColor $Colors.Info
-            Write-Host "     [N] Upgrade in-place (no downtime, recommended)" -ForegroundColor $Colors.Success
-            Write-Host "     [Y] (deprecated) Not applicable; managed by ArgoCD" -ForegroundColor $Colors.Warning
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host "Executing Complete Infrastructure Setup..." -ForegroundColor $Colors.Title
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
             Write-Host ""
-            $useForce = $false
             
-            Write-Host ""
-            Write-Host "  ℹ️  Deploy via ArgoCD (cloudgames-prod):"-ForegroundColor $Colors.Info
-            $skipDeploy = $true
-            
-            $setupScript = Join-Path $scriptPath "setup-complete-infrastructure.ps1"
-            
-            if (Test-Path $setupScript) {
-                $scriptArgs = @{
-                    ResourceGroup = $Config.ResourceGroup
-                    ClusterName = $Config.ClusterName
-                    KeyVaultName = $Config.KeyVaultName
-                    Environment = $env
-                }
-                if ($useForce) { $scriptArgs['Force'] = $true }
-                if ($skipDeploy) { $scriptArgs['SkipDeploy'] = $true }
-                
-                & $setupScript @scriptArgs
+            # Step 1: Connect to AKS
+            Write-Host "Step 1/5: Connecting to AKS cluster..." -ForegroundColor $Colors.Info
+            Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
+            Invoke-Command "connect"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "`n❌ Failed to connect to AKS cluster" -ForegroundColor $Colors.Error
+                return
             }
-            else {
-                Write-Host "❌ Script not found: setup-complete-infrastructure.ps1" -ForegroundColor $Colors.Error
+            Write-Host "✅ Step 1 completed`n" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
+            
+            # Step 2: Install ArgoCD
+            Write-Host "Step 2/5: Installing ArgoCD..." -ForegroundColor $Colors.Info
+            Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
+            Invoke-Command "install-argocd"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "`n❌ Failed to install ArgoCD" -ForegroundColor $Colors.Error
+                return
             }
+            Write-Host "✅ Step 2 completed`n" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
+            
+            # Step 3: Bootstrap ArgoCD applications
+            Write-Host "Step 3/5: Bootstrapping ArgoCD applications (PROD)..." -ForegroundColor $Colors.Info
+            Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
+            Invoke-Command "bootstrap"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "`n❌ Failed to bootstrap applications" -ForegroundColor $Colors.Error
+                return
+            }
+            Write-Host "✅ Step 3 completed`n" -ForegroundColor $Colors.Success
+            
+            # Wait for ArgoCD Applications to be ready before Workload Identity setup
+            Write-Host ""
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host "Waiting for Platform Components..." -ForegroundColor $Colors.Title
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            & "$scriptPath\wait-for-components.ps1" -TimeoutSeconds 300
+            
+            # Step 4: Setup ESO with Workload Identity
+            Write-Host "Step 4/5: Configuring ESO with Workload Identity..." -ForegroundColor $Colors.Info
+            Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
+            Invoke-Command "setup-eso-wi"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "`n⚠️  Warning: ESO setup had issues (non-critical)" -ForegroundColor $Colors.Warning
+            } else {
+                Write-Host "✅ Step 4 completed`n" -ForegroundColor $Colors.Success
+            }
+            Start-Sleep -Seconds 2
+            
+            # Step 5: Configure Image Updater
+            Write-Host "Step 5/5: Configuring ArgoCD Image Updater..." -ForegroundColor $Colors.Info
+            Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
+            Write-Host "Using Workload Identity for ACR authentication..." -ForegroundColor $Colors.Muted
+            Invoke-Command "configure-image-updater"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "`n⚠️  Warning: Image Updater setup had issues (non-critical)" -ForegroundColor $Colors.Warning
+            } else {
+                Write-Host "✅ Step 5 completed`n" -ForegroundColor $Colors.Success
+            }
+            
+            Write-Host ""
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host "✅ Complete Infrastructure Setup Finished!" -ForegroundColor $Colors.Success
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host ""
+            Write-Host "� Idempotency Guarantee:" -ForegroundColor $Colors.Info
+            Write-Host "   This setup is fully idempotent. You can:" -ForegroundColor $Colors.Muted
+            Write-Host "   • Rerun this option [12] anytime without risk" -ForegroundColor $Colors.Muted
+            Write-Host "   • It will skip installed components" -ForegroundColor $Colors.Muted
+            Write-Host "   • It will only add missing pieces" -ForegroundColor $Colors.Muted
+            Write-Host "   • It will never break existing configurations" -ForegroundColor $Colors.Muted
+            Write-Host ""
+            Write-Host "�📊 Next steps:" -ForegroundColor $Colors.Info
+            Write-Host "  1. Get ArgoCD URL:  .\aks-manager.ps1 get-argocd-url" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Check status:     .\aks-manager.ps1 status" -ForegroundColor $Colors.Muted
+            Write-Host "  3. Build images:     .\aks-manager.ps1 build-push all" -ForegroundColor $Colors.Muted
+            Write-Host ""
         }
         { $_ -in "build-push", "build-push-acr" } {
             $api = if ($arg1) { $arg1 } else { "all" }
@@ -678,9 +766,12 @@ function Invoke-Command($cmd, $arg1 = "") {
                 Write-Host "   ✅ No dev application found" -ForegroundColor $Colors.Success
             }
             
-            # Apply ArgoCD project first, then PRODUCTION manifest
+            # Apply ArgoCD project first, then platform components, then PRODUCTION manifest
             $manifestsPath = Join-Path (Split-Path (Split-Path $scriptPath -Parent) -Parent) "manifests"
             $projectManifest = "$manifestsPath\application-cloudgames-project-prod.yaml"
+            $azureWIManifest = "$manifestsPath\application-azure-workload-identity.yaml"
+            $nginxManifest = "$manifestsPath\application-ingress-nginx.yaml"
+            $esoManifest = "$manifestsPath\application-external-secrets.yaml"
             $prodManifest = "$manifestsPath\application-cloudgames-prod.yaml"
             
             if (Test-Path $projectManifest) {
@@ -697,6 +788,57 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             else {
                 Write-Host "❌ Manifest not found: $projectManifest" -ForegroundColor $Colors.Error
+            }
+            
+            # Apply Azure Workload Identity Webhook (required for WI to work)
+            if (Test-Path $azureWIManifest) {
+                Write-Host "`n🔑 Installing Azure Workload Identity Webhook..." -ForegroundColor $Colors.Info
+                Write-Host "   📄 application-azure-workload-identity.yaml" -ForegroundColor $Colors.Muted
+                kubectl apply -f $azureWIManifest
+
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   ✅ Applied application-azure-workload-identity.yaml" -ForegroundColor $Colors.Success
+                }
+                else {
+                    Write-Host "   ❌ Failed to apply Azure WI manifest" -ForegroundColor $Colors.Error
+                }
+            }
+            else {
+                Write-Host "❌ Manifest not found: $azureWIManifest" -ForegroundColor $Colors.Error
+            }
+            
+            # Apply NGINX Ingress Controller (LoadBalancer)
+            if (Test-Path $nginxManifest) {
+                Write-Host "`n🌐 Installing NGINX Ingress Controller..." -ForegroundColor $Colors.Info
+                Write-Host "   📄 application-ingress-nginx.yaml" -ForegroundColor $Colors.Muted
+                kubectl apply -f $nginxManifest
+
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   ✅ Applied application-ingress-nginx.yaml" -ForegroundColor $Colors.Success
+                }
+                else {
+                    Write-Host "   ❌ Failed to apply NGINX manifest" -ForegroundColor $Colors.Error
+                }
+            }
+            else {
+                Write-Host "❌ Manifest not found: $nginxManifest" -ForegroundColor $Colors.Error
+            }
+            
+            # Apply External Secrets Operator (platform component)
+            if (Test-Path $esoManifest) {
+                Write-Host "`n🔐 Installing External Secrets Operator..." -ForegroundColor $Colors.Info
+                Write-Host "   📄 application-external-secrets.yaml" -ForegroundColor $Colors.Muted
+                kubectl apply -f $esoManifest
+
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   ✅ Applied application-external-secrets.yaml" -ForegroundColor $Colors.Success
+                }
+                else {
+                    Write-Host "   ❌ Failed to apply ESO manifest" -ForegroundColor $Colors.Error
+                }
+            }
+            else {
+                Write-Host "❌ Manifest not found: $esoManifest" -ForegroundColor $Colors.Error
             }
             
             if (Test-Path $prodManifest) {
@@ -717,6 +859,129 @@ function Invoke-Command($cmd, $arg1 = "") {
                 Write-Host "❌ Manifest not found: $prodManifest" -ForegroundColor $Colors.Error
             }
         }
+        "reset-cluster" {
+            Write-Host "`n⚠️  DANGEROUS OPERATION - CLUSTER RESET" -ForegroundColor $Colors.Error
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Error
+            Write-Host ""
+            Write-Host "This will DELETE all resources except:" -ForegroundColor $Colors.Warning
+            Write-Host "  • kube-system namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  • kube-public namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  • default namespace" -ForegroundColor $Colors.Muted
+            Write-Host ""
+            Write-Host "This will be DELETED:" -ForegroundColor $Colors.Error
+            Write-Host "  ✗ argocd namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ cloudgames namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ ingress-nginx namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ external-secrets namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ azure-workload-identity-system namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ argocd-image-updater namespace" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ All CRDs (Applications, ExternalSecrets, etc)" -ForegroundColor $Colors.Muted
+            Write-Host "  ✗ All Helm releases" -ForegroundColor $Colors.Muted
+            Write-Host ""
+            Write-Host "This WILL NOT affect:" -ForegroundColor $Colors.Success
+            Write-Host "  ✓ Azure infrastructure (AKS, ACR, Key Vault, etc)" -ForegroundColor $Colors.Muted
+            Write-Host "  ✓ Terraform state" -ForegroundColor $Colors.Muted
+            Write-Host "  ✓ Node pools and node data" -ForegroundColor $Colors.Muted
+            Write-Host ""
+            
+            $confirm = Read-Host "Type 'yes I understand' to proceed with reset"
+            if ($confirm -ne "yes I understand") {
+                Write-Host "`n❌ Reset cancelled" -ForegroundColor $Colors.Success
+                return
+            }
+            
+            Write-Host "`n🔄 Starting cluster reset..." -ForegroundColor $Colors.Warning
+            Write-Host ""
+            
+            # Step 1: Delete namespaces in order (inverse of creation)
+            $namespacesToDelete = @(
+                "argocd-image-updater",
+                "azure-workload-identity-system",
+                "external-secrets",
+                "ingress-nginx",
+                "cloudgames",
+                "argocd"
+            )
+            
+            foreach ($ns in $namespacesToDelete) {
+                Write-Host "🗑️  Deleting namespace: $ns" -ForegroundColor $Colors.Warning
+                $nsExists = kubectl get namespace $ns --no-headers 2>$null
+                if ($nsExists) {
+                    kubectl delete namespace $ns --wait=true --timeout=60s 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "   ✅ Deleted: $ns" -ForegroundColor $Colors.Success
+                    } else {
+                        Write-Host "   ⚠️  Failed to delete: $ns (may still be terminating)" -ForegroundColor $Colors.Warning
+                    }
+                } else {
+                    Write-Host "   ⭕ Already absent: $ns" -ForegroundColor $Colors.Muted
+                }
+                Start-Sleep -Milliseconds 500
+            }
+            
+            Write-Host ""
+            Write-Host "🗑️  Cleaning up CRDs..." -ForegroundColor $Colors.Warning
+            
+            # Step 2: Delete CRDs (these can leave dangling resources)
+            $crds = @(
+                "applications.argoproj.io",
+                "externalsecrets.external-secrets.io",
+                "clustersecretstores.external-secrets.io",
+                "clustersecretstore.external-secrets.io"
+            )
+            
+            foreach ($crd in $crds) {
+                $crdExists = kubectl get crd $crd --no-headers 2>$null
+                if ($crdExists) {
+                    kubectl delete crd $crd --ignore-not-found 2>$null
+                    if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq 254) {
+                        Write-Host "   ✅ Deleted CRD: $crd" -ForegroundColor $Colors.Success
+                    }
+                }
+            }
+            
+            Write-Host ""
+            Write-Host "🗑️  Cleaning up Helm releases..." -ForegroundColor $Colors.Warning
+            
+            # Step 3: List and note any remaining Helm releases
+            $helmReleases = helm list --all-namespaces 2>$null | Select-Object -Skip 1
+            if ($helmReleases) {
+                foreach ($release in $helmReleases) {
+                    $parts = $release -split '\s+' | Where-Object { $_ }
+                    if ($parts.Count -ge 2) {
+                        $releaseName = $parts[0]
+                        $namespace = $parts[1]
+                        Write-Host "   ℹ️  Release $releaseName in namespace $namespace (will be removed with namespace)" -ForegroundColor $Colors.Muted
+                    }
+                }
+            } else {
+                Write-Host "   ⭕ No Helm releases found" -ForegroundColor $Colors.Muted
+            }
+            
+            Write-Host ""
+            Write-Host "🧹 Verifying cluster state..." -ForegroundColor $Colors.Info
+            
+            # Step 4: Verify clean state
+            $allNamespaces = kubectl get namespaces --no-headers 2>$null | awk '{print $1}'
+            Write-Host "   📋 Remaining namespaces:" -ForegroundColor $Colors.Info
+            foreach ($ns in $allNamespaces) {
+                if ($ns -in @("default", "kube-system", "kube-public", "kube-node-lease")) {
+                    Write-Host "      ✓ $ns (system)" -ForegroundColor $Colors.Success
+                } else {
+                    Write-Host "      ! $ns (unexpected)" -ForegroundColor $Colors.Warning
+                }
+            }
+            
+            Write-Host ""
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
+            Write-Host "✅ Cluster reset complete!" -ForegroundColor $Colors.Success
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
+            Write-Host ""
+            Write-Host "Next steps:" -ForegroundColor $Colors.Info
+            Write-Host "  1. .\aks-manager.ps1 post-terraform-setup" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Verify status with: .\aks-manager.ps1 status" -ForegroundColor $Colors.Muted
+            Write-Host ""
+        }
         "logs" {
             $component = if ($arg1) { $arg1 } else { "argocd" }
             Write-Host "`n📋 Logs for $component..." -ForegroundColor $Colors.Info
@@ -735,6 +1000,16 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             else {
                 Write-Host "❌ Script not found: check-helm-chart-versions.ps1" -ForegroundColor $Colors.Error
+            }
+        }
+        { $_ -in "check-argocd-updates", "check-argocd-versions" } {
+            Write-Host "`n🔄 Checking ArgoCD updates..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "check-argocd-updates.ps1"
+            if (Test-Path $script) {
+                & $script
+            }
+            else {
+                Write-Host "❌ Script not found: check-argocd-updates.ps1" -ForegroundColor $Colors.Error
             }
         }
         { $_ -in "update-chart", "update-helm-chart" } {

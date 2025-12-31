@@ -65,7 +65,7 @@ if (-not $IdentityName) {
 }
 
 $EsoNamespace = "external-secrets"
-$EsoServiceAccount = "external-secrets"
+$EsoServiceAccount = "external-secrets-operator"
 
 function Show-Header {
     Write-Host ""
@@ -108,13 +108,37 @@ try {
 }
 
 # Check ESO is installed
+Write-Host "Checking External Secrets Operator status..." -ForegroundColor $Colors.Info
 $esoPods = kubectl get pods -n $EsoNamespace --no-headers 2>$null | Where-Object { $_ -match "Running" }
 if (-not $esoPods) {
     Write-Host "❌ External Secrets Operator not running" -ForegroundColor $Colors.Error
-    Write-Host "   Run: .\aks-manager.ps1 install-eso" -ForegroundColor $Colors.Muted
-    exit 1
+    Write-Host "   ESO may still be starting. Waiting up to 90 seconds..." -ForegroundColor $Colors.Muted
+    
+    # Wait up to 90 seconds for ESO to be ready
+    $maxWaitAttempts = 18  # 18 * 5 = 90 seconds
+    $waitAttempt = 0
+    while ($waitAttempt -lt $maxWaitAttempts) {
+        Start-Sleep -Seconds 5
+        $esoPods = kubectl get pods -n $EsoNamespace --no-headers 2>$null | Where-Object { $_ -match "Running" }
+        if ($esoPods) {
+            Write-Host "✅ External Secrets Operator is now running" -ForegroundColor $Colors.Success
+            break
+        }
+        $waitAttempt++
+        if ($waitAttempt -lt $maxWaitAttempts) {
+            Write-Host "  ⏳ Still waiting... ($waitAttempt/$maxWaitAttempts)" -ForegroundColor $Colors.Muted
+        }
+    }
+    
+    # Final check
+    if (-not $esoPods) {
+        Write-Host "❌ External Secrets Operator failed to start" -ForegroundColor $Colors.Error
+        Write-Host "   Check pod logs: kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets" -ForegroundColor $Colors.Muted
+        exit 1
+    }
+} else {
+    Write-Host "✅ External Secrets Operator is running" -ForegroundColor $Colors.Success
 }
-Write-Host "✅ External Secrets Operator is running" -ForegroundColor $Colors.Success
 
 # =============================================================================
 # Step 2: Get AKS OIDC Issuer URL
@@ -138,111 +162,45 @@ Write-Host "✅ OIDC Issuer URL: $oidcIssuerUrl" -ForegroundColor $Colors.Succes
 
 $tenantId = $account.tenantId
 Write-Host "   Tenant ID: $tenantId" -ForegroundColor $Colors.Muted
-
 # =============================================================================
-# Step 3: Create User Assigned Identity
+# Step 2-5: Verify Azure Resources (Created by Terraform)
 # =============================================================================
 Write-Host ""
-Write-Host "=== 3/7 Creating User Assigned Identity ===" -ForegroundColor $Colors.Title
+Write-Host "=== 2/6 Verifying Azure Resources ===" -ForegroundColor $Colors.Title
 
-# Check if identity exists (suppress errors)
+Write-Host "   Verifying identity '$IdentityName'..." -ForegroundColor $Colors.Info
 $ErrorActionPreference = "SilentlyContinue"
-$existingIdentityJson = az identity show --name $IdentityName --resource-group $ResourceGroup 2>&1
+$identity = az identity show --name $IdentityName --resource-group $ResourceGroup 2>&1 | ConvertFrom-Json
 $ErrorActionPreference = "Stop"
 
-$existingIdentity = $null
-if ($LASTEXITCODE -eq 0 -and $existingIdentityJson) {
-    try {
-        $existingIdentity = $existingIdentityJson | ConvertFrom-Json
-    } catch {
-        $existingIdentity = $null
-    }
+if (-not $identity -or -not $identity.clientId) {
+    Write-Host "❌ Identity '$IdentityName' not found in Azure" -ForegroundColor $Colors.Error
+    Write-Host "   Ensure Terraform has created this identity" -ForegroundColor $Colors.Muted
+    exit 1
 }
 
-if ($existingIdentity -and $existingIdentity.clientId) {
-    Write-Host "⚠️  Identity '$IdentityName' already exists" -ForegroundColor $Colors.Warning
-    $clientId = $existingIdentity.clientId
-    $principalId = $existingIdentity.principalId
-    Write-Host "   Client ID: $clientId" -ForegroundColor $Colors.Muted
-} else {
-    Write-Host "   Creating identity '$IdentityName'..." -ForegroundColor $Colors.Info
-    $identityJson = az identity create --name $IdentityName --resource-group $ResourceGroup --location $aks.location 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Failed to create identity: $identityJson" -ForegroundColor $Colors.Error
-        exit 1
-    }
-    $identity = $identityJson | ConvertFrom-Json
-    $clientId = $identity.clientId
-    $principalId = $identity.principalId
-    Write-Host "✅ Identity created: $clientId" -ForegroundColor $Colors.Success
+$clientId = $identity.clientId
+$principalId = $identity.principalId
+Write-Host "✅ Identity found: $clientId" -ForegroundColor $Colors.Success
 
-    # Wait for identity to propagate
-    Write-Host "   Waiting for identity to propagate..." -ForegroundColor $Colors.Muted
-    Start-Sleep -Seconds 15
-}
-
-# =============================================================================
-# Step 4: Create Federated Identity Credential
-# =============================================================================
-Write-Host ""
-Write-Host "=== 4/7 Creating Federated Identity Credential ===" -ForegroundColor $Colors.Title
-
-$fedCredName = "$IdentityName-federated-credential"
-$subject = "system:serviceaccount:${EsoNamespace}:${EsoServiceAccount}"
-
-# Check if federated credential exists (suppress errors)
+Write-Host "   Verifying Key Vault '$KeyVaultName'..." -ForegroundColor $Colors.Info
 $ErrorActionPreference = "SilentlyContinue"
-$existingFedCredJson = az identity federated-credential show --name $fedCredName --identity-name $IdentityName --resource-group $ResourceGroup 2>&1
+$kv = az keyvault show --name $KeyVaultName 2>&1 | ConvertFrom-Json
 $ErrorActionPreference = "Stop"
 
-$existingFedCred = $null
-if ($LASTEXITCODE -eq 0 -and $existingFedCredJson) {
-    try {
-        $existingFedCred = $existingFedCredJson | ConvertFrom-Json
-    } catch {
-        $existingFedCred = $null
-    }
-}
-
-if ($existingFedCred -and $existingFedCred.name) {
-    Write-Host "⚠️  Federated credential already exists" -ForegroundColor $Colors.Warning
-} else {
-    Write-Host "   Creating federated credential..." -ForegroundColor $Colors.Info
-    Write-Host "   Subject: $subject" -ForegroundColor $Colors.Muted
-
-    az identity federated-credential create `
-        --name $fedCredName `
-        --identity-name $IdentityName `
-        --resource-group $ResourceGroup `
-        --issuer $oidcIssuerUrl `
-        --subject $subject `
-        --audiences "api://AzureADTokenExchange" 2>$null | Out-Null
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Failed to create federated credential" -ForegroundColor $Colors.Error
-        exit 1
-    }
-    Write-Host "✅ Federated credential created" -ForegroundColor $Colors.Success
-}
-
-# =============================================================================
-# Step 5: Grant Key Vault Access
-# =============================================================================
-Write-Host ""
-Write-Host "=== 5/7 Granting Key Vault access ===" -ForegroundColor $Colors.Title
-
-$kv = az keyvault show --name $KeyVaultName 2>$null | ConvertFrom-Json
 if (-not $kv) {
     Write-Host "❌ Key Vault '$KeyVaultName' not found" -ForegroundColor $Colors.Error
     exit 1
 }
+Write-Host "✅ Key Vault found" -ForegroundColor $Colors.Success
 
-Write-Host "   Assigning 'Key Vault Secrets User' role..." -ForegroundColor $Colors.Info
-az role assignment create `
-    --role "Key Vault Secrets User" `
-    --assignee-object-id $principalId `
-    --assignee-principal-type ServicePrincipal `
-    --scope $kv.id 2>$null | Out-Null
+Write-Host "   Verifying Workload Identity webhook..." -ForegroundColor $Colors.Info
+$wiWebhookPods = kubectl get pods -n azure-workload-identity-system --no-headers 2>$null | Where-Object { $_ -match "Running" }
+if ($wiWebhookPods) {
+    Write-Host "✅ Workload Identity webhook is running" -ForegroundColor $Colors.Success
+} else {
+    Write-Host "⚠️  Workload Identity webhook not ready yet" -ForegroundColor $Colors.Warning
+}
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Key Vault access granted" -ForegroundColor $Colors.Success
@@ -254,7 +212,7 @@ if ($LASTEXITCODE -eq 0) {
 # Step 6: Annotate ESO ServiceAccount
 # =============================================================================
 Write-Host ""
-Write-Host "=== 6/7 Annotating ESO ServiceAccount ===" -ForegroundColor $Colors.Title
+Write-Host "=== 3/6 Annotating ESO ServiceAccount ===" -ForegroundColor $Colors.Title
 
 # Annotate the ServiceAccount with the client ID and tenant ID
 kubectl annotate serviceaccount $EsoServiceAccount -n $EsoNamespace `
@@ -269,74 +227,64 @@ kubectl label serviceaccount $EsoServiceAccount -n $EsoNamespace `
 Write-Host "✅ ServiceAccount annotated with client ID and tenant ID" -ForegroundColor $Colors.Success
 
 # Annotate webhook ServiceAccount too
-kubectl annotate serviceaccount external-secrets-webhook -n $EsoNamespace `
+kubectl annotate serviceaccount external-secrets-operator-webhook -n $EsoNamespace `
     "azure.workload.identity/client-id=$clientId" --overwrite 2>$null
-kubectl annotate serviceaccount external-secrets-webhook -n $EsoNamespace `
+kubectl annotate serviceaccount external-secrets-operator-webhook -n $EsoNamespace `
     "azure.workload.identity/tenant-id=$tenantId" --overwrite 2>$null
-kubectl label serviceaccount external-secrets-webhook -n $EsoNamespace `
+kubectl label serviceaccount external-secrets-operator-webhook -n $EsoNamespace `
     "azure.workload.identity/use=true" --overwrite 2>$null
 
 Write-Host "✅ Webhook ServiceAccount also annotated" -ForegroundColor $Colors.Success
 
 # Restart ESO pods to pick up the new identity
 Write-Host "   Restarting ESO pods..." -ForegroundColor $Colors.Info
-kubectl rollout restart deployment/external-secrets -n $EsoNamespace 2>$null
-kubectl rollout restart deployment/external-secrets-webhook -n $EsoNamespace 2>$null
-kubectl rollout restart deployment/external-secrets-cert-controller -n $EsoNamespace 2>$null
+kubectl rollout restart deployment/external-secrets-operator -n $EsoNamespace 2>$null
+kubectl rollout restart deployment/external-secrets-operator-webhook -n $EsoNamespace 2>$null
+kubectl rollout restart deployment/external-secrets-operator-cert-controller -n $EsoNamespace 2>$null
 
 Write-Host "   Waiting for pods to be ready..." -ForegroundColor $Colors.Muted
-kubectl rollout status deployment/external-secrets -n $EsoNamespace --timeout=120s 2>$null
+kubectl rollout status deployment/external-secrets-operator -n $EsoNamespace --timeout=120s 2>$null
 
 # =============================================================================
-# Step 7: Recreate ClusterSecretStore
+# Step 4: Verify ClusterSecretStore (Managed by ArgoCD)
 # =============================================================================
 Write-Host ""
-Write-Host "=== 7/7 Recreating ClusterSecretStore ===" -ForegroundColor $Colors.Title
+Write-Host "=== 4/6 Verifying ClusterSecretStore ===" -ForegroundColor $Colors.Title
+Write-Host "   (ClusterSecretStore is managed by Kustomize/ArgoCD)" -ForegroundColor $Colors.Muted
 
-$kvUrl = "https://$KeyVaultName.vault.azure.net"
-
-$manifest = @"
-apiVersion: external-secrets.io/v1beta1
-kind: ClusterSecretStore
-metadata:
-  name: azure-keyvault
-  labels:
-    app.kubernetes.io/part-of: cloudgames
-spec:
-  provider:
-    azurekv:
-      authType: WorkloadIdentity
-      vaultUrl: $kvUrl
-      tenantId: $tenantId
-      serviceAccountRef:
-        name: $EsoServiceAccount
-        namespace: $EsoNamespace
-"@
-
-# Delete and recreate
-kubectl delete clustersecretstore azure-keyvault 2>$null
-Start-Sleep -Seconds 2
-
-$tempFile = [System.IO.Path]::GetTempFileName()
-$manifest | Out-File -FilePath $tempFile -Encoding utf8
-kubectl apply -f $tempFile 2>&1 | Out-Null
-Remove-Item $tempFile -Force
-
-Write-Host "✅ ClusterSecretStore recreated" -ForegroundColor $Colors.Success
-
-# Wait and verify
-Write-Host "   Waiting for ClusterSecretStore to be ready..." -ForegroundColor $Colors.Muted
-Start-Sleep -Seconds 10
-
-$store = kubectl get clustersecretstore azure-keyvault -o json 2>$null | ConvertFrom-Json
-if ($store.status.conditions) {
-    $readyCondition = $store.status.conditions | Where-Object { $_.type -eq "Ready" }
-    if ($readyCondition.status -eq "True") {
-        Write-Host "✅ ClusterSecretStore is READY!" -ForegroundColor $Colors.Success
-    } else {
-        Write-Host "⚠️  ClusterSecretStore status: $($readyCondition.reason)" -ForegroundColor $Colors.Warning
-        Write-Host "   Message: $($readyCondition.message)" -ForegroundColor $Colors.Muted
+# Wait for ClusterSecretStore to be created by ArgoCD
+Write-Host "   Waiting for ClusterSecretStore..." -ForegroundColor $Colors.Info
+$maxAttempts = 12
+$attempt = 0
+$store = $null
+while ($attempt -lt $maxAttempts) {
+    $store = kubectl get clustersecretstore azure-keyvault -o json 2>$null | ConvertFrom-Json
+    if ($store -and $store.metadata) {
+        break
     }
+    $attempt++
+    if ($attempt -lt $maxAttempts) {
+        Write-Host "   ⏳ Waiting... ($attempt/$maxAttempts)" -ForegroundColor $Colors.Muted
+        Start-Sleep -Seconds 5
+    }
+}
+
+if ($store -and $store.metadata) {
+    Write-Host "✅ ClusterSecretStore found" -ForegroundColor $Colors.Success
+    
+    # Check status if available
+    if ($store.status -and $store.status.conditions) {
+        $readyCondition = $store.status.conditions | Where-Object { $_.type -eq "Ready" }
+        if ($readyCondition -and $readyCondition.status -eq "True") {
+            Write-Host "✅ ClusterSecretStore is READY!" -ForegroundColor $Colors.Success
+        } elseif ($readyCondition) {
+            Write-Host "⚠️  ClusterSecretStore status: $($readyCondition.reason)" -ForegroundColor $Colors.Warning
+        }
+    } else {
+        Write-Host "⚠️  ClusterSecretStore status not yet available (will sync shortly)" -ForegroundColor $Colors.Warning
+    }
+} else {
+    Write-Host "⚠️  ClusterSecretStore not found - will be deployed by ArgoCD" -ForegroundColor $Colors.Warning
 }
 
 # =============================================================================
@@ -351,6 +299,59 @@ Write-Host "📋 Summary:" -ForegroundColor $Colors.Title
 Write-Host "   Identity Name:    $IdentityName" -ForegroundColor $Colors.Info
 Write-Host "   Client ID:        $clientId" -ForegroundColor $Colors.Info
 Write-Host "   Key Vault:        $KeyVaultName" -ForegroundColor $Colors.Info
+Write-Host ""
+
+# Verification - ensure everything is configured correctly
+Write-Host "🔍 Final Verification (Idempotency Check):" -ForegroundColor $Colors.Title
+$verifyErrors = 0
+
+# Check 1: ServiceAccount annotations
+$sa = kubectl get serviceaccount $EsoServiceAccount -n $EsoNamespace -o json 2>$null | ConvertFrom-Json
+if ($sa -and $sa.metadata -and $sa.metadata.annotations -and $sa.metadata.annotations.'azure.workload.identity/client-id') {
+    Write-Host "   ✅ ESO ServiceAccount has Workload Identity annotations" -ForegroundColor $Colors.Success
+} else {
+    Write-Host "   ❌ ESO ServiceAccount missing Workload Identity annotations" -ForegroundColor $Colors.Error
+    $verifyErrors++
+}
+
+# Check 2: Federated Credential
+$fedCred = az identity federated-credential show --name "$IdentityName-federated-credential" --identity-name $IdentityName --resource-group $ResourceGroup 2>$null | ConvertFrom-Json
+if ($fedCred -and $fedCred.name) {
+    Write-Host "   ✅ Federated Credential is configured" -ForegroundColor $Colors.Success
+} else {
+    Write-Host "   ❌ Federated Credential not found or not configured" -ForegroundColor $Colors.Error
+    $verifyErrors++
+}
+
+# Check 3: Key Vault access
+$kvCheck = az role assignment list --assignee $principalId --scope "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/$ResourceGroup" 2>$null | ConvertFrom-Json
+if ($kvCheck -and ($kvCheck | Where-Object { $_.roleDefinitionName -eq "Key Vault Secrets User" })) {
+    Write-Host "   ✅ Key Vault Secrets User role is assigned" -ForegroundColor $Colors.Success
+} else {
+    Write-Host "   ⚠️  Key Vault Secrets User role not verified (may take time to propagate)" -ForegroundColor $Colors.Warning
+}
+
+# Check 4: ClusterSecretStore status
+$store = kubectl get clustersecretstore azure-keyvault -o json 2>$null | ConvertFrom-Json
+if ($store.status.conditions) {
+    $readyCondition = $store.status.conditions | Where-Object { $_.type -eq "Ready" }
+    if ($readyCondition.status -eq "True") {
+        Write-Host "   ✅ ClusterSecretStore is READY" -ForegroundColor $Colors.Success
+    } else {
+        Write-Host "   ⚠️  ClusterSecretStore status: $($readyCondition.reason)" -ForegroundColor $Colors.Warning
+    }
+} else {
+    Write-Host "   ⚠️  ClusterSecretStore status not yet available" -ForegroundColor $Colors.Warning
+}
+
+Write-Host ""
+if ($verifyErrors -eq 0) {
+    Write-Host "✅ All critical checks passed! Setup is complete and idempotent." -ForegroundColor $Colors.Success
+    Write-Host "   You can safely run this script again if needed." -ForegroundColor $Colors.Muted
+} else {
+    Write-Host "⚠️  Some checks failed. Please review the output above." -ForegroundColor $Colors.Warning
+}
+
 Write-Host ""
 Write-Host "📋 Next Steps:" -ForegroundColor $Colors.Title
 Write-Host "1. Verify ClusterSecretStore status:" -ForegroundColor $Colors.Info
