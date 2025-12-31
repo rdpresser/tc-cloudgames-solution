@@ -157,9 +157,9 @@ variable "aks_enable_auto_scaling" {
 }
 
 variable "aks_system_node_min_count" {
-  description = "Minimum number of nodes when auto-scaling is enabled (1 is minimum for system pool)"
+  description = "Minimum number of nodes when auto-scaling is enabled (3 recommended for HA with B2ms)"
   type        = number
-  default     = 1
+  default     = 3
 
   validation {
     condition     = var.aks_system_node_min_count >= 1 && var.aks_system_node_min_count <= 10

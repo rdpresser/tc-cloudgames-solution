@@ -40,7 +40,7 @@ variable "system_node_count" {
 }
 
 variable "system_node_vm_size" {
-  description = "VM size for system node pool (B2ms = 2 vCPU, 8 GB RAM, 1250 Mbps network - upgraded from B2s for better networking performance)"
+  description = "VM size for system node pool (B2ms = 2 vCPU, 8 GB RAM, 1250 Mbps network - upgraded from B2s)"
   type        = string
   default     = "Standard_B2ms"
 }
