@@ -11,6 +11,7 @@ kind: Deployment
 metadata:
   name: user-api
 spec:
+  replicas: 1  # Temporarily reduced from 4 for cluster scale-down (will restore to 4 after upgrade)
   template:
     metadata:
       annotations:
@@ -25,6 +26,7 @@ kind: Deployment
 metadata:
   name: games-api
 spec:
+  replicas: 1  # Temporarily reduced from 2 for cluster scale-down (will restore to 2 after upgrade)
   template:
     metadata:
       annotations:
@@ -39,6 +41,7 @@ kind: Deployment
 metadata:
   name: payments-api
 spec:
+  replicas: 1  # Temporarily reduced from 1 for cluster scale-down (keeping minimal)
   template:
     metadata:
       annotations:
