@@ -145,9 +145,9 @@ variable "aks_system_node_count" {
 }
 
 variable "aks_system_node_vm_size" {
-  description = "VM size for AKS system node pool (B2s = 2 vCPU, 4 GB RAM - minimum for AKS, also hosts workloads)"
+  description = "VM size for AKS system node pool (B2ms = 2 vCPU, 8 GB RAM, 1250 Mbps network - upgraded from B2s for better performance)"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2ms"
 }
 
 variable "aks_enable_auto_scaling" {

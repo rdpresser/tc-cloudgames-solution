@@ -24,6 +24,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     os_disk_size_gb              = var.system_node_os_disk_size_gb
     max_pods                     = var.max_pods_per_node
     only_critical_addons_enabled = var.only_critical_addons_enabled
+    temporary_name_for_rotation  = "systmp"
 
     tags = var.tags
   }
