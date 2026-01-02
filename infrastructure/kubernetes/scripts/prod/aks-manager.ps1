@@ -123,6 +123,8 @@ function Show-Help {
     Write-Host "Check Helm chart versions for updates" -ForegroundColor $Colors.Muted
     Write-Host "    update-chart        " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Update Helm chart version in manifest" -ForegroundColor $Colors.Muted
+    Write-Host "    diagnose-fix-components" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Auto-detect and fix degraded components (ingress-nginx, workload-identity)" -ForegroundColor $Colors.Muted
     Write-Host "    fix-argocd-sync     " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Recover ArgoCD sync issues (manual webhook fix)" -ForegroundColor $Colors.Muted
     Write-Host "    cleanup-audit       " -NoNewline -ForegroundColor $Colors.Success
@@ -461,13 +463,15 @@ function Show-Menu {
         Write-Host "       (Check for updates to ingress-nginx, ESO, workload-identity)" -ForegroundColor $Colors.Muted
         Write-Host " [14] 🔄 Check ArgoCD Updates" -ForegroundColor $Colors.Info
         Write-Host "       (View available ArgoCD versions from GitHub)" -ForegroundColor $Colors.Muted
-        Write-Host " [15] � Cleanup Audit" -ForegroundColor $Colors.Info
+        Write-Host " [15] 🩺 Diagnose & Fix Degraded Components" -ForegroundColor $Colors.Info
+        Write-Host "       (Auto-detect and fix degraded ingress-nginx, workload-identity, etc)" -ForegroundColor $Colors.Muted
+        Write-Host " [16] 📋 Cleanup Audit" -ForegroundColor $Colors.Info
         Write-Host "       (Analyze what can be safely deleted)" -ForegroundColor $Colors.Muted
-        Write-Host " [16] 🗑️  Reset Cluster (DANGEROUS)" -ForegroundColor $Colors.Error
+        Write-Host " [17] 🗑️  Reset Cluster (DANGEROUS)" -ForegroundColor $Colors.Error
         Write-Host "       (Delete all workloads, keep only system namespaces)" -ForegroundColor $Colors.Muted
-        Write-Host " [17] 💥 Force Delete Namespace" -ForegroundColor $Colors.Error
+        Write-Host " [18] 💥 Force Delete Namespace" -ForegroundColor $Colors.Error
         Write-Host "       (Force delete stuck Terminating namespace)" -ForegroundColor $Colors.Muted
-        Write-Host " [18] 🔄 Recover ArgoCD Sync" -ForegroundColor $Colors.Info
+        Write-Host " [19] 🔄 Recover ArgoCD Sync" -ForegroundColor $Colors.Info
         Write-Host "       (Manually fix webhook sync issues if needed)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
@@ -498,16 +502,14 @@ function Show-Menu {
             "12" { Invoke-Command "post-terraform-setup" }
             "13" { Invoke-Command "check-versions" }
             "14" { Invoke-Command "check-argocd-updates" }
-            "15" { Invoke-Command "cleanup-audit" }
-            "16" { Invoke-Command "reset-cluster" }
-            "17" { 
+            "15" { Invoke-Command "diagnose-fix-components" }
+            "16" { Invoke-Command "cleanup-audit" }
+            "17" { Invoke-Command "reset-cluster" }
+            "18" { 
                 $ns = Read-Host "Namespace name"
                 Invoke-Command "force-delete-ns" $ns
             }
-            "17" {
-                Invoke-Command "force-delete-ns"
-            }
-            "18" {
+            "19" {
                 & "$PSScriptRoot\fix-argocd-sync.ps1"
             }
             "0" {
@@ -1280,6 +1282,114 @@ function Invoke-Command($cmd, $arg1 = "") {
                     Write-Host "❌ Script not found: force-delete-namespace.ps1" -ForegroundColor $Colors.Error
                 }
             }
+        }
+        { $_ -in "diagnose-fix-components", "fix-degraded" } {
+            Write-Host ""
+            Write-Host "========================================================" -ForegroundColor $Colors.Title
+            Write-Host "  Diagnose & Fix Degraded Components" -ForegroundColor $Colors.Title
+            Write-Host "========================================================" -ForegroundColor $Colors.Title
+            Write-Host ""
+            
+            # Check all ArgoCD applications for issues
+            Write-Host "Checking ArgoCD applications..." -ForegroundColor $Colors.Info
+            $apps = kubectl get applications -n argocd -o json 2>$null | ConvertFrom-Json
+            
+            if (-not $apps -or -not $apps.items) {
+                Write-Host "[ERROR] Could not get ArgoCD applications" -ForegroundColor $Colors.Error
+                return
+            }
+            
+            $degradedApps = @()
+            
+            foreach ($app in $apps.items) {
+                $name = $app.metadata.name
+                $syncStatus = $app.status.sync.status
+                $healthStatus = $app.status.health.status
+                
+                if ($syncStatus -ne "Synced" -or $healthStatus -notin @("Healthy", "Progressing")) {
+                    $degradedApps += @{
+                        Name = $name
+                        Sync = $syncStatus
+                        Health = $healthStatus
+                    }
+                    Write-Host "[ISSUE] $name - Sync: $syncStatus, Health: $healthStatus" -ForegroundColor $Colors.Warning
+                }
+            }
+            
+            if ($degradedApps.Count -eq 0) {
+                Write-Host "[OK] All applications are healthy!" -ForegroundColor $Colors.Success
+                return
+            }
+            
+            Write-Host ""
+            Write-Host "Found $($degradedApps.Count) application(s) with issues" -ForegroundColor $Colors.Warning
+            Write-Host ""
+            
+            # Auto-fix common issues
+            Write-Host "Applying automatic fixes..." -ForegroundColor $Colors.Info
+            Write-Host ""
+            
+            foreach ($degraded in $degradedApps) {
+                $appName = $degraded.Name
+                Write-Host "Fixing: $appName..." -ForegroundColor $Colors.Info
+                
+                # Strategy 1: Check pod status in namespace
+                $namespace = switch ($appName) {
+                    "azure-workload-identity" { "azure-workload-identity-system" }
+                    "ingress-nginx" { "ingress-nginx" }
+                    "external-secrets-operator" { "external-secrets" }
+                    "cloudgames-prod" { "cloudgames" }
+                    default { $appName }
+                }
+                
+                Write-Host "  Checking pods in namespace: $namespace" -ForegroundColor $Colors.Muted
+                $pods = kubectl get pods -n $namespace --no-headers 2>$null
+                
+                if ($pods) {
+                    $failedPods = $pods | Where-Object { $_ -notmatch "Running|Completed" }
+                    if ($failedPods) {
+                        Write-Host "  Found failed/pending pods - restarting..." -ForegroundColor $Colors.Warning
+                        kubectl delete pods -n $namespace -l "app.kubernetes.io/instance=$appName" --force --grace-period=0 2>$null
+                        Start-Sleep -Seconds 5
+                    }
+                }
+                
+                # Strategy 2: Force ArgoCD sync
+                Write-Host "  Force syncing in ArgoCD..." -ForegroundColor $Colors.Muted
+                kubectl patch application $appName -n argocd -p '{"operation":{"initiatedBy":{"username":"admin"}}}' --type merge 2>$null
+                
+                Start-Sleep -Seconds 3
+                
+                # Check new status
+                $newApp = kubectl get application $appName -n argocd -o json 2>$null | ConvertFrom-Json
+                if ($newApp) {
+                    $newSync = $newApp.status.sync.status
+                    $newHealth = $newApp.status.health.status
+                    Write-Host "  New status - Sync: $newSync, Health: $newHealth" -ForegroundColor $(if ($newSync -eq "Synced" -and $newHealth -eq "Healthy") { $Colors.Success } else { $Colors.Warning })
+                }
+                
+                Write-Host ""
+            }
+            
+            Write-Host "========================================================" -ForegroundColor $Colors.Success
+            Write-Host "  Fix Complete" -ForegroundColor $Colors.Success
+            Write-Host "========================================================" -ForegroundColor $Colors.Success
+            Write-Host ""
+            Write-Host "Final Status:" -ForegroundColor $Colors.Info
+            kubectl get applications -n argocd --no-headers 2>$null | ForEach-Object {
+                $parts = $_ -split '\s+'
+                $n = $parts[0]
+                $s = $parts[1]
+                $h = $parts[2]
+                $color = if ($s -eq "Synced" -and $h -eq "Healthy") { $Colors.Success } else { $Colors.Warning }
+                Write-Host "  $n - $s / $h" -ForegroundColor $color
+            }
+            Write-Host ""
+            Write-Host "If issues persist:" -ForegroundColor $Colors.Info
+            Write-Host "  1. Run: .\diagnose-workload-identity.ps1 (for azure-workload-identity)" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Run menu option [19] - Recover ArgoCD Sync" -ForegroundColor $Colors.Muted
+            Write-Host "  3. Check pod logs: kubectl logs -n <namespace> <pod-name>" -ForegroundColor $Colors.Muted
+            Write-Host ""
         }
         "fix-argocd-sync" {
             Write-Host "`n🔄 Running ArgoCD sync recovery..." -ForegroundColor $Colors.Info
