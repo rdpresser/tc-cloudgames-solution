@@ -89,11 +89,11 @@ spec:
               value: "45"
           resources:
             requests:
-              cpu: "100m"
-              memory: "384Mi"
+              cpu: "150m"
+              memory: "600Mi"
             limits:
               cpu: "1000m"
-              memory: "1Gi"
+              memory: "1536Mi"
           startupProbe:
             httpGet:
               path: /health
@@ -146,11 +146,11 @@ spec:
               value: "20"
           resources:
             requests:
-              cpu: "150m"
-              memory: "512Mi"
+              cpu: "200m"
+              memory: "700Mi"
             limits:
               cpu: "1000m"
-              memory: "1Gi"
+              memory: "1536Mi"
           startupProbe:
             httpGet:
               path: /health
@@ -203,11 +203,11 @@ spec:
               value: "20"
           resources:
             requests:
-              cpu: "100m"
-              memory: "384Mi"
+              cpu: "200m"
+              memory: "700Mi"
             limits:
               cpu: "1000m"
-              memory: "1Gi"
+              memory: "1536Mi"
           startupProbe:
             httpGet:
               path: /health
