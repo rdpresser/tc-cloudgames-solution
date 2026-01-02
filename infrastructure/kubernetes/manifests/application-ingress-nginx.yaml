@@ -60,3 +60,9 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+  # Ignore ArgoCD tracking annotation added by bootstrap meta-app
+  ignoreDifferences:
+    - group: argoproj.io
+      kind: Application
+      jsonPointers:
+        - /metadata/annotations/argocd.argoproj.io~1tracking-id
