@@ -14,8 +14,8 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: user-api
 spec:
-  minReplicas: 2
-  maxReplicas: 5
+  minReplicas: 3
+  maxReplicas: 8
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 30  # Scale up quickly

@@ -11,7 +11,7 @@ kind: Deployment
 metadata:
   name: user-api
 spec:
-  replicas: 4  # Restore to 4 replicas after cluster upgrade completes
+  # replicas removed - controlled by HPA (min: 3, max: 8)
   template:
     metadata:
       annotations:
@@ -26,7 +26,7 @@ kind: Deployment
 metadata:
   name: games-api
 spec:
-  replicas: 1  # Temporarily reduced from 2 for cluster scale-down (will restore to 2 after upgrade)
+  # replicas removed - controlled by HPA (min: 2, max: 5)
   template:
     metadata:
       annotations:
@@ -41,7 +41,7 @@ kind: Deployment
 metadata:
   name: payments-api
 spec:
-  replicas: 1  # Temporarily reduced from 1 for cluster scale-down (keeping minimal)
+  # replicas removed - controlled by HPA (min: 2, max: 5)
   template:
     metadata:
       annotations:
@@ -66,7 +66,7 @@ kind: Deployment
 metadata:
   name: user-api
 spec:
-  replicas: 4
+  # replicas removed - controlled by HPA
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -123,7 +123,7 @@ kind: Deployment
 metadata:
   name: games-api
 spec:
-  replicas: 4
+  # replicas removed - controlled by HPA
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -180,7 +180,7 @@ kind: Deployment
 metadata:
   name: payments-api
 spec:
-  replicas: 4
+  # replicas removed - controlled by HPA
   strategy:
     type: RollingUpdate
     rollingUpdate:
