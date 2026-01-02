@@ -61,6 +61,20 @@ variable "postgres_sku" {
   default     = "B_Standard_B2s"
 }
 
+# PostgreSQL max_connections parameter
+# B_Standard_B2s supports up to 429 connections
+# Default: 250 (allows 3 services × 4 pods × 15 connections + admin/monitoring)
+variable "postgres_max_connections" {
+  type        = number
+  description = "Maximum concurrent connections to PostgreSQL (default 250 for B2s SKU)"
+  default     = 300
+
+  validation {
+    condition     = var.postgres_max_connections >= 50 && var.postgres_max_connections <= 5000
+    error_message = "postgres_max_connections must be between 50 and 5000"
+  }
+}
+
 variable "db_max_pool_size" {
   description = "Application DB max pool size"
   type        = number
@@ -131,9 +145,9 @@ variable "aks_system_node_count" {
 }
 
 variable "aks_system_node_vm_size" {
-  description = "VM size for AKS system node pool (B2s = 2 vCPU, 4 GB RAM - minimum for AKS, also hosts workloads)"
+  description = "VM size for AKS system node pool (B2ms = 2 vCPU, 8 GB RAM, 1250 Mbps network - upgraded from B2s for better performance)"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2ms"
 }
 
 variable "aks_enable_auto_scaling" {
@@ -143,9 +157,9 @@ variable "aks_enable_auto_scaling" {
 }
 
 variable "aks_system_node_min_count" {
-  description = "Minimum number of nodes when auto-scaling is enabled (1 is minimum for system pool)"
+  description = "Minimum number of nodes when auto-scaling is enabled (3 recommended for HA with B2ms)"
   type        = number
-  default     = 1
+  default     = 3
 
   validation {
     condition     = var.aks_system_node_min_count >= 1 && var.aks_system_node_min_count <= 10
@@ -156,7 +170,7 @@ variable "aks_system_node_min_count" {
 variable "aks_system_node_max_count" {
   description = "Maximum number of nodes when auto-scaling is enabled (scales up during high load)"
   type        = number
-  default     = 3
+  default     = 5
 
   validation {
     condition     = var.aks_system_node_max_count >= 1 && var.aks_system_node_max_count <= 100
@@ -203,6 +217,32 @@ variable "log_analytics_daily_quota_gb" {
   validation {
     condition     = var.log_analytics_daily_quota_gb == 0 || var.log_analytics_daily_quota_gb >= 0.023
     error_message = "Daily quota must be 0 (unlimited) or >= 0.023 GB."
+  }
+}
+
+# =============================================================================
+# Application Insights (APM) Configuration
+# =============================================================================
+
+variable "app_insights_sampling_percentage" {
+  description = "Percentage of telemetry to collect (0-100). 100 = no sampling. Lower values reduce costs but may miss data."
+  type        = number
+  default     = 100
+
+  validation {
+    condition     = var.app_insights_sampling_percentage >= 0 && var.app_insights_sampling_percentage <= 100
+    error_message = "Sampling percentage must be between 0 and 100."
+  }
+}
+
+variable "app_insights_daily_cap_gb" {
+  description = "Daily data cap in GB (0 = no cap). Recommended: 1-5 GB for dev, 10+ for production."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.app_insights_daily_cap_gb >= 0
+    error_message = "Daily cap must be 0 (no cap) or a positive number."
   }
 }
 

@@ -65,6 +65,7 @@ module "postgres" {
   postgres_admin_login    = var.postgres_admin_login
   postgres_admin_password = var.postgres_admin_password
   postgres_sku            = var.postgres_sku
+  max_connections         = var.postgres_max_connections
   tags                    = local.common_tags
 
   depends_on = [
@@ -292,6 +293,25 @@ module "logs" {
 }
 
 # =============================================================================
+# Application Insights (APM - Azure Monitor OpenTelemetry)
+# =============================================================================
+module "app_insights" {
+  source                     = "../modules/application_insights"
+  name_prefix                = local.full_name
+  location                   = module.resource_group.location
+  resource_group_name        = module.resource_group.name
+  log_analytics_workspace_id = module.logs.log_analytics_workspace_id
+  sampling_percentage        = var.app_insights_sampling_percentage
+  daily_data_cap_in_gb       = var.app_insights_daily_cap_gb
+  tags                       = local.common_tags
+
+  depends_on = [
+    module.resource_group,
+    module.logs
+  ]
+}
+
+# =============================================================================
 # Key Vault Module (Terraform RBAC)
 # =============================================================================
 module "key_vault" {
@@ -350,6 +370,9 @@ module "key_vault" {
   sendgrid_email_new_user_tid = var.sendgrid_email_new_user_tid
   sendgrid_email_purchase_tid = var.sendgrid_email_purchase_tid
 
+  # Application Insights (APM)
+  app_insights_connection_string = module.app_insights.connection_string
+
   # App DB pool sizes (forced to 20/2 via locals to avoid workspace overrides)
   db_max_pool_size      = local.db_max_pool_size
   db_min_pool_size      = local.db_min_pool_size
@@ -360,7 +383,8 @@ module "key_vault" {
     module.acr,
     module.postgres,
     module.redis,
-    module.servicebus
+    module.servicebus,
+    module.app_insights
   ]
 }
 
@@ -536,6 +560,91 @@ resource "azurerm_role_assignment" "payments_api_sb_receiver" {
   depends_on = [
     azurerm_user_assigned_identity.payments_api,
     module.servicebus
+  ]
+}
+
+# =============================================================================
+# Application Insights RBAC for Live Metrics (Workload Identity)
+# =============================================================================
+# Grant "Monitoring Metrics Publisher" role to each API's managed identity
+# This is required for Azure Monitor Live Metrics when using AAD authentication
+# via DefaultAzureCredential in Azure.Monitor.OpenTelemetry.AspNetCore
+
+# User API - Monitoring Metrics Publisher (Live Metrics)
+resource "azurerm_role_assignment" "user_api_appinsights_metrics" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.app_insights
+  ]
+}
+
+# Games API - Monitoring Metrics Publisher (Live Metrics)
+resource "azurerm_role_assignment" "games_api_appinsights_metrics" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.app_insights
+  ]
+}
+
+# Payments API - Monitoring Metrics Publisher (Live Metrics)
+resource "azurerm_role_assignment" "payments_api_appinsights_metrics" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.app_insights
+  ]
+}
+
+# =============================================================================
+# Application Insights RBAC - Monitoring Reader (for Live Metrics stability)
+# =============================================================================
+# "Monitoring Reader" provides read access to monitoring data and is recommended
+# for stable Live Metrics connectivity with AAD authentication
+
+# User API - Monitoring Reader
+resource "azurerm_role_assignment" "user_api_appinsights_reader" {
+  principal_id         = azurerm_user_assigned_identity.user_api.principal_id
+  role_definition_name = "Monitoring Reader"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.user_api,
+    module.app_insights
+  ]
+}
+
+# Games API - Monitoring Reader
+resource "azurerm_role_assignment" "games_api_appinsights_reader" {
+  principal_id         = azurerm_user_assigned_identity.games_api.principal_id
+  role_definition_name = "Monitoring Reader"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.games_api,
+    module.app_insights
+  ]
+}
+
+# Payments API - Monitoring Reader
+resource "azurerm_role_assignment" "payments_api_appinsights_reader" {
+  principal_id         = azurerm_user_assigned_identity.payments_api.principal_id
+  role_definition_name = "Monitoring Reader"
+  scope                = module.app_insights.id
+
+  depends_on = [
+    azurerm_user_assigned_identity.payments_api,
+    module.app_insights
   ]
 }
 

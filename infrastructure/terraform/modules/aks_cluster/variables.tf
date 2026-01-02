@@ -40,9 +40,9 @@ variable "system_node_count" {
 }
 
 variable "system_node_vm_size" {
-  description = "VM size for system node pool (B2s = 2 vCPU, 4 GB RAM - minimum for AKS, hosts system + workloads)"
+  description = "VM size for system node pool (B2ms = 2 vCPU, 8 GB RAM, 1250 Mbps network - upgraded from B2s)"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2ms"
 }
 
 variable "system_node_os_disk_size_gb" {
@@ -81,7 +81,7 @@ variable "system_node_min_count" {
 variable "system_node_max_count" {
   description = "Maximum number of nodes when auto-scaling is enabled (scales up during high load)"
   type        = number
-  default     = 3
+  default     = 5
 
   validation {
     condition     = var.system_node_max_count >= 1 && var.system_node_max_count <= 100

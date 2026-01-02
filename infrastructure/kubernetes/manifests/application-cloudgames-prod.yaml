@@ -46,8 +46,15 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
+      - ServerSideApply=true  # Avoid webhook conflicts during sync
+      - RespectIgnoreDifferences=true
   # Ignore differences that are managed by other controllers
   ignoreDifferences:
+    # Ignore ArgoCD tracking annotation added by bootstrap meta-app
+    - group: argoproj.io
+      kind: Application
+      jsonPointers:
+        - /metadata/annotations/argocd.argoproj.io~1tracking-id
     # Ignore image tags - allow CI/CD to update them
     - group: apps
       kind: Deployment
@@ -58,3 +65,12 @@ spec:
       kind: Deployment
       jsonPointers:
         - /spec/replicas
+    # Ignore ExternalSecret defaults added by External Secrets Operator
+    # ESO automatically adds: conversionStrategy, decodingStrategy, metadataPolicy
+    # to remoteRef entries using jqPathExpressions to match all data[*].remoteRef fields
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jqPathExpressions:
+        - .spec.data[].remoteRef.conversionStrategy
+        - .spec.data[].remoteRef.decodingStrategy
+        - .spec.data[].remoteRef.metadataPolicy

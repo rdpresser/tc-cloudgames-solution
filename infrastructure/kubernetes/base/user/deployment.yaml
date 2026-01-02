@@ -6,7 +6,6 @@ metadata:
     app.kubernetes.io/name: user-api
     app.kubernetes.io/component: user
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: user-api
@@ -20,6 +19,7 @@ spec:
         runAsNonRoot: true
         fsGroup: 65534  # Allows reading projected tokens
       serviceAccountName: user-api-sa
+      terminationGracePeriodSeconds: 30
       containers:
         - name: user-api
           image: localhost:5000/user-api:latest
@@ -70,18 +70,21 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 30
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
+            failureThreshold: 5
           resources:
             requests:
               cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 384Mi
+              cpu: 1000m
+              memory: 1Gi
       volumes:
         - name: workload-identity-token
           projected:

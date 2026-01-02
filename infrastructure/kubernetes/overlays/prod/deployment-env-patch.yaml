@@ -11,6 +11,7 @@ kind: Deployment
 metadata:
   name: user-api
 spec:
+  replicas: 4  # Restore to 4 replicas after cluster upgrade completes
   template:
     metadata:
       annotations:
@@ -25,6 +26,7 @@ kind: Deployment
 metadata:
   name: games-api
 spec:
+  replicas: 1  # Temporarily reduced from 2 for cluster scale-down (will restore to 2 after upgrade)
   template:
     metadata:
       annotations:
@@ -39,6 +41,7 @@ kind: Deployment
 metadata:
   name: payments-api
 spec:
+  replicas: 1  # Temporarily reduced from 1 for cluster scale-down (keeping minimal)
   template:
     metadata:
       annotations:
@@ -63,6 +66,12 @@ kind: Deployment
 metadata:
   name: user-api
 spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     spec:
       containers:
@@ -72,43 +81,54 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
+            - name: DB_MIN_POOL_SIZE
+              value: "10"
+            - name: DB_MAX_POOL_SIZE
+              value: "80"
+            - name: DB_CONNECTION_TIMEOUT
+              value: "45"
           resources:
             requests:
               cpu: "100m"
               memory: "384Mi"
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 3
+            timeoutSeconds: 10
             failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
-            timeoutSeconds: 3
+            timeoutSeconds: 30
             failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 5
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: games-api
 spec:
-  replicas: 1
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     spec:
       containers:
@@ -118,42 +138,54 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
+            - name: DB_MIN_POOL_SIZE
+              value: "5"
+            - name: DB_MAX_POOL_SIZE
+              value: "20"
+            - name: DB_CONNECTION_TIMEOUT
+              value: "20"
           resources:
             requests:
-              cpu: "100m"
+              cpu: "150m"
               memory: "512Mi"
             limits:
-              cpu: "500m"
+              cpu: "1000m"
               memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 3
+            timeoutSeconds: 10
             failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 5
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: payments-api
 spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     spec:
       containers:
@@ -163,20 +195,26 @@ spec:
               value: "Production"
             - name: MESSAGE_BROKER_TYPE
               value: "AzureServiceBus"
+            - name: DB_MIN_POOL_SIZE
+              value: "5"
+            - name: DB_MAX_POOL_SIZE
+              value: "20"
+            - name: DB_CONNECTION_TIMEOUT
+              value: "20"
           resources:
             requests:
               cpu: "100m"
               memory: "384Mi"
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: "1000m"
+              memory: "1Gi"
           startupProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 3
+            timeoutSeconds: 10
             failureThreshold: 30
           readinessProbe:
             httpGet:
@@ -184,12 +222,12 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 5

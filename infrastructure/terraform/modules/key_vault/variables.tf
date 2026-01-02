@@ -377,6 +377,16 @@ variable "grafana_otel_auth_header" {
 }
 
 # =============================================================================
+# Application Insights (APM) Variables
+# =============================================================================
+variable "app_insights_connection_string" {
+  description = "Application Insights connection string for Azure Monitor OpenTelemetry"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+# =============================================================================
 # SENDGRID Variables
 # =============================================================================
 variable "sendgrid_api_key" {

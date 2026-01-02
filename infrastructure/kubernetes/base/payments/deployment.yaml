@@ -6,7 +6,6 @@ metadata:
     app.kubernetes.io/name: payments-api
     app.kubernetes.io/component: payments
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: payments-api
@@ -20,6 +19,7 @@ spec:
         runAsNonRoot: true
         fsGroup: 65534  # Allows reading projected tokens
       serviceAccountName: payments-api-sa
+      terminationGracePeriodSeconds: 30
       containers:
         - name: payments-api
           image: localhost:5000/payments-api:latest
@@ -70,18 +70,20 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             periodSeconds: 15
+            failureThreshold: 5
           resources:
             requests:
               cpu: 100m
               memory: 320Mi
             limits:
               cpu: 500m
-              memory: 640Mi
+              memory: 768Mi
       volumes:
         - name: workload-identity-token
           projected:

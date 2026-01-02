@@ -1,0 +1,54 @@
+# =============================================================================
+# NGINX Ingress Controller - Nodepool1 Compatibility Patch
+# =============================================================================
+# Ensures the ingress controller can run on nodepool1 with correct configuration
+# Fixes: Degraded status caused by node selector mismatches or resource constraints
+# =============================================================================
+
+# Patch for ingress-nginx-controller Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      # Ensure compatibility with nodepool1 Linux nodes
+      nodeSelector:
+        kubernetes.io/os: linux
+      # Allow scheduling on nodes with taints
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "system"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: controller
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+---
+# Patch for default backend (if enabled)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-defaultbackend
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "system"
+          effect: "NoSchedule"

@@ -34,24 +34,22 @@ images:
     newTag: latest
 
 # =============================================================================
-# Replicas - Production Scale
+# Replicas - Managed by HPA
 # =============================================================================
-# NOTE: Reduced to 1 replica due to PostgreSQL connection limit (50 max)
-# TODO: Increase PostgreSQL tier to support more connections, then scale to 3
-replicas:
-  - name: user-api
-    count: 1
-  - name: games-api
-    count: 1
-  - name: payments-api
-    count: 1
+# HPA (HorizontalPodAutoscaler) manages replicas automatically:
+# - minReplicas: 2 (baseline HA capacity - see hpa-patch.yaml)
+# - maxReplicas: 5 (peak traffic capacity - see hpa-patch.yaml)
+# - Based on CPU (60%) + Memory (70%) utilization
+# Do NOT define replicas here or it will conflict with HPA
 
 # =============================================================================
 # Patches - Production Configuration
 # =============================================================================
 patches:
-  - path: deployment-env-patch.yaml
-  - path: ingress-patch.yaml
+  - path: deployment-env-patch.yaml  # Resource limits, env vars, probes
+  - path: ingress-patch.yaml         # NGINX ingress with SSL
+  - path: hpa-patch.yaml             # Autoscaling: min=2, max=5, CPU+Memory
+  - path: pdb-patch.yaml             # Pod disruption budget for HA
 
 namespace: cloudgames
 

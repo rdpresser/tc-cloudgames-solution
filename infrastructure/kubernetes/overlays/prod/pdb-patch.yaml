@@ -1,0 +1,27 @@
+# =============================================================================
+# PDB Patches for Production - HA with Multiple Replicas
+# =============================================================================
+# With minReplicas=2, we ensure at least 1 pod remains during disruptions
+# =============================================================================
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-api
+spec:
+  minAvailable: 1  # Keep at least 1 pod during rolling updates/node drains
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: games-api
+spec:
+  minAvailable: 1
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: payments-api
+spec:
+  minAvailable: 1

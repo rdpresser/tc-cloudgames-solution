@@ -1,0 +1,68 @@
+name: perf-k6
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_scope:
+        description: "Select which suite to run"
+        required: false
+        default: "all"
+        type: choice
+        options: [all, smoke, load, performance]
+  schedule:
+    - cron: "0 3 * * *" # daily at 03:00 UTC
+
+jobs:
+  perf-prod:
+    name: k6 against prod
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Prepare output directory
+        run: mkdir -p k6/output
+
+      - name: Run smoke suite
+        if: github.event.inputs.run_scope == '' || github.event.inputs.run_scope == 'all' || github.event.inputs.run_scope == 'smoke'
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/work" -w /work \
+            -e BASE_URL=${{ secrets.PERF_BASE_URL }} \
+            -e USERNAME=${{ secrets.PERF_USERNAME }} \
+            -e PASSWORD=${{ secrets.PERF_PASSWORD }} \
+            -e AUTH_TOKEN_PATH=${{ secrets.PERF_AUTH_TOKEN_PATH }} \
+            -e AUTH_HEADER=${{ secrets.PERF_AUTH_HEADER }} \
+            grafana/k6:latest run k6/smoke/users-smoke.js \
+            --summary-export k6/output/smoke-summary.json
+
+      - name: Run load suite
+        if: github.event.inputs.run_scope == '' || github.event.inputs.run_scope == 'all' || github.event.inputs.run_scope == 'load'
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/work" -w /work \
+            -e BASE_URL=${{ secrets.PERF_BASE_URL }} \
+            -e USERNAME=${{ secrets.PERF_USERNAME }} \
+            -e PASSWORD=${{ secrets.PERF_PASSWORD }} \
+            -e AUTH_TOKEN_PATH=${{ secrets.PERF_AUTH_TOKEN_PATH }} \
+            -e AUTH_HEADER=${{ secrets.PERF_AUTH_HEADER }} \
+            grafana/k6:latest run k6/load/users-load.js \
+            --summary-export k6/output/load-summary.json
+
+      - name: Run performance suite
+        if: github.event.inputs.run_scope == '' || github.event.inputs.run_scope == 'all' || github.event.inputs.run_scope == 'performance'
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/work" -w /work \
+            -e BASE_URL=${{ secrets.PERF_BASE_URL }} \
+            -e USERNAME=${{ secrets.PERF_USERNAME }} \
+            -e PASSWORD=${{ secrets.PERF_PASSWORD }} \
+            -e AUTH_TOKEN_PATH=${{ secrets.PERF_AUTH_TOKEN_PATH }} \
+            -e AUTH_HEADER=${{ secrets.PERF_AUTH_HEADER }} \
+            grafana/k6:latest run k6/performance/users-performance.js \
+            --summary-export k6/output/performance-summary.json
+
+      - name: Upload summaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summaries
+          path: k6/output/*.json
+          if-no-files-found: warn
