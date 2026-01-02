@@ -54,20 +54,24 @@ variable "postgres_admin_password" {
   sensitive   = true
 }
 
-# PostgreSQL SKU (compute tier/size). Defaults to B_Standard_B2s for cost optimization.
+# PostgreSQL SKU (compute tier/size)
+# B_Standard_B2s: 2 vCores, 4GB RAM, 429 max connections, 640 IOPS (~$25/month)
+# GP_Standard_D2s_v3: 2 vCores, 8GB RAM, 859 max connections, 3200 IOPS (~$120/month)
+# Upgraded to GP_Standard_D2s_v3 to resolve connection pool exhaustion and improve IOPS
 variable "postgres_sku" {
   type        = string
-  description = "PostgreSQL Flexible Server SKU (e.g., B_Standard_B1ms, B_Standard_B2s, GP_Standard_D2s_v3)"
-  default     = "B_Standard_B2s"
+  description = "PostgreSQL Flexible Server SKU (e.g., B_Standard_B2s, GP_Standard_D2s_v3, GP_Standard_D4s_v3)"
+  default     = "GP_Standard_D2s_v3"
 }
 
 # PostgreSQL max_connections parameter
-# B_Standard_B2s supports up to 429 connections
-# Default: 250 (allows 3 services × 4 pods × 15 connections + admin/monitoring)
+# GP_Standard_D2s_v3 supports up to 859 connections
+# Setting to 600 allows: 3 services × 5 pods × 80 connections + admin/monitoring headroom
+# Previous: 300 (insufficient - caused connection pool exhaustion)
 variable "postgres_max_connections" {
   type        = number
-  description = "Maximum concurrent connections to PostgreSQL (default 250 for B2s SKU)"
-  default     = 300
+  description = "Maximum concurrent connections to PostgreSQL (default 600 for D2s_v3 SKU)"
+  default     = 600
 
   validation {
     condition     = var.postgres_max_connections >= 50 && var.postgres_max_connections <= 5000

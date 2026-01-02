@@ -58,8 +58,9 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "client_ip" {
 # PostgreSQL Configuration Parameters
 # =============================================================================
 # max_connections: Controls the maximum number of concurrent connections
-# B2s SKU supports up to 429 connections by default, but we set it conservatively
-# to 250 to allow for monitoring, admin connections, and future scaling
+# GP_Standard_D2s_v3 SKU supports up to 859 connections by default
+# Setting to 600 allows: 3 services × 5 pods × 80 connections + headroom
+# Calculation: 480 required + 120 headroom = 600 (67% utilization, 40% margin)
 resource "azurerm_postgresql_flexible_server_configuration" "max_connections" {
   name      = "max_connections"
   server_id = azurerm_postgresql_flexible_server.postgres_server.id
