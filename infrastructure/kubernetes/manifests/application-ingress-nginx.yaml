@@ -33,7 +33,7 @@ spec:
           admissionWebhooks:
             enabled: true
             patch:
-              enabled: false
+              enabled: true
           resources:
             requests:
               cpu: 250m
@@ -60,4 +60,3 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
-      - SkipHooks=true
