@@ -1,0 +1,27 @@
+# =============================================================================
+# Azure Workload Identity Webhook - Nodepool1 Compatibility Patch
+# =============================================================================
+# This patch ensures the webhook can run on nodepool1 with correct labeling
+# Fixes: OutOfSync issues caused by node selector mismatches
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-wi-webhook-manager
+  namespace: azure-workload-identity-system
+spec:
+  template:
+    spec:
+      # Ensure compatibility with nodepool1 Linux nodes
+      # Only restrict to Linux OS, allow scheduler to place on any suitable node
+      nodeSelector:
+        kubernetes.io/os: linux
+      # Allow scheduling on nodes with taints (if any)
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "system"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"

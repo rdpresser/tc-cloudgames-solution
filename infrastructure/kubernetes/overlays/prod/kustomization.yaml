@@ -11,6 +11,7 @@
 resources:
   - ../../base
   - cluster-secret-store-patch.yaml
+  - workload-identity-patch.yaml
 
 labels:
   - pairs:
