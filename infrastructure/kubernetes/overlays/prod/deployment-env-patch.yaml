@@ -90,26 +90,26 @@ spec:
           resources:
             requests:
               cpu: "150m"
-              memory: "600Mi"
+              memory: "1024Mi"
             limits:
               cpu: "1000m"
-              memory: "1536Mi"
+              memory: "2048Mi"
           startupProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 10
+            timeoutSeconds: 3
             failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
           livenessProbe:
             httpGet:
               path: /health
@@ -147,25 +147,25 @@ spec:
           resources:
             requests:
               cpu: "200m"
-              memory: "700Mi"
+              memory: "800Mi"
             limits:
               cpu: "1000m"
-              memory: "1536Mi"
+              memory: "1800Mi"
           startupProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 10
+            timeoutSeconds: 3
             failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
             failureThreshold: 5
           livenessProbe:
             httpGet:
@@ -204,25 +204,10 @@ spec:
           resources:
             requests:
               cpu: "200m"
-              memory: "700Mi"
+              memory: "800Mi"
             limits:
               cpu: "1000m"
-              memory: "1536Mi"
-          startupProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 10
-            failureThreshold: 30
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
+              memory: "1800Mi"
             failureThreshold: 5
           livenessProbe:
             httpGet:
