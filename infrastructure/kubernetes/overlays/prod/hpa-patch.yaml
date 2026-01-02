@@ -94,14 +94,14 @@ spec:
           averageUtilization: 70
 ---
 apiVersion: autoscaling/v2
-kiscaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: payments-api
-  nd: HorizontalPodAutoscaler
+kind: HorizontalPodAutoscaler
 metadata:
   name: payments-api
 spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: payments-api
   minReplicas: 2
   maxReplicas: 5
   behavior:
