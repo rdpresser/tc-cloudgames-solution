@@ -37,10 +37,11 @@ images:
 # Replicas - Managed by HPA
 # =============================================================================
 # HPA (HorizontalPodAutoscaler) manages replicas automatically:
-# - minReplicas: 2 (baseline HA capacity - see hpa-patch.yaml)
-# - maxReplicas: 5 (peak traffic capacity - see hpa-patch.yaml)
+# - user-api: minReplicas: 3, maxReplicas: 8 (high load service)
+# - games-api: minReplicas: 2, maxReplicas: 5 (medium load)
+# - payments-api: minReplicas: 2, maxReplicas: 5 (low load)
 # - Based on CPU (60%) + Memory (70%) utilization
-# Do NOT define replicas here or it will conflict with HPA
+# Do NOT define replicas in deployment-env-patch.yaml - conflicts with HPA
 
 # =============================================================================
 # Patches - Production Configuration
