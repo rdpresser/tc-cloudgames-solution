@@ -65,3 +65,12 @@ spec:
       kind: Deployment
       jsonPointers:
         - /spec/replicas
+    # Ignore ExternalSecret defaults added by External Secrets Operator
+    # ESO automatically adds: conversionStrategy, decodingStrategy, metadataPolicy
+    # to remoteRef entries using jqPathExpressions to match all data[*].remoteRef fields
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jqPathExpressions:
+        - .spec.data[].remoteRef.conversionStrategy
+        - .spec.data[].remoteRef.decodingStrategy
+        - .spec.data[].remoteRef.metadataPolicy
