@@ -1,11 +1,8 @@
 # =============================================================================
-# HPA Patches for Production - Optimized for Load
+# HPA Patches for Production - Baseline Configuration
 # =============================================================================
-# Based on load test results (11.4 req/s, 0.14% timeouts):
-# - Increased minReplicas to ensure baseline capacity
-# - Increased maxReplicas for peak traffic (25+ VUs)
-# - Added memory metric to prevent OOM during spikes
-# - Lowered CPU threshold for faster scale-up
+# Baseline HPA configuration - Test 3 revealed CPU/query efficiency is bottleneck, 
+# not infrastructure scaling. Reverting to baseline after optimization proved ineffective.
 # =============================================================================
 
 ---
@@ -18,21 +15,21 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: user-api
-  minReplicas: 3
-  maxReplicas: 8
+  minReplicas: 2
+  maxReplicas: 5
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 30  # Scale up quickly
+      stabilizationWindowSeconds: 60
       policies:
         - type: Percent
-          value: 100  # Double pods at once if needed
-          periodSeconds: 15
+          value: 50
+          periodSeconds: 30
         - type: Pods
-          value: 2  # Or add 2 pods at once
-          periodSeconds: 15
+          value: 1
+          periodSeconds: 30
       selectPolicy: Max
     scaleDown:
-      stabilizationWindowSeconds: 300  # Wait 5min before scale down
+      stabilizationWindowSeconds: 300
       policies:
         - type: Pods
           value: 1
@@ -43,13 +40,7 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 60  # Scale earlier (was 70%)
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 70  # Prevent memory pressure
+          averageUtilization: 70
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -64,14 +55,14 @@ spec:
   maxReplicas: 5
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 30
+      stabilizationWindowSeconds: 60
       policies:
         - type: Percent
-          value: 100
-          periodSeconds: 15
+          value: 50
+          periodSeconds: 30
         - type: Pods
-          value: 2
-          periodSeconds: 15
+          value: 1
+          periodSeconds: 30
       selectPolicy: Max
     scaleDown:
       stabilizationWindowSeconds: 300
@@ -83,12 +74,6 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 60
-    - type: Resource
-      resource:
-        name: memory
         target:
           type: Utilization
           averageUtilization: 70
@@ -106,14 +91,14 @@ spec:
   maxReplicas: 5
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 30
+      stabilizationWindowSeconds: 60
       policies:
         - type: Percent
-          value: 100
-          periodSeconds: 15
+          value: 50
+          periodSeconds: 30
         - type: Pods
-          value: 2
-          periodSeconds: 15
+          value: 1
+          periodSeconds: 30
       selectPolicy: Max
     scaleDown:
       stabilizationWindowSeconds: 300
@@ -125,12 +110,6 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 60
-    - type: Resource
-      resource:
-        name: memory
         target:
           type: Utilization
           averageUtilization: 70
