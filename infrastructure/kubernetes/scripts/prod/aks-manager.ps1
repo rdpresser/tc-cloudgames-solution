@@ -127,6 +127,8 @@ function Show-Help {
     Write-Host "Auto-detect and fix degraded components (ingress-nginx, workload-identity)" -ForegroundColor $Colors.Muted
     Write-Host "    fix-argocd-sync     " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Recover ArgoCD sync issues (manual webhook fix)" -ForegroundColor $Colors.Muted
+    Write-Host "    fix-ingress-webhook-cabundle" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Update caBundle in NGINX webhook from secret" -ForegroundColor $Colors.Muted
     Write-Host "    cleanup-audit       " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Analyze what can be safely deleted from cluster" -ForegroundColor $Colors.Muted
     Write-Host "    reset-cluster       " -NoNewline -ForegroundColor $Colors.Success
@@ -473,6 +475,8 @@ function Show-Menu {
         Write-Host "       (Force delete stuck Terminating namespace)" -ForegroundColor $Colors.Muted
         Write-Host " [19] 🔄 Recover ArgoCD Sync" -ForegroundColor $Colors.Info
         Write-Host "       (Manually fix webhook sync issues if needed)" -ForegroundColor $Colors.Muted
+        Write-Host " [20] 🔐 Fix NGINX Webhook Certificate" -ForegroundColor $Colors.Info
+        Write-Host "       (Update caBundle in ValidatingWebhookConfiguration from secret)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== EXIT =====
@@ -511,6 +515,9 @@ function Show-Menu {
             }
             "19" {
                 & "$PSScriptRoot\fix-argocd-sync.ps1"
+            }
+            "20" {
+                & "$PSScriptRoot\fix-ingress-webhook-cabundle.ps1"
             }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
