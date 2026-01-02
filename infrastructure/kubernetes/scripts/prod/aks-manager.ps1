@@ -804,6 +804,24 @@ function Invoke-Command($cmd, $arg1 = "") {
             
             # Apply ArgoCD project first, then platform components, then PRODUCTION manifest
             $manifestsPath = Join-Path (Split-Path (Split-Path $scriptPath -Parent) -Parent) "manifests"
+            $bootstrapManifest = "$manifestsPath\application-bootstrap.yaml"
+            
+            # Apply bootstrap first (meta-application that manages all others)
+            if (Test-Path $bootstrapManifest) {
+                Write-Host "`n🎯 Applying Bootstrap meta-application (manages all apps via GitOps)..." -ForegroundColor $Colors.Info
+                Write-Host "   📄 application-bootstrap.yaml" -ForegroundColor $Colors.Muted
+                kubectl apply -f $bootstrapManifest
+
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "   ✅ Applied application-bootstrap.yaml (GitOps enabled)" -ForegroundColor $Colors.Success
+                }
+                else {
+                    Write-Host "   ❌ Failed to apply bootstrap manifest" -ForegroundColor $Colors.Error
+                }
+            }
+            else {
+                Write-Host "   ⚠️  Bootstrap manifest not found: $bootstrapManifest" -ForegroundColor $Colors.Warning
+            }
             $projectManifest = "$manifestsPath\application-cloudgames-project-prod.yaml"
             $azureWIManifest = "$manifestsPath\application-azure-workload-identity.yaml"
             $nginxManifest = "$manifestsPath\application-ingress-nginx.yaml"

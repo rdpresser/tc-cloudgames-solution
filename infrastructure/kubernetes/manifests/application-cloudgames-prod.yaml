@@ -50,6 +50,11 @@ spec:
       - RespectIgnoreDifferences=true
   # Ignore differences that are managed by other controllers
   ignoreDifferences:
+    # Ignore ArgoCD tracking annotation added by bootstrap meta-app
+    - group: argoproj.io
+      kind: Application
+      jsonPointers:
+        - /metadata/annotations/argocd.argoproj.io~1tracking-id
     # Ignore image tags - allow CI/CD to update them
     - group: apps
       kind: Deployment
