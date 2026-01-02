@@ -208,7 +208,6 @@ spec:
             limits:
               cpu: "1000m"
               memory: "1800Mi"
-            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /health
