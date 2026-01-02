@@ -17,53 +17,63 @@ This document describes the modular architecture of the Kubernetes infrastructur
 ```
 infrastructure/kubernetes/scripts/prod/
 ├── aks-manager.ps1                      # Main orchestrator with interactive menu
-├── setup-complete-infrastructure.ps1    # Complete setup workflow (calls standalone scripts)
 │
 ├── install-nginx-ingress.ps1           # NGINX Ingress Controller (standalone)
 ├── install-external-secrets.ps1        # External Secrets Operator (standalone)
 ├── install-argocd-aks.ps1             # ArgoCD (standalone)
 │
 ├── setup-eso-workload-identity.ps1    # ESO + Workload Identity configuration
+├── configure-image-updater.ps1        # ArgoCD Image Updater setup
 ├── build-push-acr.ps1                 # Build and push Docker images
-└── ARCHITECTURE.md                     # This file
+│
+├── check-helm-chart-versions.ps1      # Check for Helm chart updates
+├── update-helm-chart-version.ps1      # Update Helm chart versions
+├── check-argocd-updates.ps1           # Check for ArgoCD updates
+│
+├── fix-argocd-sync.ps1                # Fix ArgoCD sync issues
+├── fix-ingress-webhook-cabundle.ps1   # Fix NGINX webhook certificates
+├── cluster-cleanup-audit.ps1          # Audit unused resources
+├── force-delete-namespace.ps1         # Force delete stuck namespaces
+│
+├── wait-for-components.ps1            # Wait for component readiness
+├── ARCHITECTURE.md                    # This file
+└── README.md                          # Getting started guide
 ```
 
 ## 🔄 Script Relationships
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      aks-manager.ps1                         │
-│                   (Main Entry Point)                         │
+┌──────────────────────────────────────────────────────────────┐
+│                    aks-manager.ps1                            │
+│             (Main Entry Point + Menu)                        │
 │                                                              │
 │  • Interactive menu with status indicators                  │
 │  • Individual component installation                        │
-│  • Complete setup orchestration                             │
+│  • Complete setup orchestration (post-terraform-setup)     │
 │  • Command-line interface                                   │
-└──────────────────┬──────────────────────────────────────────┘
+└──────────────────┬─────────────────────────────────────────┘
                    │
-                   ├─────► install-nginx-ingress.ps1
-                   │       • Helm chart installation
-                   │       • LoadBalancer IP assignment
-                   │       • -Force for reinstall
-                   │
-                   ├─────► install-external-secrets.ps1
-                   │       • CRDs installation
-                   │       • ESO operator setup
-                   │       • -Force for reinstall
-                   │
-                   ├─────► install-argocd-aks.ps1
-                   │       • ArgoCD installation
-                   │       • LoadBalancer configuration
-                   │
-                   ├─────► setup-eso-workload-identity.ps1
-                   │       • Azure Managed Identity
-                   │       • Federated credentials
-                   │       • ClusterSecretStore
-                   │
-                   └─────► setup-complete-infrastructure.ps1
-                           • Orchestrates all components
-                           • Terraform integration
-                           • Post-deployment validation
+        ┌──────────┼──────────────┬──────────────┐
+        │          │              │              │
+        ▼          ▼              ▼              ▼
+   INSTALLATION   CONFIGURATION  UTILITIES      BUILD
+        │          │              │              │
+        ├─► install-nginx-ingress.ps1           │
+        │   install-external-secrets.ps1        │
+        │   install-argocd-aks.ps1              │
+        │                                        │
+        ├─► setup-eso-workload-identity.ps1     │
+        │   configure-image-updater.ps1         │
+        │                                        │
+        ├─► check-helm-chart-versions.ps1       │
+        │   check-argocd-updates.ps1            │
+        │   update-helm-chart-version.ps1       │
+        │   fix-argocd-sync.ps1                 │
+        │   fix-ingress-webhook-cabundle.ps1    │
+        │   cluster-cleanup-audit.ps1           │
+        │   force-delete-namespace.ps1          │
+        │                                        │
+        └────────────────────────────────────────► build-push-acr.ps1
 ```
 
 ## 🔧 Component Scripts
@@ -127,43 +137,7 @@ infrastructure/kubernetes/scripts/prod/
     -KeyVaultName "kv-name"
 ```
 
-## 🎛️ Orchestrator: setup-complete-infrastructure.ps1
-
-**Purpose**: Complete post-Terraform infrastructure setup
-
-**Workflow** (6 steps):
-1. ✅ Connect to AKS cluster
-2. ✅ Install NGINX Ingress (calls `install-nginx-ingress.ps1`)
-3. ✅ Get LoadBalancer IP
-4. ✅ Install External Secrets Operator (calls `install-external-secrets.ps1`)
-5. ✅ Configure Workload Identity (calls `setup-eso-workload-identity.ps1`)
-6. ✅ Deploy applications via Kustomize
-
-**Features**:
-- ✅ Modular: Calls standalone scripts (DRY)
-- ✅ `-Force`: Pass to all component installers
-- ✅ `-SkipNginx`: Skip NGINX installation
-- ✅ `-SkipDeploy`: Skip Kustomize deployment
-- ✅ Interactive prompts with clear explanations
-
-**Usage**:
-```powershell
-# Complete setup (interactive prompts)
-.\setup-complete-infrastructure.ps1 `
-    -ResourceGroup "tc-cloudgames-solution-dev-rg" `
-    -ClusterName "tc-cloudgames-dev-cr8n-aks" `
-    -KeyVaultName "tccloudgamesdevcr8nkv"
-
-# With Force reinstall and skip deploy
-.\setup-complete-infrastructure.ps1 `
-    -ResourceGroup "tc-cloudgames-solution-dev-rg" `
-    -ClusterName "tc-cloudgames-dev-cr8n-aks" `
-    -KeyVaultName "tccloudgamesdevcr8nkv" `
-    -Force `
-    -SkipDeploy
-```
-
-## 🎮 Interactive Menu: aks-manager.ps1
+## � Interactive Menu: aks-manager.ps1
 
 **Purpose**: User-friendly interface for all operations
 
@@ -171,40 +145,10 @@ infrastructure/kubernetes/scripts/prod/
 - ✅ Visual status indicators (green = installed, gray = not installed)
 - ✅ Parallel status checks with animated spinner
 - ✅ Individual component installation options
-- ✅ Complete setup orchestration
+- ✅ Complete setup orchestration (`post-terraform-setup`)
 - ✅ Command-line interface support
 - ✅ ACR build info with timestamps
 - ✅ LoadBalancer IP display
-
-**Menu Structure**:
-```
-[1] Connect to AKS cluster
-[2] Show cluster status
-
-COMPONENT INSTALLATION:
-[3] Install NGINX Ingress (installed) ✓
-    • LoadBalancer IP: 20.x.x.x
-[4] Install External Secrets Operator (installed) ✓
-[5] Install ArgoCD (installed) ✓
-[6] Configure Image Updater (installed) ✓
-
-CONFIGURATION:
-[7] Setup ESO with Workload Identity
-[8] Bootstrap ArgoCD PROD app (installed) ✓
-
-BUILD & DEPLOY:
-[9] Build & Push images to ACR
-   • users-api:   tag v1.0.0 at 2024-12-16T10:30:00Z
-   • games-api:   tag v1.0.1 at 2024-12-16T11:00:00Z
-   • payms-api:   tag v1.0.0 at 2024-12-16T09:45:00Z
-
-UTILITIES:
-[10] View logs
-[11] Post-Terraform Complete Setup
-   (All-in-one: connect, nginx, ESO, WI, deploy)
-
-[0] Exit
-```
 
 **Usage**:
 ```powershell
@@ -215,7 +159,7 @@ UTILITIES:
 .\aks-manager.ps1 install-nginx
 .\aks-manager.ps1 install-eso
 
-# Command-line (complete setup)
+# Command-line (complete setup - RECOMMENDED)
 .\aks-manager.ps1 post-terraform-setup
 
 # Help

@@ -1,662 +1,531 @@
-# 🚀 TC CloudGames - AKS Production Guide
+# 🚀 TC CloudGames - AKS Production Setup
 
-> **Complete guide for Azure Kubernetes Service (AKS) infrastructure management**
+> **Complete guide for setting up and managing Azure Kubernetes Service (AKS) production cluster**
 
 ## 📖 Table of Contents
 
-- [Quick Start](#-quick-start)
-- [Architecture Overview](#-architecture-overview)
-- [Prerequisites](#-prerequisites)
-- [Installation](#-installation)
-- [Component Management](#-component-management)
-- [Verification](#-verification)
-- [Troubleshooting](#-troubleshooting)
-- [Common Workflows](#-common-workflows)
-- [Helm Version Management](HELM_VERSION_MANAGEMENT.md) - Update Helm charts
-- [⚠️ Cluster Reset](RESET_CLUSTER_GUIDE.md) - Clean installation
+- [⚡ Quick Start - Happy Path](#-quick-start---happy-path)
+- [📋 Prerequisites](#-prerequisites)
+- [🚀 Installation Steps](#-installation-steps)
+- [✅ Verification](#-verification)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [🚀 Common Workflows](#-common-workflows)
+- [⚠️ Advanced: Cluster Reset](#-advanced-cluster-reset)
+- [📚 Reference](#-reference)
 
 ---
 
-# ⚡ Quick Start
+# ⚡ Quick Start - Happy Path
 
-### 🔄 One-Shot Complete Setup (Recommended)
+### 🎯 Complete Production Setup (Recommended)
 
+This is the recommended flow for a **new AKS cluster after Terraform completes**:
+
+#### Step 1: Terraform Infrastructure
+```powershell
+cd infrastructure/terraform/foundation
+
+# Initialize Terraform (first time only)
+terraform init
+
+# Plan infrastructure
+terraform plan -out=tfplan
+
+# Create all infrastructure (5-15 minutes)
+terraform apply tfplan
+
+# ✅ Creates: AKS, ACR, Key Vault, Service Bus, Databases, Networking, etc.
+```
+
+#### Step 2: Post-Terraform Setup (One Command!)
 ```powershell
 cd infrastructure/kubernetes/scripts/prod
 
-# Option A: Fresh clean installation
-.\aks-manager.ps1 reset-cluster        # Safely clean all workloads
-.\aks-manager.ps1 post-terraform-setup # Complete setup
-
-# Option B: Direct setup (if cluster is already clean)
+# Run complete setup
 .\aks-manager.ps1 post-terraform-setup
 ```
 
-**What it does:**
-1. ✅ Connects to AKS cluster
-2. ✅ Installs ArgoCD via YAML
-3. ✅ Bootstraps all ArgoCD Applications (Azure WI, NGINX, ESO, Apps)
-4. ✅ Configures Workload Identity (passwordless auth)
-5. ✅ Configures Image Updater for automatic deployments
+**Automatically configures:**
+- ✅ Connects to AKS cluster
+- ✅ Installs ArgoCD (GitOps)
+- ✅ Bootstraps all applications (NGINX, ESO, Workload Identity, Apps)
+- ✅ Configures secret synchronization from Azure Key Vault
+- ✅ Enables automatic container image updates from ACR
 
-**See [PRODUCTION_SETUP_GUIDE.md](PRODUCTION_SETUP_GUIDE.md) for complete details.**
+**Done! Your production cluster is ready.**
 
----
-
-### 🗑️ Clean Installation (Reset + Setup)
-
-For a completely fresh installation (like K3D local):
-
+#### Step 3: Access & Verify
 ```powershell
-# Reset cluster to clean state (deletes workloads, preserves infrastructure)
-.\aks-manager.ps1 reset-cluster
+# Get ArgoCD dashboard URL
+.\aks-manager.ps1 get-argocd-url
 
-# Fresh installation
-.\aks-manager.ps1 post-terraform-setup
-
-# Verify status
+# Check overall status
 .\aks-manager.ps1 status
+
+# View deployed applications
+kubectl get applications -n argocd
 ```
-
-**See [RESET_CLUSTER_GUIDE.md](RESET_CLUSTER_GUIDE.md) for complete details.**
-
----
-
-### 📋 Interactive Menu
-
-```powershell
-# Interactive menu
-.\aks-manager.ps1
-
-# From the menu, you can:
-# - Install Argo CD via YAML: [5]
-# - Bootstrap Argo apps: [9]
-# - Reset cluster: [15] ⚠️
-```
-
----
-
-### Option 1: Install Argo CD via YAML (Recommended)
-
-```powershell
-cd infrastructure/kubernetes/scripts/prod
-
-# Interactive menu
-.\aks-manager.ps1
-
-# From the menu, you can:
-# - Install Argo CD via YAML: [5]
-# - Bootstrap Argo apps: [9]
-```
-
-**What it does:**
-1. ✅ Connects to AKS cluster
-2. ✅ Installs NGINX Ingress Controller
-3. ✅ Obtains LoadBalancer IP
-4. ✅ Installs External Secrets Operator
-5. ✅ Configures Workload Identity (passwordless auth)
-6. ✅ Deploys applications via Kustomize
-```powershell
-# Install Argo CD via YAML (default namespace "default")
-.\aks-manager.ps1 install-argocd
-
-# Install Argo CD into a custom namespace (to avoid overwriting an existing install)
-.\aks-manager.ps1 install-argocd argocd-test
-
-# Bootstrap Argo CD applications (projects/apps)
-.\aks-manager.ps1 bootstrap
-```
-
----
-
-## 📐 Architecture Overview
-
-This project uses a **modular, DRY architecture** with standalone scripts orchestrated by a central manager.
-
-```
-aks-manager.ps1 (Main Entry Point)
-    │
-    ├─► install-nginx-ingress.ps1
-    ├─► install-external-secrets.ps1
-    ├─► install-argocd-aks.ps1
-    ├─► setup-eso-workload-identity.ps1
-    │
-    └─► setup-complete-infrastructure.ps1 (Orchestrator)
-```
-
-**📚 For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md)**
-
-**Design Principles:**
-- ✅ **DRY**: No code duplication
-- ✅ **Modular**: Each component independently installable
-- ✅ **Idempotent**: Safe to run multiple times
-- ✅ **User-Friendly**: Visual status indicators
 
 ---
 
 ## 📋 Prerequisites
 
-**Required Tools:**
-- ✅ Azure CLI (`az`) - [Install](https://docs.microsoft.com/cli/azure/install-azure-cli)
-- ✅ kubectl - [Install](https://kubernetes.io/docs/tasks/tools/)
-- ✅ Helm v3 - [Install](https://helm.sh/docs/intro/install/)
-- ✅ PowerShell 7+ (Windows/Linux/macOS)
+### Required Tools
 
-**Azure Resources (Created by Terraform):**
-- Azure Kubernetes Service (AKS) cluster
-- Azure Key Vault with secrets
-- Azure Container Registry (ACR)
-- Azure Service Bus (messaging)
+- **Azure CLI** - [Install](https://docs.microsoft.com/cli/azure/install-azure-cli)
+  ```powershell
+  az --version    # Should be recent
+  az login        # Login to your Azure account
+  ```
 
-**Verify Prerequisites:**
+- **kubectl** - [Install](https://kubernetes.io/docs/tasks/tools/)
+  ```powershell
+  kubectl version --client
+  ```
 
-```powershell
-# Check tools
-az --version
-kubectl version --client
-helm version
+- **Helm v3** - [Install](https://helm.sh/docs/intro/install/)
+  ```powershell
+  helm version
+  ```
 
-# Login to Azure
-az login
+- **Terraform 1.14.x** - [Install](https://developer.hashicorp.com/terraform/install#windows)
+  ```powershell
+  terraform version
+  ```
 
-# Verify Terraform completed
-az aks show --resource-group tc-cloudgames-solution-dev-rg --name tc-cloudgames-dev-cr8n-aks
-```
+- **PowerShell 7+** (Windows/Linux/macOS)
+
+### Azure Requirements
+
+- Subscription with **Owner or Contributor** role
+- Valid Azure login: `az login`
+- Region resources available (check quota)
 
 ---
 
-## 🔧 Installation
+## 🚀 Installation Steps
 
-### Step 1: Connect to AKS
+### Step 1: Create Azure Infrastructure with Terraform
 
 ```powershell
-# Via aks-manager
-.\aks-manager.ps1 connect
+# Navigate to Terraform directory
+cd infrastructure/terraform/foundation
 
-# Or manually
-az aks get-credentials `
-  --resource-group tc-cloudgames-solution-dev-rg `
-  --name tc-cloudgames-dev-cr8n-aks `
-  --overwrite-existing
+# Initialize (first time only)
+terraform init
 
-# Verify
-kubectl cluster-info
-kubectl get nodes
+# View what will be created
+terraform plan -out=tfplan
+
+# Create infrastructure
+terraform apply tfplan
+
+# Wait for completion (5-15 minutes)
 ```
 
-### Step 2: Install Components
+**Infrastructure created:**
+- **AKS**: Kubernetes cluster (production-grade)
+- **ACR**: Container registry for images
+- **Key Vault**: Secrets management
+- **PostgreSQL**: Databases for each service
+- **Service Bus**: Messaging (event-driven)
+- **Virtual Network**: Networking & subnets
+- **Storage**: Backup & logging
+- **Monitoring**: Observability resources
 
-#### Interactive Menu
+### Step 2: Complete AKS Post-Terraform Setup
 
 ```powershell
+# Navigate to scripts
+cd infrastructure/kubernetes/scripts/prod
+
+# Run ONE command that does everything
+.\aks-manager.ps1 post-terraform-setup
+
+# OR use interactive menu
 .\aks-manager.ps1
+# Select menu option [12] "Post-Terraform Complete Setup"
 ```
 
-**Menu Structure:**
+**What this does:**
+
+1. **Connects to cluster** - Gets credentials from Azure
+2. **Installs ArgoCD** - GitOps platform for deployments
+3. **Bootstraps applications** - Deploys all apps via ArgoCD
+4. **Sets up ESO** - External Secrets Operator syncs secrets from Key Vault
+5. **Configures Workload Identity** - Passwordless authentication (recommended)
+6. **Enables Image Updater** - Automatically detects & deploys new images from ACR
+7. **Verifies health** - Ensures all components are running
+
+**Expected output:**
 ```
-[1] 🔌 Connect to AKS cluster
-[2] 📊 Show cluster status
-
-COMPONENT INSTALLATION:
-[3] 📦 Install NGINX Ingress (installed) ✓
-    • LoadBalancer IP: 20.x.x.x
-[4] 🔐 Install External Secrets Operator (installed) ✓
-[5] 📦 Install ArgoCD (installed) ✓
-[6] 🔄 Configure Image Updater (installed) ✓
-
-CONFIGURATION:
-[7] 🔐 Setup ESO with Workload Identity
-[8] 📋 Bootstrap ArgoCD app
-
-BUILD & DEPLOY:
-[9] 🐳 Build & Push images to ACR
-[10] 📝 View logs
-[11] 🔧 Post-Terraform Complete Setup
-
-[0] ❌ Exit
+✅ Connected to AKS cluster: tc-cloudgames-dev-cr8n-aks
+✅ ArgoCD installed successfully (namespace: argocd)
+✅ Bootstrap application deployed
+✅ ESO ClusterSecretStore configured
+✅ Workload Identity setup completed
+✅ ArgoCD Image Updater enabled
+✅ All components verified and healthy
 ```
 
-#### Command Line
+### Step 3: Access Your Deployment
 
 ```powershell
-# Individual components
-.\aks-manager.ps1 install-nginx
-.\aks-manager.ps1 install-eso
-.\aks-manager.ps1 install-argocd
-.\aks-manager.ps1 configure-image-updater
+# Get ArgoCD URL and credentials
+.\aks-manager.ps1 get-argocd-url
 
-# Configuration
-.\aks-manager.ps1 setup-eso-wi
-
-# Deployment
-.\aks-manager.ps1 bootstrap
+# Example output:
+# URL:      http://20.XX.XX.XX
+# Username: admin
+# Password: [initial password]
 ```
-
----
-
-## 📦 Component Management
-
-### NGINX Ingress Controller
-
-**Purpose:** Single LoadBalancer for all services (cost savings: $80/month)
-
-```powershell
-# Install/Upgrade
-.\aks-manager.ps1 install-nginx
-
-# Force reinstall
-.\install-nginx-ingress.ps1 -ResourceGroup "rg-name" -ClusterName "aks-name" -Force
-
-# Get LoadBalancer IP
-kubectl get svc -n ingress-nginx ingress-nginx-controller
-```
-
-**Features:**
-- ✅ Production-ready resource limits
-- ✅ Health probe configuration
-- ✅ Automatic LoadBalancer IP assignment
-- ✅ Idempotent (upgrade in-place by default)
-
-### External Secrets Operator
-
-**Purpose:** Sync secrets from Azure Key Vault to Kubernetes
-
-```powershell
-# Install ESO
-.\aks-manager.ps1 install-eso
-
-# Configure Workload Identity (recommended)
-.\aks-manager.ps1 setup-eso-wi
-
-# Verify
-kubectl get externalsecrets -n cloudgames
-kubectl get clustersecretstore
-```
-
-**Features:**
-- ✅ Automatic secret synchronization
-- ✅ Azure Workload Identity (no passwords)
-- ✅ Dynamic updates (no pod restart)
-- ✅ RBAC for Key Vault and Service Bus
-
-**Secret Flow:**
-```
-Azure Key Vault
-    ↓ (Workload Identity)
-External Secrets Operator
-    ↓ (creates)
-Kubernetes Secrets
-    ↓ (consumed by)
-Application Pods
-```
-
-### ArgoCD (GitOps)
-
-**Purpose:** Declarative deployments via Git
-
-```powershell
-# Install
-.\aks-manager.ps1 install-argocd
-
-# Install into a custom namespace (to avoid overwriting an existing install)
-.\aks-manager.ps1 install-argocd argocd-test
-
-# Access via port-forward
-kubectl port-forward svc/argocd-server -n default 8080:80
-# Open http://localhost:8080
-
-# Retrieve initial admin password
-kubectl -n default get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d | Out-String
-
-# Bootstrap applications
-.\aks-manager.ps1 bootstrap
-```
-
-**Credentials:**
-- Username: admin
-- Password: initial value from `argocd-initial-admin-secret` (see command above)
-
----
-
-## 📊 Helm Chart Version Management
-
-**Check for Helm chart updates:**
-
-```powershell
-# Via aks-manager
-.\aks-manager.ps1 check-versions
-
-# Or directly
-.\check-helm-chart-versions.ps1
-```
-
-**Update a Helm chart:**
-
-```powershell
-# Update specific chart
-.\update-helm-chart-version.ps1 -Chart ingress-nginx -Version 4.12.0
-
-# Via aks-manager
-.\aks-manager.ps1 update-chart
-```
-
-**Managed Helm Charts:**
-- NGINX Ingress Controller (ingress-nginx)
-- External Secrets Operator (external-secrets)
-- Azure Workload Identity (workload-identity-webhook)
-
-📚 **Full guide**: [HELM_VERSION_MANAGEMENT.md](HELM_VERSION_MANAGEMENT.md)
 
 ---
 
 ## ✅ Verification
 
-### Check All Components
+### Check Cluster Health
 
 ```powershell
-# Complete overview
+# Complete status overview
 .\aks-manager.ps1 status
 
-# Individual checks
+# This shows:
+# ✅ Azure account & subscription
+# ✅ AKS cluster state (Running/Stopped)
+# ✅ Installed components (ArgoCD, NGINX, ESO)
+# ✅ LoadBalancer IPs
+# ✅ Node count and health
+```
+
+### Check Components Running
+
+```powershell
+# All ArgoCD applications
+kubectl get applications -n argocd
+
+# All pods across system
+kubectl get pods -n argocd
 kubectl get pods -n ingress-nginx
 kubectl get pods -n external-secrets
-kubectl get pods -n argocd
 kubectl get pods -n cloudgames
 ```
 
-### Check Secrets Synchronization
+### Verify Secrets Synchronization
 
 ```powershell
-# ExternalSecrets status
+# Check ExternalSecrets are synced
 kubectl get externalsecrets -n cloudgames
 
-# Created Kubernetes secrets
+# Expected output:
+# NAME                   STORE              STATUS         READY
+# games-api-secrets      azure-keyvault     SecretSynced   True
+# user-api-secrets       azure-keyvault     SecretSynced   True
+# payments-api-secrets   azure-keyvault     SecretSynced   True
+
+# Verify secrets created in Kubernetes
 kubectl get secrets -n cloudgames
-
-# Verify ESO is syncing
-kubectl describe externalsecret games-api-secrets -n cloudgames
 ```
 
-**Expected Output:**
-```
-NAME                   STORE              REFRESH INTERVAL   STATUS      READY
-games-api-secrets      azure-keyvault     1h                 SecretSynced True
-user-api-secrets       azure-keyvault     1h                 SecretSynced True
-payments-api-secrets   azure-keyvault     1h                 SecretSynced True
-```
-
-### Check Ingress
+### Test Service Endpoints
 
 ```powershell
 # Get NGINX LoadBalancer IP
-$NGINX_IP = kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-Write-Host "NGINX IP: $NGINX_IP"
+$NGINX_IP = kubectl get svc ingress-nginx-controller -n ingress-nginx `
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
-# Test endpoints
-curl "http://$NGINX_IP/health" -H "Host: games-api.cloudgames.local"
+Write-Host "NGINX LoadBalancer IP: $NGINX_IP"
+
+# Test API health endpoints
 curl "http://$NGINX_IP/health" -H "Host: user-api.cloudgames.local"
+curl "http://$NGINX_IP/health" -H "Host: games-api.cloudgames.local"
 curl "http://$NGINX_IP/health" -H "Host: payments-api.cloudgames.local"
-```
 
-**Expected Response:**
-```json
-{
-  "status": "Healthy",
-  "totalDuration": "00:00:00.0123456"
-}
+# Should respond with:
+# {"status":"Healthy","totalDuration":"00:00:00.0123456"}
 ```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### NGINX Ingress Issues
+### Issue: NGINX Ingress Not Getting LoadBalancer IP
 
+**Symptoms:** `kubectl get svc -n ingress-nginx` shows `<pending>` for EXTERNAL-IP
+
+**Solution:**
 ```powershell
+# Check service status
+kubectl describe svc -n ingress-nginx ingress-nginx-controller
+
 # Check logs
 kubectl logs -n ingress-nginx deployment/ingress-nginx-controller --tail=50
 
-# Check service
-kubectl describe svc -n ingress-nginx ingress-nginx-controller
-
-# Check events
-kubectl get events -n ingress-nginx --sort-by='.lastTimestamp'
-
-# Reinstall (if needed)
+# Reinstall NGINX
 .\aks-manager.ps1 install-nginx
-# Choose "Y" for Force reinstall
+
+# Wait a few minutes for Azure to assign IP
+kubectl get svc -n ingress-nginx ingress-nginx-controller --watch
 ```
 
-### External Secrets Not Syncing
+### Issue: External Secrets Not Syncing
 
+**Symptoms:** ExternalSecrets show `SecretSyncFailed` or `PendingSecretRefresh`
+
+**Solution:**
 ```powershell
-# Check ClusterSecretStore
+# Check ESO logs
+kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets -f
+
+# Verify ClusterSecretStore configuration
 kubectl get clustersecretstore -o yaml
 
-# Check ESO logs
-kubectl logs -n external-secrets deployment/external-secrets -f
-
-# Check ExternalSecret details
+# Check specific ExternalSecret details
 kubectl describe externalsecret games-api-secrets -n cloudgames
 
-# Force resync
+# Common fixes:
+# 1. Workload Identity not configured
+.\aks-manager.ps1 setup-eso-wi
+
+# 2. Secret names don't match Key Vault
+# Verify secret names in Azure Key Vault match ExternalSecret specs
+
+# 3. Force resync
 kubectl delete secret games-api-secrets -n cloudgames
-kubectl get externalsecrets -n cloudgames --watch
+# ExternalSecrets controller will recreate it
 ```
 
-**Common Issues:**
-- ❌ Workload Identity not configured → Run `.\aks-manager.ps1 setup-eso-wi`
-- ❌ Key Vault permissions missing → Check RBAC assignments
-- ❌ Missing tenant-id annotation → Reinstall ESO WI setup
-- ❌ Secret name mismatch → Verify Key Vault secret names
+### Issue: Pods in CrashLoopBackOff
 
-### Pods in CrashLoopBackOff
+**Symptoms:** Pods restart continuously
 
+**Solution:**
 ```powershell
-# Check current logs
-kubectl logs -n cloudgames <pod-name>
+# Check logs (current crash)
+kubectl logs -n cloudgames <pod-name> --tail=50
 
-# Check previous logs (after crash)
+# Check logs from previous crash
 kubectl logs -n cloudgames <pod-name> --previous
 
-# Check events
+# Get full pod details
 kubectl describe pod -n cloudgames <pod-name>
 
 # Common causes:
-# - Missing secrets → Check ExternalSecrets
-# - Database connection failure → Check connection string
-# - OOMKilled → Increase memory limits
+# - Missing secrets → Check ExternalSecrets are synced
+# - Database connection failure → Check connection string in Key Vault
+# - Out of memory → Increase pod memory limits
+# - Application error → Check application logs for specific error
 ```
 
-### View Component Logs
+### Issue: ArgoCD Applications Not Syncing
 
+**Symptoms:** ArgoCD shows "OutOfSync" or "Unknown"
+
+**Solution:**
 ```powershell
-# Via aks-manager
-.\aks-manager.ps1 logs nginx
-.\aks-manager.ps1 logs eso
-.\aks-manager.ps1 logs argocd
+# Check ArgoCD controller logs
+kubectl logs -n argocd deployment/argocd-application-controller --tail=50
 
-# Or manually
-kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx --tail=50
-kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets --tail=50
-kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server --tail=50
+# Get application status
+kubectl get applications -n argocd
+kubectl describe application cloudgames-prod -n argocd
+
+# Check Git repository connection
+kubectl logs -n argocd deployment/argocd-repo-server --tail=50
+
+# Manually recover sync
+.\aks-manager.ps1 fix-argocd-sync
 ```
 
 ---
 
 ## 🚀 Common Workflows
 
-### First-Time Setup (After Terraform Apply)
+### Deploy New Version of Application
 
 ```powershell
-# Automated (recommended)
-.\aks-manager.ps1
-# Choose [12] Post-Terraform Complete Setup
-
-# Or manual steps
-.\aks-manager.ps1 connect
-.\aks-manager.ps1 install-nginx
-.\aks-manager.ps1 install-eso
-.\aks-manager.ps1 setup-eso-wi
-.\aks-manager.ps1 bootstrap
-```
-
-### Update Application Images
-
-```powershell
-# Build and push to ACR
+# Build and push new image to ACR
+cd infrastructure/kubernetes/scripts/prod
 .\aks-manager.ps1 build-push
 
-# If using ArgoCD
-# - Images are automatically detected and deployed
-# - Check ArgoCD UI for sync status
+# ArgoCD Image Updater automatically:
+# 1. Detects new image in ACR
+# 2. Creates/updates deployment manifest
+# 3. Syncs to cluster (watch in ArgoCD UI)
 
-# If using Kustomize directly
-kubectl apply -k infrastructure/kubernetes/overlays/prod
-kubectl rollout restart deployment -n cloudgames
+# Check deployment status
+kubectl rollout status deployment/games-api -n cloudgames
 ```
 
-### Reinstall Component
+### Check for Component Updates
 
 ```powershell
-# Via menu (prompts for Force option)
-.\aks-manager.ps1
-# Choose component → Answer "Y" to Force reinstall
+# See available Helm chart updates (NGINX, ESO, etc.)
+.\aks-manager.ps1 check-versions
 
-# Direct script call
-.\install-nginx-ingress.ps1 -ResourceGroup "rg" -ClusterName "aks" -Force
-.\install-external-secrets.ps1 -ResourceGroup "rg" -ClusterName "aks" -Force
+# See available ArgoCD versions
+.\aks-manager.ps1 check-argocd-updates
+
+# Update a specific Helm chart
+.\aks-manager.ps1 update-chart
+# Follow prompts to select chart and target version
 ```
 
-### Update NGINX IP in Terraform
+### View Component Logs
 
 ```powershell
-# Get current NGINX IP
-$NGINX_IP = kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+# Via aks-manager (easier)
+.\aks-manager.ps1 logs nginx    # NGINX Ingress Controller
+.\aks-manager.ps1 logs eso      # External Secrets Operator
+.\aks-manager.ps1 logs argocd   # ArgoCD
 
-# Update Terraform
-cd infrastructure/terraform/foundation
-@"
-nginx_ingress_ip = "$NGINX_IP"
-"@ | Add-Content terraform.tfvars
-
-# Apply
-terraform plan -out=tfplan
-terraform apply tfplan
+# Or use kubectl directly
+kubectl logs -n argocd deployment/argocd-server -f
+kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -f
+kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets -f
 ```
 
-### Bootstrap ArgoCD Applications
+### Auto-Detect & Fix Issues
 
 ```powershell
-# Production
-.\aks-manager.ps1 bootstrap
+# Automatic diagnosis and repair of degraded components
+.\aks-manager.ps1 diagnose-fix-components
 
-# Or manually
-kubectl apply -f ../../manifests/application-cloudgames-project-prod.yaml
-kubectl apply -f ../../manifests/application-cloudgames-prod.yaml
-
-# Verify
-kubectl get applications -n argocd
+# This will:
+# ✅ Check all component health
+# ✅ Restart failed pods
+# ✅ Fix webhook certificate issues
+# ✅ Recover NGINX ingress problems
+# ✅ Reset stuck deployments
 ```
 
 ---
 
-## 📚 Additional Documentation
+## ⚠️ Advanced: Cluster Reset
 
-| Document | Purpose |
-|----------|---------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed technical architecture, design principles, and script relationships |
-| [../../README.md](../../README.md) | Kubernetes overview (dev + prod) |
+### When to Use Cluster Reset
 
----
+Use `reset-cluster` only when you need a **completely clean installation** while keeping the AKS infrastructure:
 
-## 📊 Component Status Reference
+- ❌ Complete reinstallation from scratch
+- ❌ Remove all workloads and deployments  
+- ❌ Start with fresh configuration
+- ✅ Preserves: AKS cluster, networks, storage, RBAC
 
-| Component | Namespace | Purpose | Required |
-|-----------|-----------|---------|----------|
-| **NGINX Ingress** | `ingress-nginx` | LoadBalancer + routing | ✅ Yes |
-| **External Secrets** | `external-secrets` | Key Vault sync | ✅ Yes |
-| **Workload Identity** | System-wide | Passwordless auth | ✅ Yes |
-| **ArgoCD** | `argocd` | GitOps deployment | ⚠️ Optional |
-
----
-
-## 💡 Tips
-
-### PowerShell Alias
+### Reset & Reinstall
 
 ```powershell
-# Add to PowerShell profile
-notepad $PROFILE
+# ⚠️ WARNING: This DELETES all workloads!
+.\aks-manager.ps1 reset-cluster
 
-# Add this line:
-Set-Alias aks "C:\Projects\tc-cloudgames-solution\infrastructure\kubernetes\scripts\prod\aks-manager.ps1"
+# Follow confirmation prompts carefully
+# Wait for completion (5-10 minutes)
 
-# Reload
-. $PROFILE
+# After reset, do fresh setup:
+.\aks-manager.ps1 post-terraform-setup
 
-# Usage
-aks                    # Interactive menu
-aks status            # Cluster status
-aks install-nginx     # Install NGINX
+# Verify healthy cluster
+.\aks-manager.ps1 status
 ```
 
-### Cost Optimization
+### What Gets Deleted
 
-**NGINX Ingress = $80/month savings**
-- ❌ Without NGINX: 3 LoadBalancers × $40 = $120/month
-- ✅ With NGINX: 1 LoadBalancer = $40/month
-- 💰 **Savings: 67%**
+```
+❌ DELETED:
+  - ArgoCD and all managed applications
+  - NGINX Ingress Controller
+  - External Secrets Operator
+  - All workloads in cloudgames namespace
+  - Custom monitoring (if installed)
 
-### Health Check Endpoints
-
-All APIs expose health endpoints:
-- `GET /health` - Overall health
-- `GET /health/ready` - Readiness probe
-- `GET /health/live` - Liveness probe
+✅ PRESERVED:
+  - AKS cluster itself
+  - Node pools & networking
+  - Azure Key Vault & secrets
+  - PostgreSQL databases
+  - Service Bus
+  - ACR & images
+  - System namespaces (kube-system, default)
+```
 
 ---
 
-## 🔐 Security: Workload Identity
+## 📚 Reference
 
-**No secrets/passwords in cluster!**
+### AKS Manager Commands
 
+```powershell
+# Connection & Status
+.\aks-manager.ps1 connect                  # Get AKS credentials
+.\aks-manager.ps1 status                   # Full cluster health check
+
+# Installation
+.\aks-manager.ps1 post-terraform-setup     # Complete one-shot setup (recommended)
+.\aks-manager.ps1 bootstrap [env]          # Deploy applications via ArgoCD
+.\aks-manager.ps1 build-push [api]         # Build & push images to ACR
+
+# Configuration
+.\aks-manager.ps1 setup-eso-wi             # Configure Workload Identity
+.\aks-manager.ps1 configure-image-updater  # Enable automatic image updates
+.\aks-manager.ps1 get-argocd-url           # Get ArgoCD access info
+
+# Maintenance & Troubleshooting
+.\aks-manager.ps1 logs [component]         # View logs (nginx/eso/argocd)
+.\aks-manager.ps1 check-versions           # Check Helm chart updates
+.\aks-manager.ps1 check-argocd-updates     # Check ArgoCD version
+.\aks-manager.ps1 update-chart             # Update Helm chart version
+.\aks-manager.ps1 diagnose-fix-components  # Auto-detect & fix issues
+.\aks-manager.ps1 fix-argocd-sync          # Recover sync failures
+.\aks-manager.ps1 cleanup-audit            # Analyze unused resources
+
+# Advanced/Dangerous
+.\aks-manager.ps1 reset-cluster            # ⚠️ Delete all workloads
+.\aks-manager.ps1 force-delete-namespace   # Force delete stuck namespace
+
+# Help
+.\aks-manager.ps1 help                     # Show all commands
+.\aks-manager.ps1 menu                     # Interactive menu
 ```
-Azure Key Vault ──┐
-                  │
-Azure Service Bus ┤
-                  │
-                  ├─► Azure Managed Identity (RBAC)
-                  │
-                  ├─► Federated Credential (OIDC)
-                  │
-                  └─► ServiceAccount (annotations)
-                      │
-                      └─► ClusterSecretStore
-                          │
-                          └─► ExternalSecret resources
-```
 
-**Critical Annotations:**
-- `azure.workload.identity/client-id`: `<client-id>`
-- `azure.workload.identity/tenant-id`: `<tenant-id>` ⚠️ **Required!**
+### Key Azure Resources
+
+| Resource | Purpose | Created by |
+|----------|---------|-----------|
+| AKS Cluster | Kubernetes infrastructure | Terraform |
+| ACR | Container image registry | Terraform |
+| Key Vault | Secrets management | Terraform |
+| PostgreSQL | Application databases | Terraform |
+| Service Bus | Messaging (event-driven) | Terraform |
+| Workload Identity | Passwordless authentication | post-terraform-setup |
+| External Secrets | K8s ↔ Key Vault sync | post-terraform-setup |
+| ArgoCD | GitOps deployments | post-terraform-setup |
+
+### Default Credentials
+
+| Component | Default User | Location |
+|-----------|--------------|----------|
+| ArgoCD | admin | From `argocd-initial-admin-secret` |
+| NGINX | N/A | LoadBalancer IP in Azure |
+| Key Vault | Managed Identity | Workload Identity configuration |
+
+### Kubernetes Namespaces
+
+| Namespace | Purpose |
+|-----------|---------|
+| `argocd` | ArgoCD GitOps platform |
+| `ingress-nginx` | NGINX Ingress Controller |
+| `external-secrets` | ESO & secret syncing |
+| `cloudgames` | Application deployments |
+| `kube-system` | Kubernetes system components |
 
 ---
 
-## 📝 Script Reference
+### Getting Help
 
-| Script | Purpose | Idempotent |
-|--------|---------|------------|
-| `aks-manager.ps1` | Main entry point (menu + CLI) | N/A |
-| `setup-complete-infrastructure.ps1` | Complete post-Terraform setup | ✅ Yes |
-| `install-nginx-ingress.ps1` | NGINX Ingress installation | ✅ Yes |
-| `install-external-secrets.ps1` | ESO installation | ✅ Yes |
-| `install-argocd-aks.ps1` | ArgoCD installation | ✅ Yes |
-| `setup-eso-workload-identity.ps1` | ESO + Workload Identity | ✅ Yes |
-| `build-push-acr.ps1` | Build/push Docker images | ✅ Yes |
+For detailed help with specific commands:
+```powershell
+.\aks-manager.ps1 help          # Show all available commands
+.\aks-manager.ps1              # Interactive menu with guided options
+```
 
----
-
-**Maintained by**: TC CloudGames Infrastructure Team  
-**Last Updated**: December 16, 2024  
-**Version**: 1.0.0
+For component-specific documentation, check ARCHITECTURE.md.

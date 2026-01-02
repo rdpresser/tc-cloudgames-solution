@@ -1,342 +1,261 @@
 # TC Cloud Games - Microservices Solution
 
-A modern cloud-native gaming platform built with microservices architecture, Azure infrastructure, and .NET Aspire orchestration.
+A cloud-native gaming platform built with microservices architecture, Azure infrastructure (AKS, Service Bus, Key Vault, PostgreSQL, Redis), event-driven communication with Wolverine, Event Sourcing with Marten, and GitOps deployment with ArgoCD.
 
-## 🏗️ Architecture Overview
-
-This solution follows a well-organized microservices architecture with clear separation of concerns:
+## 📁 Repository Structure
 
 ```
 tc-cloudgames-solution/
-├── 🛠️ infrastructure/     # Infrastructure as Code
-│   └── terraform/         # Terraform files (Azure Container Apps, Key Vault, etc.)
-├── 🚀 orchestration/      # Development environment orchestration  
-│   └── apphost/           # .NET Aspire AppHost for local development
-├── 🎯 services/           # Business microservices
-│   ├── users/             # User management, authentication & access control
-│   ├── games/             # Game management, sessions & scoring
-│   └── payments/          # Payments, transactions & credits
-├── 🧱 shared/             # Shared components
-│   └── common/            # Shared Kernel (contracts, events, utilities)
-├── 🔄 .github/         # CI/CD automation
-│   └── workflows/         # GitHub Actions workflows orchestrator
-└── 📜 scripts/            # Solution automation scripts
-    └── clone-repos.ps1    # Repository cloning script
+├── 🛠️ infrastructure/
+│   ├── terraform/          # IaC: AKS, ACR, Key Vault, Service Bus, PostgreSQL, Redis
+│   └── kubernetes/         # K8s manifests: base/, overlays/, ArgoCD applications
+├── 🚀 orchestration/
+│   ├── apphost/            # .NET Aspire AppHost (local dev: all services + dependencies)
+│   └── functions/          # Azure Functions for serverless operations
+├── 🎯 services/
+│   ├── users/              # User management, auth, RBAC (Event Sourcing)
+│   ├── games/              # Game catalog, library, purchase (CQRS)
+│   └── payments/           # Payment processing, transactions (CQRS + Outbox)
+├── 🧱 shared/
+│   └── common/             # Contracts, integration events, Wolverine configuration
+├── 📚 docs/                # Architecture diagrams and documentation
+├── 🔄 .github/
+│   └── workflows/          # GitHub Actions CI/CD pipelines
+└── 📜 scripts/
+    └── clone-repos.ps1     # Multi-repo setup script
 ```
 
-## 🛠️ Architecture Overview
-<div align="center">
-  <a href="./docs/images/img_001_diagram.png" target="_blank" title="Click to view full-size architecture diagram">
-    <img src="./docs/images/img_001_diagram.png" alt="TC Cloud Games - Microservices Architecture" width="600" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
-  </a>
-  <br>
-  <em>🔍 Click to view full-size diagram</em>
-</div>
+---
 
+## 🔧 Technology Stack
 
-## 📦 Repositories
+### Backend & API
+- **.NET 9** - Main development framework
+- **FastEndpoints** - High-performance, minimal HTTP endpoints
+- **FluentValidation** - Input validation with FastEndpoints integration
 
-| Repository | Alias | Category | Description |
-|------------|-------|----------|-------------|
-| `tc-cloudgames-solution` | `solution` | 🛠️ Infrastructure | Terraform IaC for Azure Container Apps, Key Vault, Managed Identity, ASB, ACR & GitHub Actions |
-| `tc-cloudgames-apphost` | `apphost` | 🚀 Orchestration | .NET Aspire AppHost for local development environment orchestration |
-| `tc-cloudgames-users` | `users` | 🎯 Services | User management microservice with authentication, access control & Event Sourcing |
-| `tc-cloudgames-games` | `games` | 🎯 Services | Game management microservice for sessions, scoring & game flow logic |
-| `tc-cloudgames-payments` | `payments` | 🎯 Services | Payment microservice for transactions, credits & financial provider integration |
-| `tc-cloudgames-common` | `common` | 🧱 Shared | Shared Kernel with contracts, integration events & utilities  |
+### Data & Persistence
+- **Marten** - Event Store and document database on PostgreSQL
+- **PostgreSQL** - Relational database (schema-per-service, no shared databases)
+- **Redis** - Distributed caching and session storage
 
+### Event-Driven Architecture
+- **Wolverine** - Message broker with CQRS, Outbox pattern, and saga support
+- **Azure Service Bus** - Production messaging (topics, subscriptions, DLQ)
+- **RabbitMQ** - Local development messaging
 
-## 🧩 Component Matrix
+### Infrastructure & Deployment
+- **Azure Kubernetes Service (AKS)** - Production Kubernetes cluster
+- **Azure Container Registry (ACR)** - Container image storage
+- **Azure Key Vault** - Secrets and configuration management
+- **Azure Service Bus** - Messaging and event distribution
+- **Terraform 1.14.x** - Infrastructure as Code
+- **Docker** - Container images
 
-| Repository | 🌐 Infra | ⚙️ AppHost | 👤 Users | 🎮 Games | 💳 Payments | ♻️ Shared | 🔁 CI/CD |
-|------------|:--------:|:----------:|:--------:|:--------:|:-----------:|:--------:|:--------:|
-| `tc-cloudgames-users` | | | ✅ | | | ✅ | ✅ |
-| `tc-cloudgames-games` | | | | ✅ | | ✅ | ✅ |
-| `tc-cloudgames-payments` | | | | | ✅ | ✅ | ✅ |
-| `tc-cloudgames-common` | | | ✅ | ✅ | ✅ | ✅ | |
-| `tc-cloudgames-pipelines` | ✅ | | | | | | ✅ |
-| `tc-cloudgames-solution` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+### Kubernetes & GitOps
+- **ArgoCD** - GitOps deployment and application management
+- **Kustomize** - Configuration management for K8s manifests
+- **External Secrets Operator** - Sync Azure Key Vault → K8s secrets
+- **Workload Identity** - Passwordless pod authentication to Azure
 
-### 🧩 Legend
-- 🌐 **Solution** – Resource provisioning, networking, Key Vault, identity management
-- ⚙️ **AppHost** – Local orchestration with .NET Aspire
-- 👤 **Users** – Authentication and identity microservice
-- 🎮 **Games** – Game logic and session microservice
-- 💳 **Payments** – Financial microservice
-- ♻️ **Shared** – Reusable code and contracts between microservices
-- 🔁 **CI/CD** – Automation and deployment workflows
+### Observability
+- **Serilog** - Structured logging with correlation IDs
+- **Application Insights** - Azure monitoring and diagnostics
+- **Health Checks API** - Service health endpoints
 
 ---
 
-## 📚 Documentation & Resources
-
-   - **Phase 1 Demo**: [YouTube Video](https://www.youtube.com/watch?v=9zyK9rb1lTs)
-   - **Phase 2 Demo**: [YouTube Video](https://www.youtube.com/watch?v=7JR0DxilQkg)
-   - **Phase 3 Demo**: [YouTube Video](https://www.youtube.com/watch?v=4D36zP36rkM)
----
-
-## 🏛️ Architecture Patterns
+## 🎯 Microservices Architecture
 
 ### Hexagonal Architecture (Ports & Adapters)
-Each microservice follows hexagonal architecture:
-- **Domain Layer**: Core business logic and aggregates
-- **Application Layer**: Use cases, commands, queries, and orchestration
-- **Infrastructure Layer**: External concerns (database, messaging, APIs)
-- **API Layer**: HTTP endpoints and controllers
-
-### CQRS + Event Sourcing
-- **Commands**: Write operations that modify state
-- **Queries**: Read operations optimized for specific use cases
-- **Events**: Domain events for audit trail and projections
-- **Projections**: Materialized views for read models
+Each microservice maintains isolation:
+```
+services/{service}/src/
+├── Core/
+│   ├── {Service}.Domain/          # Aggregates, Value Objects, Domain Events
+│   └── {Service}.Application/     # Commands, Queries, Use Cases, Ports
+└── Adapters/
+    ├── Inbound/{Service}.Api/     # FastEndpoints HTTP API
+    └── Outbound/{Service}.Infrastructure/  # Marten, PostgreSQL, Wolverine, Redis
+```
 
 ### Database per Service
-- Each microservice has its own dedicated database
-- Complete data isolation between services
-- Independent scalability and evolution
+No shared databases, complete data isolation:
+- **Users**: PostgreSQL + Event Sourcing (full audit trail)
+- **Games**: PostgreSQL + CQRS (read models via projections)
+- **Payments**: PostgreSQL + CQRS + Outbox (guaranteed event publishing)
 
-## 🎯 Microservices Overview
+### Event-Driven Communication
+- **Integration Events**: Defined in `shared/common/src/TC.CloudGames.Contracts/Events/`
+- **Wolverine Handlers**: `Application/MessageBrokerHandlers/` with `[WolverineHandler]` attribute
+- **Outbox Pattern**: Wolverine + Marten ensure event publishing reliability
+- **Service Bus Topics**: `user-events`, `game-events`, `payment-events` with SQL subscriptions
 
-### 👤 Users Service
-- **Responsibility**: User management, authentication, and access control
-- **Database**: PostgreSQL (`users_db`)
-- **Key Features**:
-  - User registration and authentication
-  - Role-based access control (RBAC)
-  - Event Sourcing for audit trail
-  - JWT token management
+### Three Microservices
 
-### 🎮 Games Service
-- **Responsibility**: Game management, sessions, and scoring
-- **Database**: PostgreSQL (`games_db`)
-- **Key Features**:
-  - Game catalog management
-  - Advanced search with Elasticsearch
-  - Game purchase workflow
-  - User game library projections
-  - Game session tracking
+#### 👤 Users Service
+- User registration and authentication
+- JWT token management and RBAC
+- Event Sourcing for complete user audit trail
+- Publishes: `UserRegisteredIntegrationEvent`, `UserAuthenticatedIntegrationEvent`
 
-### 💳 Payments Service
-- **Responsibility**: Financial transactions and payment processing
-- **Database**: PostgreSQL (`payments_db`)
-- **Key Features**:
-  - Payment processing
-  - Transaction management
-  - Credit system
-  - Integration with payment gateways
-  - Financial reporting
+#### 🎮 Games Service
+- Game catalog management
+- User game library (CQRS projection from events)
+- Game purchase workflow
+- Publishes: `GamePurchaseRequestedIntegrationEvent`
+- Subscribes: `PaymentApprovedIntegrationEvent`
 
-## Message Broker Communication Flow
+#### 💳 Payments Service
+- Payment processing and transaction management
+- Outbox pattern for guaranteed event delivery
+- Integration with Games and Users services
+- Publishes: `PaymentApprovedIntegrationEvent`, `PaymentFailedIntegrationEvent`
+- Subscribes: `GamePurchaseRequestedIntegrationEvent`
 
-The microservices communicate through a robust message broker architecture using Azure Service Bus for event-driven interactions:
+---
 
-<div align="center">
-  <a href="./docs/images/message_broker_flow.png" target="_blank" title="Click to view full-size message broker flow diagram">
-    <img src="./docs/images/message_broker_flow.png" alt="Message Broker Communication Flow" width="700" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
-  </a>
-  <br>
-  <em>🔍 Click to view full-size diagram</em>
-</div>
+## 🚀 Local Development with .NET Aspire
 
-### Azure Service Bus Infrastructure
+```powershell
+cd orchestration/apphost
+dotnet restore
+dotnet run
+```
 
-The complete messaging infrastructure includes dedicated topics and subscriptions for each microservice domain:
+Aspire AppHost orchestrates:
+- All three microservices with hot reload
+- PostgreSQL databases (users_db, games_db, payments_db)
+- Redis for distributed caching
+- RabbitMQ for local messaging
+- Automatic service discovery and health monitoring
 
-<div align="center">
-  <a href="./docs/images/servicebus_queues.png" target="_blank" title="Click to view Service Bus queues and topics">
-    <img src="./docs/images/servicebus_queues.png" alt="Service Bus Topics, Queues and Subscriptions" width="600" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
-  </a>
-  <br>
-  <em>🔍 Service Bus topics, subscriptions and message routing</em>
-</div>
+---
 
-### Key Communication Patterns
-- **Event Publishing**: Services publish domain events to Azure Service Bus topics
-- **Event Subscription**: Services subscribe to relevant events with SQL filters
-- **Async Processing**: Decoupled communication enables independent scaling
-- **Reliability**: Built-in retry mechanisms and dead letter queues
+## ☸️ Production Deployment (Azure AKS)
 
-## �🔧 Technology Stack
+### Infrastructure with Terraform
+```powershell
+cd infrastructure/terraform/foundation
+terraform init
+terraform plan
+terraform apply
+```
 
-### Backend Framework
-- **.NET 9**: Modern, high-performance framework
-- **FastEndpoints**: Minimalist API endpoints with high performance
-- **FluentValidation**: Comprehensive input validation
+Provisions:
+- AKS cluster with Workload Identity enabled
+- Azure Container Registry for images
+- Azure Service Bus with topics/subscriptions
+- Azure Key Vault for secrets
+- PostgreSQL Flexible Servers
+- Azure Cache for Redis
 
-### Data & Storage
-- **Marten**: Event Store and Document Database for PostgreSQL
-- **PostgreSQL**: Primary database with dedicated schemas per service
-- **Redis**: Distributed caching and session storage
-- **Elasticsearch**: Advanced search and analytics
+### GitOps Deployment with ArgoCD
+```powershell
+cd infrastructure/kubernetes/scripts/prod
+.\aks-manager.ps1 post-terraform-setup
+```
 
-### Messaging & Communication
-- **Wolverine**: Message broker with built-in CQRS support
-- **Azure Service Bus**: Cloud messaging for production
-- **RabbitMQ**: Local development messaging
+Installs and configures:
+- ArgoCD for GitOps deployments
+- External Secrets Operator for Key Vault sync
+- NGINX Ingress Controller (single LoadBalancer for all services)
+- All microservices via ArgoCD Applications
+- Auto-scaling policies with KEDA
 
-### Infrastructure & DevOps
-- **Azure**: Cloud platform and services
-- **Terraform**: Infrastructure as Code
-- **Docker**: Containerization
-- **.NET Aspire**: Local development orchestration
+---
 
-### Observability & Monitoring
-- **Serilog**: Structured logging framework
-- **Application Insights**: Application performance monitoring
-- **Health Checks**: Service health monitoring
+## 🔄 CI/CD Pipeline
 
+GitHub Actions per service (`services/{service}/.github/workflows/`):
+1. **Validate** - Code style, static analysis, Roslyn analyzers
+2. **Test** - Unit and integration tests with coverage reporting
+3. **Build** - Docker image creation
+4. **Scan** - Security scanning with Trivy
+5. **Push** - ACR image push with Git commit SHA tags
+6. **Deploy** - ArgoCD auto-sync on successful push
+
+Deployment strategies:
+- Push to `main` → production (AKS)
+- Push to `develop` → staging (if configured)
+- Feature branches → tests only (no deployment)
+
+---
+
+## 🔐 Security Features
+
+- **Workload Identity**: Passwordless pod authentication to Azure services
+- **Azure Key Vault**: Centralized secrets with automatic K8s sync via ESO
+- **RBAC**: Role-based access control at application and Kubernetes levels
+- **Network Security**: VNet integration, private endpoints, network policies
+- **Container Security**: Image scanning, least privilege pod policies
+
+---
+
+## 📚 Documentation & Videos
+
+- **Phase 1 Demo**: [YouTube](https://www.youtube.com/watch?v=9zyK9rb1lTs) - Initial setup
+- **Phase 2 Demo**: [YouTube](https://www.youtube.com/watch?v=7JR0DxilQkg) - Microservices
+- **Phase 3 Demo**: [YouTube](https://www.youtube.com/watch?v=4D36zP36rkM) - Cloud deployment
+- **Architecture Diagram**: `/docs/images/img_001_diagram.png`
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- [.NET 9 SDK](https://dotnet.microsoft.com/download)
+- [Docker Desktop](https://www.docker.com/)
+- [Terraform 1.14.x](https://developer.hashicorp.com/terraform/install#windows)
+- Azure subscription for production
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
 
-Before you begin, ensure you have the following installed:
-
-- [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download) - For building and running .NET applications
-- [Docker Desktop](https://www.docker.com/) - For containerization
-- [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) - For infrastructure provisioning
-- Azure subscription with appropriate permissions
-
-### 1. Clone All Repositories
-
-Use the provided PowerShell script to clone all repositories with organized folder structure:
-
+### 1. Clone Repositories
 ```powershell
-# Navigate to your development directory
 cd C:\Projects
-
-# Clone the solution repository
 git clone https://github.com/rdpresser/tc-cloudgames-solution.git
 cd tc-cloudgames-solution
-
-# Run the automated cloning script
 .\scripts\clone-repos.ps1
 ```
 
-The script will create the following organized structure:
-```
-tc-cloudgames-solution/
-├── infrastructure/terraform/
-├── orchestration/apphost/
-├── services/
-│   ├── users/
-│   ├── games/
-│   └── payments/
-├── shared/common/
-
-```
-
-### 2. Local Development with Aspire
-
+### 2. Local Development (Aspire)
 ```powershell
-# Navigate to the AppHost project
 cd orchestration/apphost
-
-# Restore dependencies
 dotnet restore
-
-# Run the Aspire AppHost (starts all microservices locally)
 dotnet run
 ```
+Monitor services in the Aspire dashboard.
 
-This will start the Aspire dashboard and all configured microservices for local development.
-
-### 3. Deploy to Azure
-
+### 3. Production (Azure AKS)
 ```powershell
-# Navigate to infrastructure
-cd infrastructure/terraform
-
-# Initialize and deploy infrastructure
-terraform init -upgrade
+# Deploy infrastructure
+cd infrastructure/terraform/foundation
+terraform init
 terraform plan
-terraform apply -auto-approve
+terraform apply
+
+# Configure Kubernetes
+cd infrastructure/kubernetes/scripts/prod
+.\aks-manager.ps1 post-terraform-setup
 ```
-
-## 🛠️ Development Workflow
-
-### Local Development
-1. **Start dependencies**: Use Docker Compose or Dapr for external dependencies
-2. **Run AppHost**: Execute the Aspire AppHost to orchestrate all microservices
-3. **Develop**: Make changes to individual microservices
-4. **Test**: Use the integrated testing approach with shared contracts
-
-### CI/CD Pipeline
-1. **Code changes**: Push to feature branches
-2. **Automated testing**: GitHub Actions run tests and quality checks
-3. **Infrastructure validation**: Terraform plans are validated
-4. **Deployment**: Automatic deployment to staging/production environments
-
-## 📚 Documentation
-
-Each repository contains detailed documentation:
-
-- **Infrastructure**: Terraform modules, Azure resource configuration
-- **Services**: API documentation, domain models, event schemas
-- **AppHost**: Local development setup, service configuration
-- **Common**: Shared contracts, event definitions, utilities
-- **Pipelines**: CI/CD workflow documentation
-
-## 🔐 Security & Compliance
-
-- **Authentication**: Azure Active Directory integration
-- **Authorization**: Role-based access control (RBAC)
-- **Secrets Management**: Azure Key Vault for sensitive data
-- **Network Security**: Virtual networks, private endpoints
-- **Monitoring**: Azure Application Insights, logging
-
-## 🤝 Contributing
-
-### Development Guidelines
-1. **Branch Strategy**: Feature branches from `main`
-2. **Commit Messages**: Follow conventional commit format
-3. **Code Review**: All changes require peer review
-4. **Testing**: Maintain test coverage above 80%
-
-### Pull Request Process
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request with detailed description
-
-### Code Standards
-- **C#**: Follow Microsoft coding conventions
-- **Architecture**: Maintain hexagonal architecture principles
-- **Documentation**: Update documentation with code changes
-- **Performance**: Consider performance implications
-
-## 📊 Monitoring & Observability
-
-### Application Insights
-- **Performance Metrics**: Response times, throughput
-- **Error Tracking**: Exception monitoring and alerting
-- **Dependency Tracking**: External service calls
-
-### Logging
-- **Structured Logging**: JSON format with correlation IDs
-- **Log Levels**: Appropriate logging levels per environment
-- **Centralized Aggregation**: All logs in Grafana Loki
-
-### Health Checks
-- **Service Health**: Database connectivity, external services
-- **Dependency Health**: Redis, Elasticsearch, message brokers
-- **Custom Health Checks**: Business logic validation
-
-## Microservices Communication Flow
-![Microservices Communication Flow](./docs/images/microservices-communication-flow.png)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the individual repository LICENSE files for details.
-
-## 📞 Support
-
-For questions or issues:
-- Open an [issue](https://github.com/rdpresser/tc-cloudgames-solution/issues) in this repository
-- Check individual repository documentation
-- Review the troubleshooting guides in each service
 
 ---
 
-**TC Cloud Games** - Building the future of cloud gaming with modern microservices architecture.
+## 🤝 Contributing
+
+- Feature branches from `main`
+- All changes require peer review
+- Test coverage minimum 80%
+- Follow [conventional commits](https://www.conventionalcommits.org/)
+
+---
+
+## 📞 Support
+
+- Open issues in the repository
+- Check service-specific documentation in each repository
+- Review demo videos for setup guidance
+
+---
+
+**TC Cloud Games** - Cloud-native gaming platform with modern microservices architecture.
