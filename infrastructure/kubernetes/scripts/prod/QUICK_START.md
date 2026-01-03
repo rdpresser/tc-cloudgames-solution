@@ -57,17 +57,35 @@ cd infrastructure/kubernetes/scripts/prod
 # Check status
 .\aks-manager.ps1 status
 
-# Reinstall NGINX
+# Validate NGINX
 .\aks-manager.ps1 install-nginx
 ```
 
 **Issue: ExternalSecrets not syncing?**
 ```powershell
 # Check logs
-kubectl logs -n external-secrets -f
+kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets-operator
 
 # Reconfigure Workload Identity
 .\aks-manager.ps1 setup-eso-wi
+```
+
+**Issue: Webhook validation errors?**
+```powershell
+# Validate and fix webhooks
+.\aks-manager.ps1 fix-webhooks
+
+# Then sync applications
+.\aks-manager.ps1 fix-argocd-sync
+```
+
+**Issue: After recreating AKS cluster?**
+```powershell
+# Fix federated credentials (OIDC issuer changed)
+.\fix-federated-credentials-after-aks-recreation.ps1
+
+# Then run post-terraform-setup again
+.\aks-manager.ps1 post-terraform-setup
 ```
 
 **Issue: Pods crashing?**
@@ -77,13 +95,17 @@ kubectl logs -n cloudgames <pod-name> --previous
 
 # Check secrets synced
 kubectl get externalsecrets -n cloudgames
+kubectl get clustersecretstore azure-keyvault
 ```
 
 ---
 
 ## 📚 Full Documentation
 
-For complete details, see [README.md](README.md)
+For complete details, see:
+- **[README.md](README.md)** - Complete setup guide with verification
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Scripts architecture and design
+- **SOLUTION_WEBHOOKS_AND_SYNC.md** - Webhook troubleshooting details
 
 ---
 

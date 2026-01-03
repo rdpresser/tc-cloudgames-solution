@@ -119,6 +119,8 @@ function Show-Help {
     Write-Host "  🔧 MAINTENANCE:" -ForegroundColor $Colors.Info
     Write-Host "    get-argocd-url      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Get ArgoCD LoadBalancer URL" -ForegroundColor $Colors.Muted
+    Write-Host "    reset-argocd-password" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Retrieve initial password or reset to custom (default: Argo@AKS123!)" -ForegroundColor $Colors.Muted
     Write-Host "    logs [component]    " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "View logs (argocd/eso/nginx)" -ForegroundColor $Colors.Muted
     Write-Host "    check-versions      " -NoNewline -ForegroundColor $Colors.Success
@@ -127,6 +129,8 @@ function Show-Help {
     Write-Host "Update Helm chart version in manifest" -ForegroundColor $Colors.Muted
     Write-Host "    diagnose-fix-components" -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Auto-detect and fix degraded components (ingress-nginx, workload-identity)" -ForegroundColor $Colors.Muted
+    Write-Host "    fix-webhooks        " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Validate and fix all webhook health (NGINX, ESO, Workload Identity)" -ForegroundColor $Colors.Muted
     Write-Host "    fix-argocd-sync     " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Recover ArgoCD sync issues (manual webhook fix)" -ForegroundColor $Colors.Muted
     Write-Host "    fix-ingress-webhook-cabundle" -NoNewline -ForegroundColor $Colors.Success
@@ -377,6 +381,134 @@ function Update-ServiceAccountClientIds {
     Write-Host ""
 }
 
+function Reset-ArgoCDPassword {
+    <#
+    .SYNOPSIS
+    Retrieves initial ArgoCD password or resets to custom password.
+    
+    .DESCRIPTION
+    Gets the initial admin password from argocd-initial-admin-secret or
+    resets the password to a custom value (default: Argo@AKS123!).
+    
+    .PARAMETER NewPassword
+    Custom password to set. Default: Argo@AKS123!
+    
+    .PARAMETER Namespace
+    ArgoCD namespace. Default: argocd
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$NewPassword = "Argo@AKS123!",
+        
+        [Parameter(Mandatory = $false)]
+        [string]$Namespace = "argocd"
+    )
+    
+    Write-Host ""
+    Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
+    Write-Host "║           ArgoCD Password Reset/Retrieval                ║" -ForegroundColor $Colors.Title
+    Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Title
+    Write-Host ""
+    
+    # Check if ArgoCD is installed
+    Write-Host "Checking ArgoCD installation..." -ForegroundColor $Colors.Info
+    $ns = kubectl get namespace $Namespace 2>$null
+    if (-not $ns) {
+        Write-Host "❌ ArgoCD namespace '$Namespace' not found" -ForegroundColor $Colors.Error
+        Write-Host "💡 Run: .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Warning
+        return
+    }
+    
+    # Option 1: Get initial password from secret
+    Write-Host ""
+    Write-Host "1️⃣  Retrieving initial admin password..." -ForegroundColor $Colors.Info
+    $initialPwd = kubectl get secret argocd-initial-admin-secret -n $Namespace -o jsonpath='{.data.password}' 2>$null
+    
+    if ($initialPwd) {
+        $decodedPwd = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($initialPwd))
+        Write-Host "✅ Initial password found:" -ForegroundColor $Colors.Success
+        Write-Host ""
+        Write-Host "  Username: admin" -ForegroundColor $Colors.Info
+        Write-Host "  Password: $decodedPwd" -ForegroundColor $Colors.Success
+        Write-Host ""
+        Write-Host "📌 Use this password to login at ArgoCD UI" -ForegroundColor $Colors.Warning
+        Write-Host ""
+    }
+    else {
+        Write-Host "⚠️  Initial admin secret not found (may have been deleted)" -ForegroundColor $Colors.Warning
+        Write-Host ""
+    }
+    
+    # Option 2: Reset to custom password
+    Write-Host "2️⃣  Resetting password to: $('*' * $NewPassword.Length)" -ForegroundColor $Colors.Info
+    Write-Host ""
+    
+    # Generate bcrypt hash
+    $podName = "bcrypt-reset-$(Get-Random -Maximum 9999)"
+    $bcryptPod = @"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $podName
+  namespace: $Namespace
+spec:
+  containers:
+  - name: htpasswd
+    image: httpd:2.4-alpine
+    command: ["sh", "-c", "htpasswd -nbBC 10 admin '$NewPassword' | cut -d: -f2"]
+  restartPolicy: Never
+"@
+    
+    Write-Host "  Generating bcrypt hash..." -ForegroundColor $Colors.Muted
+    $bcryptPod | kubectl apply -f - 2>$null | Out-Null
+    
+    # Wait for pod completion
+    $retries = 0
+    while ($retries -lt 15) {
+        $podStatus = kubectl get pod $podName -n $Namespace -o jsonpath='{.status.phase}' 2>$null
+        if ($podStatus -eq "Succeeded" -or $podStatus -eq "Failed") {
+            break
+        }
+        Start-Sleep -Seconds 2
+        $retries++
+    }
+    
+    $hash = kubectl logs $podName -n $Namespace 2>$null | Select-Object -First 1
+    kubectl delete pod $podName -n $Namespace --ignore-not-found 2>$null | Out-Null
+    
+    if ($hash -and $hash.StartsWith('$2')) {
+        Write-Host "  Patching argocd-secret..." -ForegroundColor $Colors.Muted
+        $hashB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($hash))
+        $mtime = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")))
+        
+        kubectl patch secret argocd-secret -n $Namespace -p "{`"data`": {`"admin.password`": `"$hashB64`", `"admin.passwordMtime`": `"$mtime`"}}" 2>$null
+        
+        Write-Host "  Restarting argocd-server..." -ForegroundColor $Colors.Muted
+        kubectl rollout restart deployment argocd-server -n $Namespace 2>$null | Out-Null
+        kubectl rollout status deployment argocd-server -n $Namespace --timeout=60s 2>$null | Out-Null
+        
+        Write-Host ""
+        Write-Host "✅ Password successfully reset!" -ForegroundColor $Colors.Success
+        Write-Host ""
+        Write-Host "  Username: admin" -ForegroundColor $Colors.Info
+        Write-Host "  Password: $NewPassword" -ForegroundColor $Colors.Success
+        Write-Host ""
+        
+        # Get ArgoCD URL
+        $ip = kubectl get svc argocd-server -n $Namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
+        if ($ip) {
+            Write-Host "  🌐 URL: http://$ip" -ForegroundColor $Colors.Info
+        }
+        Write-Host ""
+    }
+    else {
+        Write-Host "❌ Failed to generate bcrypt hash" -ForegroundColor $Colors.Error
+        Write-Host "💡 Try using the initial password from above" -ForegroundColor $Colors.Warning
+        Write-Host ""
+    }
+}
+
 function Show-Menu {
     function Get-InstallStatuses {
         # Start parallel jobs for faster info gathering
@@ -536,6 +668,7 @@ function Show-Menu {
         Write-Host "  📦 ARGOCD & DEPLOYMENT:" -ForegroundColor $Colors.Title
         Write-Host ""
         Write-Host ("  [7] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
+        Write-Host ("  [7a] 🔑 Reset/Retrieve ArgoCD password") -ForegroundColor $Colors.Warning
         Write-Host ""
         
         # ===== CONFIGURATION =====
@@ -590,6 +723,8 @@ function Show-Menu {
         Write-Host "       (Manually fix webhook sync issues if needed)" -ForegroundColor $Colors.Muted
         Write-Host " [21] 🔐 Fix NGINX Webhook Certificate" -ForegroundColor $Colors.Info
         Write-Host "       (Update caBundle in ValidatingWebhookConfiguration from secret)" -ForegroundColor $Colors.Muted
+        Write-Host " [22] 🔧 Fix All Webhooks Health" -ForegroundColor $Colors.Info
+        Write-Host "       (Validate NGINX, ESO, and Workload Identity webhooks)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== EXIT =====
@@ -606,6 +741,7 @@ function Show-Menu {
             "5" { Invoke-Command "install-argocd" }
             "6" { Invoke-Command "configure-image-updater" }
             "7" { Invoke-Command "get-argocd-url" }
+            "7a" { Invoke-Command "reset-argocd-password" }
             "8" { Invoke-Command "setup-eso-wi" }
             "9" { Invoke-Command "update-sa-client-ids" }
             "10" { Invoke-Command "bootstrap" }
@@ -632,6 +768,9 @@ function Show-Menu {
             }
             "21" {
                 & "$PSScriptRoot\fix-ingress-webhook-cabundle.ps1"
+            }
+            "22" {
+                & "$PSScriptRoot\fix-webhooks.ps1"
             }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
@@ -755,6 +894,9 @@ function Invoke-Command($cmd, $arg1 = "") {
                 Write-Host "  ❌ ArgoCD LoadBalancer IP not found" -ForegroundColor $Colors.Error
                 Write-Host "  💡 Run: .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Warning
             }
+        }
+        "reset-argocd-password" {
+            Reset-ArgoCDPassword
         }
         "update-sa-client-ids" {
             Update-ServiceAccountClientIds
@@ -880,7 +1022,14 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             
             Write-Host ""
-            Write-Host "Ensuring all ArgoCD applications are synced before completion..." -ForegroundColor $Colors.Info
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host "Step 6/6: Validating webhooks and syncing applications..." -ForegroundColor $Colors.Title
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host ""
+            Write-Host "🔍 Checking webhook health before final sync..." -ForegroundColor $Colors.Info
+            & "$PSScriptRoot\fix-webhooks.ps1"
+            Write-Host ""
+            Write-Host "🔄 Ensuring all ArgoCD applications are synced..." -ForegroundColor $Colors.Info
             & "$PSScriptRoot\fix-argocd-sync.ps1"
             
             Write-Host ""
@@ -1410,6 +1559,16 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             else {
                 Write-Host "❌ Script not found: cluster-cleanup-audit.ps1" -ForegroundColor $Colors.Error
+            }
+        }
+        "fix-webhooks" {
+            Write-Host "`n🔧 Validating and fixing webhooks..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "fix-webhooks.ps1"
+            if (Test-Path $script) {
+                & $script
+            }
+            else {
+                Write-Host "❌ Script not found: fix-webhooks.ps1" -ForegroundColor $Colors.Error
             }
         }
         { $_ -in "force-delete-ns", "force-delete-namespace" } {

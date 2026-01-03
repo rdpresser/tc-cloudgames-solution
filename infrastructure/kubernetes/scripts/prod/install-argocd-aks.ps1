@@ -102,6 +102,38 @@ Write-Host "✅ Components ready" -ForegroundColor Green
 # =============================================================================
 Write-Host "Setting admin password..." -ForegroundColor Yellow
 
+# Method 1: Using argocd CLI (if available)
+$argoCdExe = Get-Command argocd -ErrorAction SilentlyContinue
+if ($argoCdExe) {
+    Write-Host "  Using argocd CLI to update password..." -ForegroundColor Gray
+    
+    # Get initial password
+    $initialPwd = kubectl get secret argocd-initial-admin-secret -n $Namespace -o jsonpath='{.data.password}' 2>$null | ForEach-Object {
+        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
+    }
+    
+    if ($initialPwd) {
+        # Wait for server to be ready
+        Start-Sleep -Seconds 10
+        
+        # Get server pod
+        $serverPod = kubectl get pod -n $Namespace -l app.kubernetes.io/name=argocd-server -o jsonpath='{.items[0].metadata.name}' 2>$null
+        
+        if ($serverPod) {
+            # Update password using argocd CLI inside the pod
+            $updateCmd = "argocd account update-password --current-password '$initialPwd' --new-password '$AdminPassword' --account admin --plaintext"
+            kubectl exec -n $Namespace $serverPod -- sh -c $updateCmd 2>$null
+            
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "✅ Password updated via argocd CLI" -ForegroundColor Green
+            } else {
+                Write-Host "⚠️  Could not update password via CLI, trying manual method..." -ForegroundColor Yellow
+            }
+        }
+    }
+}
+
+# Method 2: Generate bcrypt hash and patch secret
 $podName = "bcrypt-$(Get-Random -Maximum 9999)"
 $bcryptPod = @"
 apiVersion: v1
@@ -113,23 +145,40 @@ spec:
   containers:
   - name: htpasswd
     image: httpd:2.4-alpine
-    command: ["htpasswd", "-nbBC", "10", "", "$AdminPassword"]
+    command: ["sh", "-c", "htpasswd -nbBC 10 admin '$AdminPassword' | cut -d: -f2"]
   restartPolicy: Never
-  activeDeadlineSeconds: 30
 "@
 
-$bcryptPod | kubectl apply -f - 2>$null
-Start-Sleep -Seconds 5
+Write-Host "  Generating bcrypt hash..." -ForegroundColor Gray
+$bcryptPod | kubectl apply -f - 2>$null | Out-Null
 
-$hash = kubectl logs $podName -n $Namespace 2>$null | ForEach-Object { $_ -replace '^:', '' } | Select-Object -First 1
+# Wait for pod to complete
+$retries = 0
+while ($retries -lt 15) {
+    $podStatus = kubectl get pod $podName -n $Namespace -o jsonpath='{.status.phase}' 2>$null
+    if ($podStatus -eq "Succeeded" -or $podStatus -eq "Failed") {
+        break
+    }
+    Start-Sleep -Seconds 2
+    $retries++
+}
+
+$hash = kubectl logs $podName -n $Namespace 2>$null | Select-Object -First 1
 kubectl delete pod $podName -n $Namespace --ignore-not-found 2>$null | Out-Null
 
-if ($hash -and $hash.Length -gt 15) {
+if ($hash -and $hash.StartsWith('$2')) {
+    Write-Host "  Patching argocd-secret..." -ForegroundColor Gray
     $hashB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($hash))
-    kubectl patch secret argocd-secret -n $Namespace -p "{`"data`": {`"admin.password`": `"$hashB64`"}}" 2>$null
-    Write-Host "✅ Password set" -ForegroundColor Green
+    kubectl patch secret argocd-secret -n $Namespace -p "{`"data`": {`"admin.password`": `"$hashB64`", `"admin.passwordMtime`": `"$(([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")))))`"}}" 2>$null
+    
+    # Restart argocd-server to pick up new password
+    kubectl rollout restart deployment argocd-server -n $Namespace 2>$null | Out-Null
+    kubectl rollout status deployment argocd-server -n $Namespace --timeout=60s 2>$null | Out-Null
+    
+    Write-Host "✅ Password set and server restarted" -ForegroundColor Green
 } else {
-    Write-Host "⚠️  Could not set custom password" -ForegroundColor Yellow
+    Write-Host "⚠️  Could not generate bcrypt hash" -ForegroundColor Yellow
+    Write-Host "⚠️  Use initial admin password from secret: kubectl get secret argocd-initial-admin-secret -n $Namespace" -ForegroundColor Yellow
 }
 
 # =============================================================================

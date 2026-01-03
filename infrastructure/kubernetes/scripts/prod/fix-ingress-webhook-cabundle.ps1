@@ -84,43 +84,15 @@ if ($caLength -gt 100) {
     Write-Host "   [WARNING] caBundle length suspicious ($caLength chars)" -ForegroundColor $Colors.Warning
 }
 
-# Sync cloudgames-prod
-Write-Host "   Forcing sync of cloudgames-prod..." -ForegroundColor $Colors.Muted
-kubectl patch application cloudgames-prod -n argocd `
-    -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"prune":true}}}' `
-    --type merge 2>$null | Out-Null
-
-Write-Host ""
-Write-Host "Waiting for sync (30s)..." -ForegroundColor $Colors.Muted
-Start-Sleep -Seconds 30
-
 # Final status
 Write-Host ""
 Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Success
-Write-Host "║   ✅ Fix Complete                                         ║" -ForegroundColor $Colors.Success
+Write-Host "║   ✅ NGINX Webhook caBundle Fixed                        ║" -ForegroundColor $Colors.Success
 Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Success
 Write-Host ""
-
-Write-Host "Final Status:" -ForegroundColor $Colors.Info
-kubectl get applications -n argocd --no-headers 2>$null | ForEach-Object {
-    $parts = $_ -split '\s+'
-    $name = $parts[0]
-    $sync = $parts[1]
-    $health = $parts[2]
-    
-    $color = if ($sync -eq "Synced" -and $health -eq "Healthy") { $Colors.Success } else { $Colors.Warning }
-    Write-Host "  $name - $sync / $health" -ForegroundColor $color
-}
-
-Write-Host ""
-Write-Host "Ingresses:" -ForegroundColor $Colors.Info
-kubectl get ingress -n cloudgames --no-headers 2>$null | ForEach-Object {
-    Write-Host "  $_" -ForegroundColor $Colors.Muted
-}
-
+Write-Host "✅ caBundle successfully updated from secret" -ForegroundColor $Colors.Success
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor $Colors.Info
-Write-Host "  • If cloudgames-prod is still Progressing, wait a few more seconds" -ForegroundColor $Colors.Muted
-Write-Host "  • Monitor: kubectl get pods -n cloudgames -w" -ForegroundColor $Colors.Muted
-Write-Host "  • View logs: kubectl logs -n cloudgames -l app=<service-name>" -ForegroundColor $Colors.Muted
+Write-Host "  • Run sync script: .\aks-manager.ps1 fix-argocd-sync" -ForegroundColor $Colors.Muted
+Write-Host "  • Or let ArgoCD auto-sync applications" -ForegroundColor $Colors.Muted
 Write-Host ""

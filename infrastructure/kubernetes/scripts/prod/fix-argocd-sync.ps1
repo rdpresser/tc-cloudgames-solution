@@ -21,8 +21,11 @@ $Colors = @{
 
 Write-Host ""
 Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Info
-Write-Host "║   🔄 ArgoCD Application Sync Recovery                     ║" -ForegroundColor $Colors.Info
+Write-Host "║   🔄 ArgoCD Application Sync (Ordered)                    ║" -ForegroundColor $Colors.Info
 Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Info
+Write-Host ""
+Write-Host "ℹ️  This script syncs applications in correct order with retry logic" -ForegroundColor $Colors.Info
+Write-Host "💡 Run 'fix-webhooks' first if you have webhook validation errors" -ForegroundColor $Colors.Muted
 Write-Host ""
 
 # Helper function to sync app and wait (idempotent with retry)
@@ -100,7 +103,7 @@ function Sync-ArgoApp {
 }
 
 # Step 1: Check prerequisites
-Write-Host "Step 1/4: Checking prerequisites..." -ForegroundColor $Colors.Info
+Write-Host "Step 1/3: Checking prerequisites..." -ForegroundColor $Colors.Info
 Write-Host ""
 
 $kubectlOk = kubectl cluster-info 2>$null
@@ -120,7 +123,7 @@ Write-Host "✅ ArgoCD available" -ForegroundColor $Colors.Success
 Write-Host ""
 
 # Step 2: Sync platform dependencies first
-Write-Host "Step 2/4: Syncing platform dependencies..." -ForegroundColor $Colors.Info
+Write-Host "Step 2/3: Syncing platform dependencies..." -ForegroundColor $Colors.Info
 Write-Host ""
 
 $apps = @(
@@ -134,41 +137,8 @@ foreach ($app in $apps) {
     Write-Host ""
 }
 
-# Step 3: Verify webhooks are ready
-Write-Host "Step 3/4: Verifying webhooks are ready..." -ForegroundColor $Colors.Info
-Write-Host ""
-
-$webhooks = @(
-    "external-secrets-operator-webhook",
-    "ingress-nginx-controller-admission",
-    "azure-workload-identity-webhook"
-)
-
-foreach ($webhook in $webhooks) {
-    Write-Host "  🔍 Checking: $webhook..." -ForegroundColor $Colors.Muted
-    
-    $endpointReady = $false
-    for ($i = 0; $i -lt 30; $i++) {
-        $endpoints = kubectl get endpoints -A -o json 2>$null | ConvertFrom-Json
-        $ready = $endpoints.items | Where-Object { $_.metadata.name -like "*$webhook*" -and $_.subsets.count -gt 0 }
-        
-        if ($ready) {
-            Write-Host "     ✅ Ready" -ForegroundColor $Colors.Success
-            $endpointReady = $true
-            break
-        }
-        
-        Start-Sleep -Seconds 1
-    }
-    
-    if (-not $endpointReady) {
-        Write-Host "     ⚠️  Not ready yet (may be deploying)" -ForegroundColor $Colors.Warning
-    }
-}
-Write-Host ""
-
-# Step 4: Sync cloudgames-prod
-Write-Host "Step 4/4: Syncing cloudgames-prod application..." -ForegroundColor $Colors.Info
+# Step 3: Sync cloudgames-prod
+Write-Host "Step 3/3: Syncing cloudgames-prod application..." -ForegroundColor $Colors.Info
 Write-Host ""
 
 $success = Sync-ArgoApp -AppName "cloudgames-prod" -WaitSeconds 180 -MaxRetries 3
