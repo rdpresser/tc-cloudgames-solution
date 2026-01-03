@@ -55,23 +55,22 @@ variable "postgres_admin_password" {
 }
 
 # PostgreSQL SKU (compute tier/size)
-# B_Standard_B2s: 2 vCores, 4GB RAM, 429 max connections, 640 IOPS (~$25/month)
-# GP_Standard_D2s_v3: 2 vCores, 8GB RAM, 859 max connections, 3200 IOPS (~$120/month)
-# Upgraded to GP_Standard_D2s_v3 to resolve connection pool exhaustion and improve IOPS
+# B_Standard_B2s: 2 vCores, 4GB RAM, 429 max connections, 640 IOPS (~$25/month) - BASELINE
+# GP_Standard_D2s_v3: 2 vCores, 8GB RAM, 859 max connections, 3200 IOPS (~$120/month) - TESTED (no significant improvement)
 variable "postgres_sku" {
   type        = string
   description = "PostgreSQL Flexible Server SKU (e.g., B_Standard_B2s, GP_Standard_D2s_v3, GP_Standard_D4s_v3)"
-  default     = "GP_Standard_D2s_v3"
+  default     = "B_Standard_B2s"
 }
 
 # PostgreSQL max_connections parameter
-# GP_Standard_D2s_v3 supports up to 859 connections
-# Setting to 600 allows: 3 services × 5 pods × 80 connections + admin/monitoring headroom
-# Previous: 300 (insufficient - caused connection pool exhaustion)
+# B_Standard_B2s supports up to 429 connections
+# Setting to 350 allows: baseline capacity for 3 services × 4 pods with margin
+# Note: Test 3 showed CPU/query efficiency is the bottleneck, not connection limits
 variable "postgres_max_connections" {
   type        = number
-  description = "Maximum concurrent connections to PostgreSQL (default 600 for D2s_v3 SKU)"
-  default     = 600
+  description = "Maximum concurrent connections to PostgreSQL (default 350 for B2s SKU)"
+  default     = 350
 
   validation {
     condition     = var.postgres_max_connections >= 50 && var.postgres_max_connections <= 5000
@@ -149,9 +148,9 @@ variable "aks_system_node_count" {
 }
 
 variable "aks_system_node_vm_size" {
-  description = "VM size for AKS system node pool (B2ms = 2 vCPU, 8 GB RAM, 1250 Mbps network - upgraded from B2s for better performance)"
+  description = "VM size for AKS system node pool (B2s = 2 vCPU, 4 GB RAM - baseline, cost-optimized for dev/test)"
   type        = string
-  default     = "Standard_B2ms"
+  default     = "Standard_B2s"
 }
 
 variable "aks_enable_auto_scaling" {
@@ -161,9 +160,9 @@ variable "aks_enable_auto_scaling" {
 }
 
 variable "aks_system_node_min_count" {
-  description = "Minimum number of nodes when auto-scaling is enabled (3 recommended for HA with B2ms)"
+  description = "Minimum number of nodes when auto-scaling is enabled (1 for dev/test cost optimization)"
   type        = number
-  default     = 3
+  default     = 1
 
   validation {
     condition     = var.aks_system_node_min_count >= 1 && var.aks_system_node_min_count <= 10
@@ -172,9 +171,9 @@ variable "aks_system_node_min_count" {
 }
 
 variable "aks_system_node_max_count" {
-  description = "Maximum number of nodes when auto-scaling is enabled (scales up during high load)"
+  description = "Maximum number of nodes when auto-scaling is enabled (3 sufficient for dev/test workloads)"
   type        = number
-  default     = 5
+  default     = 3
 
   validation {
     condition     = var.aks_system_node_max_count >= 1 && var.aks_system_node_max_count <= 100

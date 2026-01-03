@@ -10,10 +10,11 @@ resource "azurerm_kubernetes_cluster" "aks" {
   kubernetes_version  = var.kubernetes_version
 
   # System node pool (optimized for dev/test with autoscaling)
-  # Note: In provider 4.x, you must use EITHER node_count OR (min_count + max_count)
-  # Using dynamic block to avoid defining both simultaneously
+  # Using original pool name "system"; SKU/count reverted to B2s 1-3 nodes
+  # Test 3: CPU bottleneck is in application code, not node capacity
+  # Pods use 600Mi-1024Mi max; B2s (4GB RAM) is sufficient
   default_node_pool {
-    name                         = "nodepool1"
+    name                         = "system"
     vm_size                      = var.system_node_vm_size
     min_count                    = var.system_node_min_count
     max_count                    = var.system_node_max_count
@@ -60,6 +61,13 @@ resource "azurerm_kubernetes_cluster" "aks" {
   local_account_disabled = length(var.admin_group_object_ids) > 0 ? var.local_account_disabled : false
 
   tags = var.tags
+
+  timeouts {
+    create = "45m"
+    delete = "30m"
+    read   = "10m"
+    update = "45m"
+  }
 
   lifecycle {
     # Prevent Terraform from attempting AKS updates due to provider/API drift
