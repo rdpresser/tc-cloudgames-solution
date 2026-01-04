@@ -11,7 +11,6 @@
 resources:
   - ../../base
   - cluster-secret-store-patch.yaml
-  - resource-governance.yaml
 
 labels:
   - pairs:
