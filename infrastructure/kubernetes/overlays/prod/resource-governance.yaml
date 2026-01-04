@@ -54,7 +54,7 @@ spec:
       cpu: 100m
     maxLimitRequestRatio:       # Max ratio between limit and request
       memory: 3                 # limit can be max 3x request
-      cpu: 4                    # limit can be max 4x request
+      cpu: 10                   # limit can be max 10x request (to accommodate 150m->1000m = 6.6x)
   
   # Pod-level limits (sum of all containers)
   - type: Pod
