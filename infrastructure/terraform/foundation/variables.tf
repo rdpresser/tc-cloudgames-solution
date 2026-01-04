@@ -171,9 +171,9 @@ variable "aks_system_node_min_count" {
 }
 
 variable "aks_system_node_max_count" {
-  description = "Maximum number of nodes when auto-scaling is enabled (3 sufficient for dev/test workloads)"
+  description = "Maximum number of nodes when auto-scaling is enabled (4 for improved buffer and failover safety)"
   type        = number
-  default     = 3
+  default     = 4
 
   validation {
     condition     = var.aks_system_node_max_count >= 1 && var.aks_system_node_max_count <= 100
