@@ -90,10 +90,10 @@ spec:
           resources:
             requests:
               cpu: "150m"
-              memory: "700Mi"
+              memory: "512Mi"
             limits:
               cpu: "1000m"
-              memory: "1800Mi"
+              memory: "1400Mi"
           startupProbe:
             httpGet:
               path: /health
@@ -147,10 +147,10 @@ spec:
           resources:
             requests:
               cpu: "150m"
-              memory: "700Mi"
+              memory: "512Mi"
             limits:
               cpu: "1000m"
-              memory: "1800Mi"
+              memory: "1400Mi"
           startupProbe:
             httpGet:
               path: /health
@@ -204,10 +204,10 @@ spec:
           resources:
             requests:
               cpu: "150m"
-              memory: "700Mi"
+              memory: "512Mi"
             limits:
               cpu: "1000m"
-              memory: "1800Mi"
+              memory: "1400Mi"
           livenessProbe:
             httpGet:
               path: /health
