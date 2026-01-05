@@ -293,23 +293,6 @@ thresholds: {
 
 ---
 
-## 🤖 GitHub Actions (CI/CD)
-
-**Workflow**: `.github/workflows/perf-k6.yml`
-
-**Triggers**: Manual dispatch or scheduled runs
-
-**Secrets** (environment-scoped to `prod`):
-- `PERF_BASE_URL`
-- `PERF_USERNAME`
-- `PERF_PASSWORD`
-- `PERF_AUTH_TOKEN_PATH` (optional)
-- `PERF_AUTH_HEADER` (optional)
-
-**Artifacts**: Automatically uploaded test summaries and metrics
-
----
-
 ## 📈 Output Files
 
 All test results are saved to `k6/output/` (gitignored):
@@ -363,13 +346,3 @@ k6 run --http-debug k6/smoke/users-smoke.js
 - [k6 Test Lifecycle](https://k6.io/docs/using-k6/test-lifecycle/)
 - [k6 Thresholds](https://k6.io/docs/using-k6/thresholds/)
 - [k6 Options Reference](https://k6.io/docs/using-k6/k6-options/reference/)
-
----
-
-## 🔮 Next Steps
-
-- Tune stages/thresholds based on your SLOs
-- Add custom scenarios for specific user flows
-- Integrate with monitoring (Prometheus, Grafana)
-- Set up automated performance regression testing
-- Create service-specific dashboards for results analysis
