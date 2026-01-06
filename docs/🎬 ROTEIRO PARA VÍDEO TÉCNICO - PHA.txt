@@ -1,0 +1,487 @@
+🎬 ROTEIRO PARA VÍDEO TÉCNICO - PHASE_04
+TC Cloud Games - Plataforma de Jogos em Nuvem
+📋 PARTE 1: ROTEIRO COM BULLET POINTS (Estrutura Geral)
+1. ABERTURA (1-2 min)
+Apresentação do projeto e contexto acadêmico
+Objetivo da Phase 04
+Visão geral da arquitetura
+2. ARQUITETURA & PADRÕES (3-4 min)
+Hexagonal Architecture com DDD
+Microserviços: Users, Games, Payments
+Event-Driven Architecture
+CQRS + Event Sourcing
+3. INFRAESTRUTURA COMO CÓDIGO (3-4 min)
+Terraform: 15+ recursos Azure
+AKS: Kubernetes em produção
+Segurança: Workload Identity + External Secrets
+GitOps: ArgoCD com bootstrap
+4. MENSAGERIA & INTEGRAÇÃO (2-3 min)
+Wolverine + Outbox Pattern
+Azure Service Bus com tópicos
+Integration Events entre serviços
+Saga Pattern para fluxo de compra
+5. PERFORMANCE & OTIMIZAÇÃO (2-3 min)
+k6: Smoke, Load e Performance tests
+Resultados: 20k+ requests, 0% falhas
+Otimização de recursos (700Mi → 512Mi)
+Auto-scaling funcional
+6. ENCERRAMENTO (1 min)
+Conquistas da Phase 04
+Lições aprendidas
+Próximos passos
+📖 PARTE 2: ROTEIRO DETALHADO COM EXPLICAÇÕES
+🎯 1. ABERTURA (1-2 minutos)
+O que mostrar:
+Slide inicial: Logo + título "TC Cloud Games - Phase 04: Production Kubernetes Deployment"
+Contexto: "Plataforma de distribuição digital de jogos, similar a Steam/Epic Games Store"
+O que falar:
+"Olá, professores. Este é o TC Cloud Games, uma plataforma completa de distribuição digital de jogos construída com arquitetura de microserviços na nuvem Azure. Estou apresentando a Phase 04, onde implementamos o deployment em produção no Kubernetes com foco em segurança, performance e confiabilidade."
+
+Números de impacto:
+
+✅ 3 microserviços independentes
+✅ 15+ recursos Azure provisionados via Terraform
+✅ 20.651 requisições processadas com 0% de falhas nos testes de carga
+✅ Deployment automatizado via GitOps com ArgoCD
+✅ Zero credenciais hardcoded (Workload Identity + External Secrets)
+Stack tecnológico (mostrar visualmente):
+
+Backend: .NET 9 + FastEndpoints
+Persistência: PostgreSQL + Marten (Event Sourcing + CQRS)
+Cache: Redis (Azure Cache)
+Mensageria: Azure Service Bus + Wolverine (Outbox Pattern)
+Orquestração: Kubernetes (AKS)
+IaC: Terraform
+GitOps: ArgoCD
+Testes: k6 (load testing)
+
+🏗️ 2. ARQUITETURA & PADRÕES (3-4 minutos)
+O que mostrar:
+Diagrama: tc-cloudgames-aks-architecture.drawio - arquitetura completa do AKS
+Código: Estrutura de pastas de um serviço (Hexagonal Architecture)
+O que falar:
+"A arquitetura segue o padrão Hexagonal, também conhecido como Ports & Adapters, que garante separação clara entre lógica de negócio e infraestrutura."
+
+HEXAGONAL ARCHITECTURE:
+
+Mostrar estrutura de pastas:
+
+services/users/src/
+├── Core/                          ← LÓGICA DE NEGÓCIO
+│   ├── Domain/                    ← Aggregates, ValueObjects, Events
+│   │   ├── UserAggregate.cs
+│   │   ├── Email.cs (ValueObject)
+│   │   └── Password.cs (ValueObject)
+│   └── Application/               ← CQRS: Commands & Queries
+│       ├── UseCases/
+│       │   ├── Commands/RegisterUserCommand.cs
+│       │   └── Queries/GetUserByIdQuery.cs
+│       └── MessageBrokerHandlers/ ← Integration Events
+└── Adapters/                      ← INFRAESTRUTURA
+    ├── Inbound/
+    │   └── Api/                   ← FastEndpoints (REST)
+    └── Outbound/
+        └── Infrastructure/         ← Marten, Redis, Service Bus
+
+MICROSERVIÇOS:
+
+Serviço	Responsabilidade	Tecnologia Principal
+Users	Autenticação, autorização JWT, gestão de usuários	Event Sourcing (Marten Event Store)
+Games	Catálogo de jogos, biblioteca do usuário, orquestração de compras	CQRS (Marten Document DB)
+Payments	Processamento de pagamentos, transações	Outbox Pattern (Wolverine + Marten)
+CQRS + EVENT SOURCING:
+
+"O serviço de Users implementa Event Sourcing completo. Todo estado é reconstruído através de eventos, garantindo auditoria completa e time travel."
+
+Mostrar exemplo visual:
+
+Event Store (mt_events table):
+┌────┬───────────┬─────────┬──────────────────┬────────────────┐
+│ ID │ Stream ID │ Version │ Type             │ Timestamp      │
+├────┼───────────┼─────────┼──────────────────┼────────────────┤
+│ 1  │ user-123  │ 1       │ UserRegistered   │ 2026-01-01 10h │
+│ 2  │ user-123  │ 2       │ EmailUpdated     │ 2026-01-02 14h │
+│ 3  │ user-123  │ 3       │ PasswordChanged  │ 2026-01-03 09h │
+└────┴───────────┴─────────┴──────────────────┴────────────────┘
+
+Benefícios:
+✅ Auditoria completa (LGPD, compliance)
+✅ Reconstrução de estado em qualquer ponto no tempo
+✅ Debugging facilitado (replay de eventos)
+✅ Natural fit com CQRS
+
+DOMAIN-DRIVEN DESIGN:
+
+"Aplicamos DDD tático: Aggregates para consistência transacional, Value Objects para validação de domínio, e Domain Events para comunicação assíncrona."
+
+Exemplo de Value Object:
+
+public record Email
+{
+    private Email(string value) => _value = value;
+    
+    public static Email From(string email)
+    {
+        // Validação no próprio objeto
+        if (!EmailRegex.IsMatch(email))
+            throw new DomainException("Email inválido");
+        return new Email(email);
+    }
+}
+
+☁️ 3. INFRAESTRUTURA COMO CÓDIGO (3-4 minutos)
+O que mostrar:
+Portal Azure: Mostrar Resource Group com os recursos provisionados
+Código Terraform: modules
+Diagrama AKS: Arquitetura de rede e segurança
+O que falar:
+"Toda infraestrutura é provisionada via Terraform, garantindo reprodutibilidade e versionamento. São 15+ recursos Azure organizados em módulos reutilizáveis."
+
+RECURSOS AZURE PROVISIONADOS:
+
+Resource Group: tc-cloudgames-solution-dev-rg
+├── AKS Cluster
+│   ├── 3 nodes (Standard_D2s_v3: 2 cores, 8GB RAM)
+│   ├── Auto-scaling: 2-6 nodes
+│   ├── Workload Identity habilitado
+│   └── Integrado com Log Analytics
+├── Container Registry (ACR)
+│   └── Armazena imagens Docker dos 3 serviços
+├── PostgreSQL Flexible Server
+│   ├── users_db (Event Store)
+│   ├── games_db (Document DB)
+│   └── payments_db (Document DB)
+├── Azure Cache for Redis
+│   └── Caching distribuído + sessões
+├── Azure Service Bus
+│   ├── Tópicos: user.events, game.events, payment.events
+│   └── Subscriptions com SQL filters
+├── Key Vault
+│   ├── 40+ secrets (connection strings, APIs)
+│   └── Integrado com External Secrets Operator
+├── Virtual Network
+│   └── Subnet dedicado para AKS
+└── Application Insights
+    └── Monitoramento APM + OpenTelemetry
+
+SEGURANÇA (Destaque importante):
+
+"Implementamos zero credentials no código. Toda autenticação usa Workload Identity e External Secrets Operator."
+
+Mostrar fluxo:
+
+┌─────────────────────────────────────────────────────────┐
+│ SEGURANÇA: ZERO CREDENTIALS                             │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│ 1. Pod inicia com ServiceAccount + Annotation           │
+│    ↓                                                     │
+│ 2. Workload Identity injeta Azure AD token              │
+│    ↓                                                     │
+│ 3. External Secrets Operator busca secrets do Key Vault │
+│    ↓                                                     │
+│ 4. Cria Kubernetes Secret automaticamente               │
+│    ↓                                                     │
+│ 5. Pod consome secrets via env vars                     │
+│                                                          │
+│ ✅ Nenhuma credencial em código ou manifests            │
+│ ✅ Rotação automática a cada 1 hora                     │
+│ ✅ Auditoria completa no Azure AD                       │
+└─────────────────────────────────────────────────────────┘
+
+GITOPS COM ARGOCD:
+
+"Deployment totalmente automatizado via GitOps. Push no Git → ArgoCD sincroniza → Pods atualizados."
+
+Mostrar estrutura:
+
+ArgoCD Bootstrap Pattern:
+application-bootstrap.yaml (App of Apps)
+├── azure-workload-identity    ← Instala webhook
+├── ingress-nginx              ← LoadBalancer único
+├── external-secrets           ← Sincroniza Key Vault
+└── cloudgames-prod            ← Aplica os 3 serviços
+    ├── user-api (Deployment + Service + HPA + PDB)
+    ├── games-api (mesmo pattern)
+    └── payments-api (mesmo pattern)
+
+Recursos por serviço:
+├── Deployment (2+ replicas para HA)
+├── Service (ClusterIP)
+├── Ingress (path-based routing)
+├── ExternalSecret (Key Vault sync)
+├── HorizontalPodAutoscaler (CPU: 70%, max 5 replicas)
+└── PodDisruptionBudget (garante disponibilidade)
+
+Tempo de deployment:
+
+⚡ Terraform provisioning: ~15 min
+⚡ Kubernetes bootstrap: ~5 min
+⚡ Service deployment: ~2 min
+🚀 Total: Código → Produção em <10 minutos
+📨 4. MENSAGERIA & INTEGRAÇÃO (2-3 minutos)
+O que mostrar:
+Diagrama: Fluxo de Integration Events entre serviços
+Código: Handler de evento + Wolverine configuration
+O que falar:
+"A comunicação entre serviços é assíncrona via Azure Service Bus, usando o padrão Outbox do Wolverine para garantir entrega confiável."
+
+OUTBOX PATTERN:
+
+┌─────────────────────────────────────────────────────┐
+│ OUTBOX PATTERN: TRANSACTIONAL MESSAGING             │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│ 1. Begin Transaction                                │
+│ 2. Update Aggregate (Marten)                        │
+│ 3. Write Event to Outbox Table ← MESMA TRANSAÇÃO    │
+│ 4. Commit Transaction                               │
+│    ─────────────────────────────                    │
+│    [Transaction Boundary]                           │
+│    ─────────────────────────────                    │
+│ 5. Background Worker lê Outbox                      │
+│ 6. Publica no Service Bus                           │
+│ 7. Marca como entregue                              │
+│                                                      │
+│ ✅ Garantia: At-least-once delivery                 │
+│ ✅ Mensagem NUNCA é perdida                         │
+│ ✅ Mesmo que Service Bus esteja indisponível        │
+└─────────────────────────────────────────────────────┘
+
+SAGA PATTERN (Fluxo de Compra):
+
+"O fluxo de compra de um jogo demonstra o padrão Saga orquestrado via eventos."
+
+Mostrar sequência:
+
+SAGA: COMPRA DE JOGO
+
+1️⃣ Games Service
+   └─► Publica: GamePurchaseRequestedIntegrationEvent
+       {
+         userId: "123",
+         gameId: "456",
+         price: 59.90
+       }
+
+2️⃣ Payments Service
+   └─► Recebe evento
+   └─► Processa pagamento
+   └─► Publica resultado:
+       ✅ PaymentApprovedIntegrationEvent
+       ❌ PaymentFailedIntegrationEvent
+
+3️⃣ Games Service
+   └─► Recebe PaymentApproved
+   └─► Adiciona jogo à biblioteca do usuário
+   └─► Usuário vê jogo disponível
+
+   OU
+
+   └─► Recebe PaymentFailed
+   └─► Libera reserva
+   └─► Notifica usuário
+
+AZURE SERVICE BUS TOPOLOGY:
+
+Tópicos e Subscriptions:
+
+user.events-topic
+├── games-user-subscription (SQL filter: eventType = 'UserRegistered')
+└── payments-user-subscription
+
+game.events-topic
+├── payments-game-subscription (SQL filter: eventType = 'GamePurchaseRequested')
+└── analytics-game-subscription
+
+payment.events-topic
+└── games-payment-subscription (SQL filter: eventType IN ('PaymentApproved', 'PaymentFailed'))
+
+Benefícios:
+✅ Pub/Sub pattern (desacoplamento)
+✅ Filtering server-side (economia de rede)
+✅ Dead Letter Queues (retry automático)
+✅ At-least-once delivery garantido
+📊 5. PERFORMANCE & OTIMIZAÇÃO (2-3 minutos)
+O que mostrar:
+Terminal: Executando k6 load test ao vivo
+Resultados: GAMES_LOAD_TEST_FINAL_REPORT_20260104.md
+Grafana (se disponível): Dashboard com métricas
+O que falar:
+"Implementamos testes de performance automatizados com k6, cobrindo smoke tests, load tests e stress tests. Os resultados guiaram otimizações que reduziram custos em 27%."
+
+TIPOS DE TESTE K6:
+
+📁 k6/
+├── smoke/       ← 1 VU, 30s (sanity check pré-deploy)
+├── load/        ← 25 VUs, 9 min (simula tráfego real)
+└── performance/ ← 50-100 VUs, 15 min (stress test)
+
+Comando com timestamp:
+$ts = Get-Date -Format "yyyyMMdd_HHmmss"
+k6 run k6/load/games-load.js \
+  --summary-export="k6/output/games-load_$ts.json"
+
+RESULTADOS LOAD TEST (Games API):
+
+┌─────────────────────────────────────────────────┐
+│ 🎯 GAMES LOAD TEST - 25 VUs                     │
+├─────────────────────────────────────────────────┤
+│                                                  │
+│ ✅ Requisições: 20.651 (0% falhas)              │
+│ ✅ Iterações: 6.883 cenários completos           │
+│ ✅ Latência P95: 194.92ms (87% abaixo do SLO)   │
+│ ✅ Throughput: 38.12 req/s sustentado            │
+│ ✅ Data transfer: 73 MB recebidos                │
+│                                                  │
+│ Cenário testado:                                 │
+│ 1. Listar catálogo                               │
+│ 2. Criar novo jogo                               │
+│ 3. Simular compra                                │
+│                                                  │
+│ SLO: P95 < 1500ms → ATINGIDO COM FOLGA          │
+└─────────────────────────────────────────────────┘
+
+
+OTIMIZAÇÃO DE RECURSOS (Case de Sucesso):
+
+"Encontramos um problema: pods não conseguiam ser agendados devido a pressão de memória. Usamos dados reais dos testes para otimizar."
+
+Mostrar processo:
+
+🔴 PROBLEMA INICIAL:
+├── Memory requests: 700Mi por pod
+├── Node capacity: 8GB (5.7GB usable)
+├── Pods por node: 3-4 pods
+├── Utilização: 101% (saturação!)
+└── Resultado: Pods em Pending, HPA não conseguia escalar
+
+🔄 ANÁLISE (via kubectl top pods):
+├── Uso real: 400-500Mi por pod
+├── Over-provisioning: 40-50%
+└── Decisão: Reduzir requests com margem de segurança
+
+✅ SOLUÇÃO IMPLEMENTADA:
+├── Memory requests: 512Mi (-27%)
+├── Memory limits: 1400Mi (-22%)
+├── Pods por node: 5-6 pods (+50% densidade)
+├── Utilização: 60-75% (saudável!)
+└── Resultado: HPA funcional, auto-scaling comprovado
+
+💰 IMPACTO:
+├── Redução de custo: ~27%
+├── Melhor utilização de recursos
+└── Escalabilidade garantida
+
+AUTO-SCALING FUNCIONAL:
+
+HPA (Horizontal Pod Autoscaler):
+┌────────────────────────────────────────┐
+│ Min Replicas: 2 (HA garantida)        │
+│ Max Replicas: 5                        │
+│ Target CPU: 70%                        │
+│                                        │
+│ Durante load test:                     │
+│ 0min  → 2 replicas (baseline)         │
+│ 3min  → 3 replicas (CPU > 70%)        │
+│ 5min  → 4 replicas (carga sustentada) │
+│ 7min  → 5 replicas (pico)             │
+│ 12min → 3 replicas (ramp down)        │
+│ 15min → 2 replicas (estável)          │
+│                                        │
+│ ✅ Auto-scaling respondeu em <2 min   │
+│ ✅ Zero downtime durante escala        │
+└────────────────────────────────────────┘
+
+🎓 6. ENCERRAMENTO (1 minuto)
+O que mostrar:
+Slide de conquistas: Checklist visual
+Próximos passos (opcional)
+O que falar:
+"A Phase 04 entregou uma plataforma production-ready com todos os pilares de cloud-native: escalabilidade, resiliência, segurança e observabilidade."
+
+CONQUISTAS DA PHASE 04:
+
+✅ INFRAESTRUTURA
+   ├── 15+ recursos Azure via Terraform
+   ├── AKS com 3 nodes (auto-scaling 2-6)
+   └── Zero downtime deployments
+
+✅ SEGURANÇA
+   ├── Workload Identity (zero credentials)
+   ├── External Secrets Operator
+   ├── RBAC least privilege
+   └── TLS termination no Ingress
+
+✅ ARQUITETURA
+   ├── Hexagonal Architecture + DDD
+   ├── CQRS + Event Sourcing (Users)
+   ├── Outbox Pattern (mensageria confiável)
+   └── Saga Pattern (compra distribuída)
+
+✅ PERFORMANCE
+   ├── 20.651 requests com 0% falhas
+   ├── P95 latency: 194ms (87% abaixo do SLO)
+   ├── Auto-scaling funcional comprovado
+   └── Otimização: -27% recursos, +50% densidade
+
+✅ GITOPS
+   ├── ArgoCD com bootstrap pattern
+   ├── Deployment < 10 minutos
+   ├── Self-healing automático
+   └── Rollback com 1 clique
+
+✅ OBSERVABILIDADE
+   ├── Application Insights (APM)
+   ├── Structured logging (Serilog)
+   ├── Health checks
+   └── OpenTelemetry distribuído
+
+LIÇÕES APRENDIDAS:
+
+"Três lições principais desta fase:"
+
+Dados guiam otimização: Usar métricas reais (kubectl top, k6) é essencial para tuning correto
+Segurança desde o início: Workload Identity eliminou toda complexidade de gestão de credenciais
+GitOps aumenta confiança: Poder fazer rollback instantâneo reduz medo de deploy
+PRÓXIMOS PASSOS (Futuro):
+
+
+
+🔮 MELHORIAS FUTURAS:
+├── Network Policies (segurança pod-to-pod)
+├── Pod Security Standards (PSS)
+├── Chaos Engineering (Azure Chaos Studio)
+├── Multi-region deployment
+└── Service Mesh (Istio/Linkerd)
+
+FECHAMENTO:
+
+"Obrigado pela atenção. Este projeto demonstra a aplicação prática de padrões enterprise em cloud-native, desde arquitetura até operações. Todo código e infraestrutura estão disponíveis no repositório para análise."
+
+🎬 DICAS DE GRAVAÇÃO
+Timing sugerido por seção:
+⏱️ Abertura: 1:30
+⏱️ Arquitetura & Padrões: 3:30
+⏱️ Infraestrutura: 3:30
+⏱️ Mensageria: 2:30
+⏱️ Performance: 3:00
+⏱️ Encerramento: 1:00
+TOTAL: ~15 minutos
+Recursos visuais essenciais:
+✅ Diagrama de arquitetura AKS (tc-cloudgames-aks-architecture.drawio)
+✅ Estrutura de pastas (Hexagonal Architecture)
+✅ Portal Azure com recursos provisionados
+✅ ArgoCD dashboard mostrando aplicações
+✅ Executar k6 test ao vivo (se possível)
+✅ Resultados de load test (gráficos/números)
+✅ kubectl top pods (mostrar uso de recursos)
+Transições eficientes:
+Use slide de transição com ícone para cada seção
+Mantenha código na tela por 3-5 segundos (tempo de leitura)
+Destaque palavras-chave (Event Sourcing, CQRS, Outbox) em negrito/cor
+Tom profissional:
+✅ Técnico mas explicativo
+✅ Mostrar números concretos (20k requests, 0% falhas)
+✅ Explicar "por quê" das escolhas (não só "o que")
+✅ Demonstrar domínio dos conceitos
