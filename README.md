@@ -216,6 +216,13 @@ Deployment strategies:
 - **Phase 2 Demo**: [YouTube](https://www.youtube.com/watch?v=7JR0DxilQkg) - Microservices
 - **Phase 3 Demo**: [YouTube](https://www.youtube.com/watch?v=4D36zP36rkM) - Cloud deployment
 - **Phase 4 Demo**: [YouTube](https://youtu.be/__t4Pmejgig) - AKS (CI Github Action | ArgoCD)
+
+### 🔄 CI/CD Workflows
+
+- **Users Service**: [GitHub Actions Build](https://github.com/rdpresser/tc-cloudgames-users/actions/workflows/users-build.yml)
+- **Games Service**: [GitHub Actions Build](https://github.com/rdpresser/tc-cloudgames-games/actions/workflows/games-build.yml)
+- **Payments Service**: [GitHub Actions Build](https://github.com/rdpresser/tc-cloudgames-payments/actions/workflows/payments-build.yml)
+
 - **Architecture Diagram**: 
 <div align="center">
   <a href="./docs/images/tc-cloudgames-aks-architecture.png" target="_blank" title="Click to view full-size diagram">
