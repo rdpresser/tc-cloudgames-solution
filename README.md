@@ -172,7 +172,14 @@ Installs and configures:
 - External Secrets Operator for Key Vault sync
 - NGINX Ingress Controller (single LoadBalancer for all services)
 - All microservices via ArgoCD Applications
-- Auto-scaling policies with KEDA
+
+<div align="center">
+  <a href="./docs/images/image_argocd.png" target="_blank" title="Click to view full-size image">
+    <img src="./docs/images/image_argocd.png" alt="ArgoCD" width="700" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
+  </a>
+  <br>
+  <em>🔍 Click to view full-size image</em>
+</div>
 
 ---
 
