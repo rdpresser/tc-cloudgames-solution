@@ -12,6 +12,7 @@ tc-cloudgames-solution/
 ├── 🚀 orchestration/
 │   ├── apphost/            # .NET Aspire AppHost (local dev: all services + dependencies)
 │   └── functions/          # Azure Functions for serverless operations
+├── 📈 k6/                   # Smoke, load, and performance test harness for AKS endpoints
 ├── 🎯 services/
 │   ├── users/              # User management, auth, RBAC (Event Sourcing)
 │   ├── games/              # Game catalog, library, purchase (CQRS)
@@ -51,6 +52,16 @@ tc-cloudgames-solution/
 - **Azure Service Bus** - Messaging and event distribution
 - **Terraform 1.14.x** - Infrastructure as Code
 - **Docker** - Container images
+
+### K6 Test Suites
+- **Smoke (1 VU)**: fast sanity/health check
+- **Load (25 VU)**: steady-state expected traffic
+- **Performance (50 or 100 VU)**: breakpoint/stress to find limits
+
+**Examples (PowerShell, timestamped outputs under `k6/output/`):**
+- Smoke (1 VU): `$runId=$(Get-Date -Format 'yyyyMMdd_HHmmss'); k6 run -e RUN_ID=$runId --summary-export k6/output/users-smoke_$runId.json k6/smoke/users-smoke.js`
+- Load (25 VU): `$runId=$(Get-Date -Format 'yyyyMMdd_HHmmss'); k6 run -e RUN_ID=$runId --summary-export k6/output/users-load_$runId.json k6/load/users-load.js`
+- Performance (50 or 100 VU): `$runId=$(Get-Date -Format 'yyyyMMdd_HHmmss'); k6 run -e RUN_ID=$runId --summary-export k6/output/users-performance_$runId.json k6/performance/users-performance.js`
 
 ### Kubernetes & GitOps
 - **ArgoCD** - GitOps deployment and application management

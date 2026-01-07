@@ -100,6 +100,8 @@ function Show-Help {
     Write-Host "  🔐 SECRETS & CONFIGURATION:" -ForegroundColor $Colors.Info
     Write-Host "    setup-eso-wi        " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Configures ESO with Workload Identity (recommended)" -ForegroundColor $Colors.Muted
+    Write-Host "    update-sa-client-ids" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Update ServiceAccount client IDs from Terraform outputs" -ForegroundColor $Colors.Muted
     # Removed legacy setup-eso (ClusterSecretStore). Use Workload Identity.
     Write-Host "    list-secrets        " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Lists secrets from Key Vault" -ForegroundColor $Colors.Muted
@@ -117,6 +119,8 @@ function Show-Help {
     Write-Host "  🔧 MAINTENANCE:" -ForegroundColor $Colors.Info
     Write-Host "    get-argocd-url      " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Get ArgoCD LoadBalancer URL" -ForegroundColor $Colors.Muted
+    Write-Host "    reset-argocd-password" -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Retrieve initial password or reset to custom (default: Argo@AKS123!)" -ForegroundColor $Colors.Muted
     Write-Host "    logs [component]    " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "View logs (argocd/eso/nginx)" -ForegroundColor $Colors.Muted
     Write-Host "    check-versions      " -NoNewline -ForegroundColor $Colors.Success
@@ -125,6 +129,8 @@ function Show-Help {
     Write-Host "Update Helm chart version in manifest" -ForegroundColor $Colors.Muted
     Write-Host "    diagnose-fix-components" -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Auto-detect and fix degraded components (ingress-nginx, workload-identity)" -ForegroundColor $Colors.Muted
+    Write-Host "    fix-webhooks        " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Validate and fix all webhook health (NGINX, ESO, Workload Identity)" -ForegroundColor $Colors.Muted
     Write-Host "    fix-argocd-sync     " -NoNewline -ForegroundColor $Colors.Success
     Write-Host "Recover ArgoCD sync issues (manual webhook fix)" -ForegroundColor $Colors.Muted
     Write-Host "    fix-ingress-webhook-cabundle" -NoNewline -ForegroundColor $Colors.Success
@@ -149,6 +155,7 @@ function Show-Help {
     Write-Host "  .\aks-manager.ps1 install-nginx  # validate (ArgoCD-managed)" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-eso    # validate (ArgoCD-managed)" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Muted
+    Write-Host "  .\aks-manager.ps1 update-sa-client-ids  # Update ServiceAccounts from Terraform" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 get-argocd-url" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 bootstrap prod" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 check-versions # Check Helm chart updates" -ForegroundColor $Colors.Muted
@@ -263,6 +270,243 @@ function Show-Status {
     }
 
     Write-Host ""
+}
+
+function Update-ServiceAccountClientIds {
+    param(
+        [string]$TerraformPath = "C:\Projects\tc-cloudgames-solution\infrastructure\terraform\foundation"
+    )
+    
+    Write-Host ""
+    Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
+    Write-Host "║   Update ServiceAccount Client IDs from Terraform        ║" -ForegroundColor $Colors.Title
+    Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Title
+    Write-Host ""
+    
+    # Check if Terraform directory exists
+    if (-not (Test-Path $TerraformPath)) {
+        Write-Host "❌ Terraform directory not found: $TerraformPath" -ForegroundColor $Colors.Error
+        return
+    }
+    
+    Write-Host "📂 Terraform Path: $TerraformPath" -ForegroundColor $Colors.Info
+    Write-Host ""
+    
+    # Get client IDs from Terraform outputs
+    Write-Host "🔍 Fetching client IDs from Terraform..." -ForegroundColor $Colors.Info
+    
+    Push-Location $TerraformPath
+    try {
+        $userApiClientId = (terraform output -raw user_api_client_id 2>$null)
+        $gamesApiClientId = (terraform output -raw games_api_client_id 2>$null)
+        $paymentsApiClientId = (terraform output -raw payments_api_client_id 2>$null)
+        
+        if (-not $userApiClientId -or -not $gamesApiClientId -or -not $paymentsApiClientId) {
+            Write-Host "❌ Failed to retrieve client IDs from Terraform" -ForegroundColor $Colors.Error
+            Write-Host "   Run 'terraform apply' first to create identities" -ForegroundColor $Colors.Warning
+            return
+        }
+        
+        Write-Host "✅ Retrieved client IDs:" -ForegroundColor $Colors.Success
+        Write-Host "   User API:     $userApiClientId" -ForegroundColor $Colors.Muted
+        Write-Host "   Games API:    $gamesApiClientId" -ForegroundColor $Colors.Muted
+        Write-Host "   Payments API: $paymentsApiClientId" -ForegroundColor $Colors.Muted
+        Write-Host ""
+    }
+    finally {
+        Pop-Location
+    }
+    
+    # Define ServiceAccount file paths
+    $k8sBasePath = Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) "base"
+    $serviceAccounts = @(
+        @{
+            Name = "user-api"
+            Path = Join-Path $k8sBasePath "user\service-account.yaml"
+            ClientId = $userApiClientId
+        },
+        @{
+            Name = "games-api"
+            Path = Join-Path $k8sBasePath "games\service-account.yaml"
+            ClientId = $gamesApiClientId
+        },
+        @{
+            Name = "payments-api"
+            Path = Join-Path $k8sBasePath "payments\service-account.yaml"
+            ClientId = $paymentsApiClientId
+        }
+    )
+    
+    Write-Host "📝 Updating ServiceAccount YAML files..." -ForegroundColor $Colors.Info
+    Write-Host ""
+    
+    foreach ($sa in $serviceAccounts) {
+        if (-not (Test-Path $sa.Path)) {
+            Write-Host "⚠️  File not found: $($sa.Path)" -ForegroundColor $Colors.Warning
+            continue
+        }
+        
+        $content = Get-Content $sa.Path -Raw
+        
+        # Update the client-id annotation (regex pattern to match existing value)
+        $pattern = '(azure\.workload\.identity/client-id:\s*")[^"]*(")'
+        $replacement = "`${1}$($sa.ClientId)`$2"
+        
+        if ($content -match $pattern) {
+            $newContent = $content -replace $pattern, $replacement
+            
+            # Check if changed
+            if ($content -eq $newContent) {
+                Write-Host "✅ $($sa.Name): Already up-to-date" -ForegroundColor $Colors.Success
+            }
+            else {
+                Set-Content -Path $sa.Path -Value $newContent -NoNewline
+                Write-Host "✅ $($sa.Name): Updated to $($sa.ClientId)" -ForegroundColor $Colors.Success
+            }
+        }
+        else {
+            Write-Host "⚠️  $($sa.Name): Pattern not found (manual review needed)" -ForegroundColor $Colors.Warning
+        }
+    }
+    
+    Write-Host ""
+    Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
+    Write-Host "║   ✓ ServiceAccount Client IDs Updated                    ║" -ForegroundColor $Colors.Success
+    Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Title
+    Write-Host ""
+    Write-Host "📌 Next Steps:" -ForegroundColor $Colors.Info
+    Write-Host "  1. Commit changes: git add infrastructure/kubernetes/base/*/service-account.yaml" -ForegroundColor $Colors.Muted
+    Write-Host "  2. Push to Git: git commit -m 'Update ServiceAccount client IDs'" -ForegroundColor $Colors.Muted
+    Write-Host "  3. ArgoCD will auto-sync (or run: kubectl apply -f <path>)" -ForegroundColor $Colors.Muted
+    Write-Host ""
+}
+
+function Reset-ArgoCDPassword {
+    <#
+    .SYNOPSIS
+    Retrieves initial ArgoCD password or resets to custom password.
+    
+    .DESCRIPTION
+    Gets the initial admin password from argocd-initial-admin-secret or
+    resets the password to a custom value (default: Argo@AKS123!).
+    
+    .PARAMETER NewPassword
+    Custom password to set. Default: Argo@AKS123!
+    
+    .PARAMETER Namespace
+    ArgoCD namespace. Default: argocd
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$NewPassword = "Argo@AKS123!",
+        
+        [Parameter(Mandatory = $false)]
+        [string]$Namespace = "argocd"
+    )
+    
+    Write-Host ""
+    Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
+    Write-Host "║           ArgoCD Password Reset/Retrieval                ║" -ForegroundColor $Colors.Title
+    Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Title
+    Write-Host ""
+    
+    # Check if ArgoCD is installed
+    Write-Host "Checking ArgoCD installation..." -ForegroundColor $Colors.Info
+    $ns = kubectl get namespace $Namespace 2>$null
+    if (-not $ns) {
+        Write-Host "❌ ArgoCD namespace '$Namespace' not found" -ForegroundColor $Colors.Error
+        Write-Host "💡 Run: .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Warning
+        return
+    }
+    
+    # Option 1: Get initial password from secret
+    Write-Host ""
+    Write-Host "1️⃣  Retrieving initial admin password..." -ForegroundColor $Colors.Info
+    $initialPwd = kubectl get secret argocd-initial-admin-secret -n $Namespace -o jsonpath='{.data.password}' 2>$null
+    
+    if ($initialPwd) {
+        $decodedPwd = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($initialPwd))
+        Write-Host "✅ Initial password found:" -ForegroundColor $Colors.Success
+        Write-Host ""
+        Write-Host "  Username: admin" -ForegroundColor $Colors.Info
+        Write-Host "  Password: $decodedPwd" -ForegroundColor $Colors.Success
+        Write-Host ""
+        Write-Host "📌 Use this password to login at ArgoCD UI" -ForegroundColor $Colors.Warning
+        Write-Host ""
+    }
+    else {
+        Write-Host "⚠️  Initial admin secret not found (may have been deleted)" -ForegroundColor $Colors.Warning
+        Write-Host ""
+    }
+    
+    # Option 2: Reset to custom password
+    Write-Host "2️⃣  Resetting password to: $('*' * $NewPassword.Length)" -ForegroundColor $Colors.Info
+    Write-Host ""
+    
+    # Generate bcrypt hash
+    $podName = "bcrypt-reset-$(Get-Random -Maximum 9999)"
+    $bcryptPod = @"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $podName
+  namespace: $Namespace
+spec:
+  containers:
+  - name: htpasswd
+    image: httpd:2.4-alpine
+    command: ["sh", "-c", "htpasswd -nbBC 10 admin '$NewPassword' | cut -d: -f2"]
+  restartPolicy: Never
+"@
+    
+    Write-Host "  Generating bcrypt hash..." -ForegroundColor $Colors.Muted
+    $bcryptPod | kubectl apply -f - 2>$null | Out-Null
+    
+    # Wait for pod completion
+    $retries = 0
+    while ($retries -lt 15) {
+        $podStatus = kubectl get pod $podName -n $Namespace -o jsonpath='{.status.phase}' 2>$null
+        if ($podStatus -eq "Succeeded" -or $podStatus -eq "Failed") {
+            break
+        }
+        Start-Sleep -Seconds 2
+        $retries++
+    }
+    
+    $hash = kubectl logs $podName -n $Namespace 2>$null | Select-Object -First 1
+    kubectl delete pod $podName -n $Namespace --ignore-not-found 2>$null | Out-Null
+    
+    if ($hash -and $hash.StartsWith('$2')) {
+        Write-Host "  Patching argocd-secret..." -ForegroundColor $Colors.Muted
+        $hashB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($hash))
+        $mtime = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")))
+        
+        kubectl patch secret argocd-secret -n $Namespace -p "{`"data`": {`"admin.password`": `"$hashB64`", `"admin.passwordMtime`": `"$mtime`"}}" 2>$null
+        
+        Write-Host "  Restarting argocd-server..." -ForegroundColor $Colors.Muted
+        kubectl rollout restart deployment argocd-server -n $Namespace 2>$null | Out-Null
+        kubectl rollout status deployment argocd-server -n $Namespace --timeout=60s 2>$null | Out-Null
+        
+        Write-Host ""
+        Write-Host "✅ Password successfully reset!" -ForegroundColor $Colors.Success
+        Write-Host ""
+        Write-Host "  Username: admin" -ForegroundColor $Colors.Info
+        Write-Host "  Password: $NewPassword" -ForegroundColor $Colors.Success
+        Write-Host ""
+        
+        # Get ArgoCD URL
+        $ip = kubectl get svc argocd-server -n $Namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
+        if ($ip) {
+            Write-Host "  🌐 URL: http://$ip" -ForegroundColor $Colors.Info
+        }
+        Write-Host ""
+    }
+    else {
+        Write-Host "❌ Failed to generate bcrypt hash" -ForegroundColor $Colors.Error
+        Write-Host "💡 Try using the initial password from above" -ForegroundColor $Colors.Warning
+        Write-Host ""
+    }
 }
 
 function Show-Menu {
@@ -424,13 +668,15 @@ function Show-Menu {
         Write-Host "  📦 ARGOCD & DEPLOYMENT:" -ForegroundColor $Colors.Title
         Write-Host ""
         Write-Host ("  [7] 🔗 Get ArgoCD URL & credentials") -ForegroundColor $Colors.Info
+        Write-Host ("  [7a] 🔑 Reset/Retrieve ArgoCD password") -ForegroundColor $Colors.Warning
         Write-Host ""
         
         # ===== CONFIGURATION =====
         Write-Host "  ⚙️  CONFIGURATION:" -ForegroundColor $Colors.Title
         Write-Host ""
         Write-Host "  [8] 🔐 Setup ESO with Workload Identity" -ForegroundColor $Colors.Info
-        Write-Host ("  [9] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
+        Write-Host "  [9] 🔄 Update ServiceAccount Client IDs (from Terraform)" -ForegroundColor $Colors.Info
+        Write-Host ("  [10] 📋 Bootstrap ArgoCD PROD app {0}" -f (& $installed $statuses.apps)) -ForegroundColor $(if ($statuses.apps) { $Colors.Success } else { $Colors.Info })
         Write-Host ""
         
         # ===== BUILD & DEPLOY =====
@@ -440,7 +686,7 @@ function Show-Menu {
         $acrUser    = $statuses.acrTags['user']
         $acrGames   = $statuses.acrTags['games']
         $acrPayments= $statuses.acrTags['payments']
-        Write-Host " [10] 🐳 Build & Push images to ACR" -ForegroundColor $Colors.Info
+        Write-Host " [11] 🐳 Build & Push images to ACR" -ForegroundColor $Colors.Info
         if ($acrUser -or $acrGames -or $acrPayments) {
             Write-Host ""
             if ($acrUser) {
@@ -458,25 +704,27 @@ function Show-Menu {
         # ===== UTILITIES =====
         Write-Host "  🔧 UTILITIES:" -ForegroundColor $Colors.Title
         Write-Host ""
-        Write-Host " [11] 📝 View logs" -ForegroundColor $Colors.Info
-        Write-Host " [12] 🔧 Post-Terraform Complete Setup" -ForegroundColor $Colors.Info
+        Write-Host " [12] 📝 View logs" -ForegroundColor $Colors.Info
+        Write-Host " [13] 🔧 Post-Terraform Complete Setup" -ForegroundColor $Colors.Info
         Write-Host "       (All-in-one: connect → ArgoCD → bootstrap → ESO → Image Updater)" -ForegroundColor $Colors.Muted
-        Write-Host " [13] 📊 Check Helm chart versions" -ForegroundColor $Colors.Info
+        Write-Host " [14] 📊 Check Helm chart versions" -ForegroundColor $Colors.Info
         Write-Host "       (Check for updates to ingress-nginx, ESO, workload-identity)" -ForegroundColor $Colors.Muted
-        Write-Host " [14] 🔄 Check ArgoCD Updates" -ForegroundColor $Colors.Info
+        Write-Host " [15] 🔄 Check ArgoCD Updates" -ForegroundColor $Colors.Info
         Write-Host "       (View available ArgoCD versions from GitHub)" -ForegroundColor $Colors.Muted
-        Write-Host " [15] 🩺 Diagnose & Fix Degraded Components" -ForegroundColor $Colors.Info
+        Write-Host " [16] 🩺 Diagnose & Fix Degraded Components" -ForegroundColor $Colors.Info
         Write-Host "       (Auto-detect and fix degraded ingress-nginx, workload-identity, etc)" -ForegroundColor $Colors.Muted
-        Write-Host " [16] 📋 Cleanup Audit" -ForegroundColor $Colors.Info
+        Write-Host " [17] 📋 Cleanup Audit" -ForegroundColor $Colors.Info
         Write-Host "       (Analyze what can be safely deleted)" -ForegroundColor $Colors.Muted
-        Write-Host " [17] 🗑️  Reset Cluster (DANGEROUS)" -ForegroundColor $Colors.Error
+        Write-Host " [18] 🗑️  Reset Cluster (DANGEROUS)" -ForegroundColor $Colors.Error
         Write-Host "       (Delete all workloads, keep only system namespaces)" -ForegroundColor $Colors.Muted
-        Write-Host " [18] 💥 Force Delete Namespace" -ForegroundColor $Colors.Error
+        Write-Host " [19] 💥 Force Delete Namespace" -ForegroundColor $Colors.Error
         Write-Host "       (Force delete stuck Terminating namespace)" -ForegroundColor $Colors.Muted
-        Write-Host " [19] 🔄 Recover ArgoCD Sync" -ForegroundColor $Colors.Info
+        Write-Host " [20] 🔄 Recover ArgoCD Sync" -ForegroundColor $Colors.Info
         Write-Host "       (Manually fix webhook sync issues if needed)" -ForegroundColor $Colors.Muted
-        Write-Host " [20] 🔐 Fix NGINX Webhook Certificate" -ForegroundColor $Colors.Info
+        Write-Host " [21] 🔐 Fix NGINX Webhook Certificate" -ForegroundColor $Colors.Info
         Write-Host "       (Update caBundle in ValidatingWebhookConfiguration from secret)" -ForegroundColor $Colors.Muted
+        Write-Host " [22] 🔧 Fix All Webhooks Health" -ForegroundColor $Colors.Info
+        Write-Host "       (Validate NGINX, ESO, and Workload Identity webhooks)" -ForegroundColor $Colors.Muted
         Write-Host ""
         
         # ===== EXIT =====
@@ -493,31 +741,36 @@ function Show-Menu {
             "5" { Invoke-Command "install-argocd" }
             "6" { Invoke-Command "configure-image-updater" }
             "7" { Invoke-Command "get-argocd-url" }
+            "7a" { Invoke-Command "reset-argocd-password" }
             "8" { Invoke-Command "setup-eso-wi" }
-            "9" { Invoke-Command "bootstrap" }
-            "10" { 
+            "9" { Invoke-Command "update-sa-client-ids" }
+            "10" { Invoke-Command "bootstrap" }
+            "11" { 
                 $api = Read-Host "API to build (all/user/games/payments) [all]"
                 Invoke-Command "build-push" $api
             }
-            "11" { 
+            "12" { 
                 $comp = Read-Host "Component (argocd/eso/nginx)"
                 Invoke-Command "logs" $comp
             }
-            "12" { Invoke-Command "post-terraform-setup" }
-            "13" { Invoke-Command "check-versions" }
-            "14" { Invoke-Command "check-argocd-updates" }
-            "15" { Invoke-Command "diagnose-fix-components" }
-            "16" { Invoke-Command "cleanup-audit" }
-            "17" { Invoke-Command "reset-cluster" }
-            "18" { 
+            "13" { Invoke-Command "post-terraform-setup" }
+            "14" { Invoke-Command "check-versions" }
+            "15" { Invoke-Command "check-argocd-updates" }
+            "16" { Invoke-Command "diagnose-fix-components" }
+            "17" { Invoke-Command "cleanup-audit" }
+            "18" { Invoke-Command "reset-cluster" }
+            "19" { 
                 $ns = Read-Host "Namespace name"
                 Invoke-Command "force-delete-ns" $ns
             }
-            "19" {
+            "20" {
                 & "$PSScriptRoot\fix-argocd-sync.ps1"
             }
-            "20" {
+            "21" {
                 & "$PSScriptRoot\fix-ingress-webhook-cabundle.ps1"
+            }
+            "22" {
+                & "$PSScriptRoot\fix-webhooks.ps1"
             }
             "0" {
                 Write-Host "`n👋 Goodbye!" -ForegroundColor $Colors.Success
@@ -642,12 +895,26 @@ function Invoke-Command($cmd, $arg1 = "") {
                 Write-Host "  💡 Run: .\aks-manager.ps1 install-argocd" -ForegroundColor $Colors.Warning
             }
         }
+        "reset-argocd-password" {
+            Reset-ArgoCDPassword
+        }
+        "update-sa-client-ids" {
+            Update-ServiceAccountClientIds
+        }
         "post-terraform-setup" {
             Write-Host "`n🔧 Post-Terraform Complete Infrastructure Setup" -ForegroundColor $Colors.Info
             Write-Host ""
             Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
             Write-Host "Pre-Flight Status Check (IDEMPOTENT SETUP)" -ForegroundColor $Colors.Title
             Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host ""
+            
+            # Step 0: Update ServiceAccount client IDs from Terraform
+            Write-Host "Step 0/6: Updating ServiceAccount client IDs from Terraform..." -ForegroundColor $Colors.Info
+            Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
+            Update-ServiceAccountClientIds
+            Write-Host "✅ Step 0 completed`n" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
             Write-Host ""
             
             # Pre-flight checks
@@ -694,7 +961,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host ""
             
             # Step 1: Connect to AKS
-            Write-Host "Step 1/5: Connecting to AKS cluster..." -ForegroundColor $Colors.Info
+            Write-Host "Step 1/6: Connecting to AKS cluster..." -ForegroundColor $Colors.Info
             Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
             Invoke-Command "connect"
             if ($LASTEXITCODE -ne 0) {
@@ -705,7 +972,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             Start-Sleep -Seconds 2
             
             # Step 2: Install ArgoCD
-            Write-Host "Step 2/5: Installing ArgoCD..." -ForegroundColor $Colors.Info
+            Write-Host "Step 2/6: Installing ArgoCD..." -ForegroundColor $Colors.Info
             Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
             Invoke-Command "install-argocd"
             if ($LASTEXITCODE -ne 0) {
@@ -716,7 +983,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             Start-Sleep -Seconds 2
             
             # Step 3: Bootstrap ArgoCD applications
-            Write-Host "Step 3/5: Bootstrapping ArgoCD applications (PROD)..." -ForegroundColor $Colors.Info
+            Write-Host "Step 3/6: Bootstrapping ArgoCD applications (PROD)..." -ForegroundColor $Colors.Info
             Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
             Invoke-Command "bootstrap"
             if ($LASTEXITCODE -ne 0) {
@@ -733,7 +1000,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             & "$scriptPath\wait-for-components.ps1" -TimeoutSeconds 300
             
             # Step 4: Setup ESO with Workload Identity
-            Write-Host "Step 4/5: Configuring ESO with Workload Identity..." -ForegroundColor $Colors.Info
+            Write-Host "Step 4/6: Configuring ESO with Workload Identity..." -ForegroundColor $Colors.Info
             Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
             Invoke-Command "setup-eso-wi"
             if ($LASTEXITCODE -ne 0) {
@@ -744,7 +1011,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             Start-Sleep -Seconds 2
             
             # Step 5: Configure Image Updater
-            Write-Host "Step 5/5: Configuring ArgoCD Image Updater..." -ForegroundColor $Colors.Info
+            Write-Host "Step 5/6: Configuring ArgoCD Image Updater..." -ForegroundColor $Colors.Info
             Write-Host "─────────────────────────────────────────────────────────" -ForegroundColor $Colors.Muted
             Write-Host "Using Workload Identity for ACR authentication..." -ForegroundColor $Colors.Muted
             Invoke-Command "configure-image-updater"
@@ -755,7 +1022,14 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             
             Write-Host ""
-            Write-Host "Ensuring all ArgoCD applications are synced before completion..." -ForegroundColor $Colors.Info
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host "Step 6/6: Validating webhooks and syncing applications..." -ForegroundColor $Colors.Title
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            Write-Host ""
+            Write-Host "🔍 Checking webhook health before final sync..." -ForegroundColor $Colors.Info
+            & "$PSScriptRoot\fix-webhooks.ps1"
+            Write-Host ""
+            Write-Host "🔄 Ensuring all ArgoCD applications are synced..." -ForegroundColor $Colors.Info
             & "$PSScriptRoot\fix-argocd-sync.ps1"
             
             Write-Host ""
@@ -1285,6 +1559,16 @@ function Invoke-Command($cmd, $arg1 = "") {
             }
             else {
                 Write-Host "❌ Script not found: cluster-cleanup-audit.ps1" -ForegroundColor $Colors.Error
+            }
+        }
+        "fix-webhooks" {
+            Write-Host "`n🔧 Validating and fixing webhooks..." -ForegroundColor $Colors.Info
+            $script = Join-Path $scriptPath "fix-webhooks.ps1"
+            if (Test-Path $script) {
+                & $script
+            }
+            else {
+                Write-Host "❌ Script not found: fix-webhooks.ps1" -ForegroundColor $Colors.Error
             }
         }
         { $_ -in "force-delete-ns", "force-delete-namespace" } {

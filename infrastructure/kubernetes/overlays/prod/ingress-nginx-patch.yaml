@@ -1,7 +1,7 @@
 # =============================================================================
-# NGINX Ingress Controller - Nodepool1 Compatibility Patch
+# NGINX Ingress Controller - System Node Pool Compatibility Patch
 # =============================================================================
-# Ensures the ingress controller can run on nodepool1 with correct configuration
+# Ensures the ingress controller can run on the system node pool with correct configuration
 # Fixes: Degraded status caused by node selector mismatches or resource constraints
 # =============================================================================
 
@@ -14,7 +14,7 @@ metadata:
 spec:
   template:
     spec:
-      # Ensure compatibility with nodepool1 Linux nodes
+      # Ensure compatibility with system node pool (Linux nodes)
       nodeSelector:
         kubernetes.io/os: linux
       # Allow scheduling on nodes with taints

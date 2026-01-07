@@ -40,9 +40,9 @@ variable "system_node_count" {
 }
 
 variable "system_node_vm_size" {
-  description = "VM size for system node pool (B2ms = 2 vCPU, 8 GB RAM, 1250 Mbps network - upgraded from B2s)"
+  description = "VM size for system node pool (B2s = 2 vCPU, 4 GB RAM - baseline, reverted from B2ms based on Test 3 findings)"
   type        = string
-  default     = "Standard_B2ms"
+  default     = "Standard_B2s"
 }
 
 variable "system_node_os_disk_size_gb" {
@@ -68,7 +68,7 @@ variable "enable_auto_scaling" {
 }
 
 variable "system_node_min_count" {
-  description = "Minimum number of nodes when auto-scaling is enabled (1 is minimum for system pool)"
+  description = "Minimum number of nodes when auto-scaling is enabled (1 for cost optimization, sufficient for dev/test)"
   type        = number
   default     = 1
 
@@ -79,9 +79,9 @@ variable "system_node_min_count" {
 }
 
 variable "system_node_max_count" {
-  description = "Maximum number of nodes when auto-scaling is enabled (scales up during high load)"
+  description = "Maximum number of nodes when auto-scaling is enabled (3 sufficient after Test 3 analysis)"
   type        = number
-  default     = 5
+  default     = 3
 
   validation {
     condition     = var.system_node_max_count >= 1 && var.system_node_max_count <= 100

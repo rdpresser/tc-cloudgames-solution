@@ -46,6 +46,7 @@ cd infrastructure/kubernetes/scripts/prod
 ```
 
 **Automatically configures:**
+- ✅ Updates ServiceAccount client IDs from Terraform outputs (Workload Identity)
 - ✅ Connects to AKS cluster
 - ✅ Installs ArgoCD (GitOps)
 - ✅ Bootstraps all applications (NGINX, ESO, Workload Identity, Apps)
@@ -149,6 +150,7 @@ cd infrastructure/kubernetes/scripts/prod
 
 **What this does:**
 
+0. **Updates ServiceAccount client IDs** - Fetches managed identity client IDs from Terraform and updates Kubernetes ServiceAccount YAML files for Workload Identity integration
 1. **Connects to cluster** - Gets credentials from Azure
 2. **Installs ArgoCD** - GitOps platform for deployments
 3. **Bootstraps applications** - Deploys all apps via ArgoCD
@@ -341,6 +343,39 @@ kubectl logs -n argocd deployment/argocd-repo-server --tail=50
 
 ## 🚀 Common Workflows
 
+### Update Workload Identity After Terraform Changes
+
+If you recreate Azure Managed Identities via Terraform, you need to update the ServiceAccount annotations:
+
+```powershell
+# Standalone update (after terraform apply)
+.\aks-manager.ps1 update-sa-client-ids
+
+# This automatically:
+# 1. Fetches client IDs: terraform output user_api_client_id, games_api_client_id, payments_api_client_id
+# 2. Updates YAML files:
+#    - infrastructure/kubernetes/base/user/service-account.yaml
+#    - infrastructure/kubernetes/base/games/service-account.yaml
+#    - infrastructure/kubernetes/base/payments/service-account.yaml
+# 3. Shows next steps (commit changes, ArgoCD will sync)
+
+# Commit the updated files
+git add infrastructure/kubernetes/base/*/service-account.yaml
+git commit -m "Update ServiceAccount client IDs after Terraform apply"
+git push
+
+# ArgoCD will automatically sync (or force sync)
+kubectl apply -f infrastructure/kubernetes/base/user/service-account.yaml
+kubectl apply -f infrastructure/kubernetes/base/games/service-account.yaml
+kubectl apply -f infrastructure/kubernetes/base/payments/service-account.yaml
+```
+
+**Why this is needed:**
+- Azure Managed Identities get unique `client_id` values
+- Kubernetes ServiceAccounts need these IDs in `azure.workload.identity/client-id` annotations
+- Workload Identity uses OIDC federation to link Azure AD identities to K8s ServiceAccounts
+- Pods authenticate to Azure services (Key Vault, Service Bus) without secrets
+
 ### Deploy New Version of Application
 
 ```powershell
@@ -466,6 +501,7 @@ Use `reset-cluster` only when you need a **completely clean installation** while
 
 # Configuration
 .\aks-manager.ps1 setup-eso-wi             # Configure Workload Identity
+.\aks-manager.ps1 update-sa-client-ids     # Update ServiceAccount client IDs from Terraform
 .\aks-manager.ps1 configure-image-updater  # Enable automatic image updates
 .\aks-manager.ps1 get-argocd-url           # Get ArgoCD access info
 
