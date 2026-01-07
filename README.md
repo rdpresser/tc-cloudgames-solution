@@ -208,7 +208,14 @@ Deployment strategies:
 - **Phase 1 Demo**: [YouTube](https://www.youtube.com/watch?v=9zyK9rb1lTs) - Initial setup
 - **Phase 2 Demo**: [YouTube](https://www.youtube.com/watch?v=7JR0DxilQkg) - Microservices
 - **Phase 3 Demo**: [YouTube](https://www.youtube.com/watch?v=4D36zP36rkM) - Cloud deployment
-- **Architecture Diagram**: `/docs/images/img_001_diagram.png`
+- **Architecture Diagram**: 
+<div align="center">
+  <a href="./docs/images/tc-cloudgames-aks-architecture.png" target="_blank" title="Click to view full-size diagram">
+    <img src="./docs/images/tc-cloudgames-aks-architecture.png" alt="Architecture Diagram" width="700" style="cursor: pointer; border: 2px solid #0078d4; border-radius: 8px;">
+  </a>
+  <br>
+  <em>🔍 Click to view full-size diagram</em>
+</div>
 
 ---
 
