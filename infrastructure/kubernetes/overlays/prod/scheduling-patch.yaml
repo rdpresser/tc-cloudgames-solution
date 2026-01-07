@@ -18,7 +18,7 @@ spec:
       topologySpreadConstraints:
         - maxSkew: 2
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: user-api
@@ -42,7 +42,7 @@ spec:
       topologySpreadConstraints:
         - maxSkew: 2
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: games-api
@@ -66,7 +66,7 @@ spec:
       topologySpreadConstraints:
         - maxSkew: 2
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: payments-api
