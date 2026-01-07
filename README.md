@@ -215,6 +215,7 @@ Deployment strategies:
 - **Phase 1 Demo**: [YouTube](https://www.youtube.com/watch?v=9zyK9rb1lTs) - Initial setup
 - **Phase 2 Demo**: [YouTube](https://www.youtube.com/watch?v=7JR0DxilQkg) - Microservices
 - **Phase 3 Demo**: [YouTube](https://www.youtube.com/watch?v=4D36zP36rkM) - Cloud deployment
+- **Phase 4 Demo**: [YouTube](https://youtu.be/__t4Pmejgig) - AKS (CI Github Action | ArgoCD)
 - **Architecture Diagram**: 
 <div align="center">
   <a href="./docs/images/tc-cloudgames-aks-architecture.png" target="_blank" title="Click to view full-size diagram">

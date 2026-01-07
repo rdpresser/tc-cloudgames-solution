@@ -18,11 +18,11 @@ spec:
     limits.cpu: "16"            # 16 cores limit total
     
     # Memory limits
-    requests.memory: 8Gi        # 8GB total (supports ~16 pods @ 512Mi each)
-    limits.memory: 20Gi         # 20GB limit total
+    requests.memory: 12Gi       # 12GB total (supports current HPA maxima with higher requests)
+    limits.memory: 24Gi         # 24GB limit total
     
     # Pod count
-    pods: "15"                  # Maximum 15 pods in namespace
+    pods: "20"                  # Increased headroom for HPA scale-out
     
     # Other resources
     persistentvolumeclaims: "5"
