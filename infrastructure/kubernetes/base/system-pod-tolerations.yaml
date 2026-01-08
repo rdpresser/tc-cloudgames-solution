@@ -1,0 +1,68 @@
+# =============================================================================
+# System Pod Tolerations - Allow scheduling on system node pool
+# =============================================================================
+# Apply these tolerations to ArgoCD and other critical system components
+# to allow them to run on the tainted system node pool
+# =============================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    workload-type: system
+
+---
+# Patch ArgoCD Server to tolerate system node pool taint
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      nodeSelector:
+        workload-type: system
+
+---
+# Patch ArgoCD Repo Server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      nodeSelector:
+        workload-type: system
+
+---
+# Patch ArgoCD Application Controller
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      nodeSelector:
+        workload-type: system

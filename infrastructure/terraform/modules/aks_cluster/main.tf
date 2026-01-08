@@ -9,10 +9,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
   dns_prefix          = "${var.name_prefix}-aks-dns"
   kubernetes_version  = var.kubernetes_version
 
-  # System node pool (optimized for dev/test with autoscaling)
-  # Using original pool name "system"; SKU/count reverted to B2s 1-3 nodes
-  # Test 3: CPU bottleneck is in application code, not node capacity
-  # Pods use 600Mi-1024Mi max; B2s (4GB RAM) is sufficient
+  # System node pool (will be used only for critical addons after node pool separation)
+  # Using original pool name "system"; will be replaced by systempool + workload pools
+  # This pool will eventually only run critical system addons
   default_node_pool {
     name                         = "system"
     vm_size                      = var.system_node_vm_size
@@ -24,7 +23,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     orchestrator_version         = var.kubernetes_version
     os_disk_size_gb              = var.system_node_os_disk_size_gb
     max_pods                     = var.max_pods_per_node
-    only_critical_addons_enabled = var.only_critical_addons_enabled
+    only_critical_addons_enabled = true  # Changed to true for node pool separation
     # temporary_name_for_rotation removed after successful node pool creation
 
     tags = var.tags

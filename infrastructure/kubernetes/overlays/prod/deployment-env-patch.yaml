@@ -17,6 +17,8 @@ spec:
       annotations:
         azure.workload.identity/use: "true"
     spec:
+      nodeSelector:
+        workload-type: application
       serviceAccountName: user-api-sa
       containers:
         - name: user-api
@@ -32,6 +34,8 @@ spec:
       annotations:
         azure.workload.identity/use: "true"
     spec:
+      nodeSelector:
+        workload-type: application
       serviceAccountName: games-api-sa
       containers:
         - name: games-api
@@ -47,6 +51,8 @@ spec:
       annotations:
         azure.workload.identity/use: "true"
     spec:
+      nodeSelector:
+        workload-type: application
       serviceAccountName: payments-api-sa
       containers:
         - name: payments-api
@@ -74,6 +80,8 @@ spec:
       maxUnavailable: 0
   template:
     spec:
+      nodeSelector:
+        workload-type: application
       containers:
         - name: user-api
           env:
@@ -131,6 +139,8 @@ spec:
       maxUnavailable: 0
   template:
     spec:
+      nodeSelector:
+        workload-type: application
       containers:
         - name: games-api
           env:
@@ -188,6 +198,8 @@ spec:
       maxUnavailable: 0
   template:
     spec:
+      nodeSelector:
+        workload-type: application
       containers:
         - name: payments-api
           env:

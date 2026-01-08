@@ -59,10 +59,11 @@ variable "max_pods_per_node" {
 
 # =============================================================================
 # Auto-scaling Configuration (Cost Optimization for Dev/Test)
+# NOTE: Used by default_node_pool during transition to separated pools
 # =============================================================================
 
 variable "enable_auto_scaling" {
-  description = "Enable auto-scaling for system node pool (scales nodes based on workload demand)"
+  description = "Enable auto-scaling for default node pool (used during transition period)"
   type        = bool
   default     = true
 }
@@ -91,10 +92,11 @@ variable "system_node_max_count" {
 
 # =============================================================================
 # Node Pool Behavior (Dev/Test Optimization)
+# NOTE: Used by default_node_pool during transition to separated pools
 # =============================================================================
 
 variable "only_critical_addons_enabled" {
-  description = "Only schedule critical addons on system pool (false = allow workload pods for dev/test cost optimization)"
+  description = "Only schedule critical addons on default pool (will be true after separation)"
   type        = bool
   default     = false
 }
@@ -148,4 +150,104 @@ variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
   default     = {}
+}
+
+# =============================================================================
+# System Node Pool Configuration (Separated Architecture)
+# =============================================================================
+
+variable "system_pool_vm_size" {
+  description = "VM size for system node pool (B2s = 2 vCPU, 4 GB RAM - cost optimized)"
+  type        = string
+  default     = "Standard_B2s"
+}
+
+variable "system_pool_node_count" {
+  description = "Initial number of nodes in system pool (used when auto-scaling is disabled)"
+  type        = number
+  default     = 2
+}
+
+variable "system_pool_min_count" {
+  description = "Minimum number of nodes in system pool when auto-scaling is enabled"
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.system_pool_min_count >= 1
+    error_message = "System pool requires at least 1 node"
+  }
+}
+
+variable "system_pool_max_count" {
+  description = "Maximum number of nodes in system pool when auto-scaling is enabled"
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.system_pool_max_count >= 1 && var.system_pool_max_count <= 100
+    error_message = "Max count must be between 1 and 100"
+  }
+}
+
+variable "system_pool_enable_auto_scaling" {
+  description = "Enable auto-scaling for system node pool"
+  type        = bool
+  default     = true
+}
+
+variable "system_pool_os_disk_size_gb" {
+  description = "OS disk size in GB for system pool nodes"
+  type        = number
+  default     = 30
+}
+
+# =============================================================================
+# Workload Node Pool Configuration (Separated Architecture)
+# =============================================================================
+
+variable "workload_pool_vm_size" {
+  description = "VM size for workload node pool (B2s = 2 vCPU, 4 GB RAM - cost optimized)"
+  type        = string
+  default     = "Standard_B2s"
+}
+
+variable "workload_pool_node_count" {
+  description = "Initial number of nodes in workload pool (used when auto-scaling is disabled)"
+  type        = number
+  default     = 3
+}
+
+variable "workload_pool_min_count" {
+  description = "Minimum number of nodes in workload pool when auto-scaling is enabled"
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.workload_pool_min_count >= 1
+    error_message = "Workload pool requires at least 1 node"
+  }
+}
+
+variable "workload_pool_max_count" {
+  description = "Maximum number of nodes in workload pool when auto-scaling is enabled (higher for load tests)"
+  type        = number
+  default     = 6
+
+  validation {
+    condition     = var.workload_pool_max_count >= 1 && var.workload_pool_max_count <= 100
+    error_message = "Max count must be between 1 and 100"
+  }
+}
+
+variable "workload_pool_enable_auto_scaling" {
+  description = "Enable auto-scaling for workload node pool"
+  type        = bool
+  default     = true
+}
+
+variable "workload_pool_os_disk_size_gb" {
+  description = "OS disk size in GB for workload pool nodes"
+  type        = number
+  default     = 30
 }
