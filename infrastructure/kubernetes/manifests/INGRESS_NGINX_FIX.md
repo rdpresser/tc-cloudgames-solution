@@ -10,11 +10,13 @@
 ## 🔍 Diagnóstico
 
 ### Sintomas
+
 - Application status: **Syncing** (nunca completa)
 - Health: ✅ Healthy
 - Message: `waiting for completion of hook /ServiceAccount/ingress-nginx-admission and 5 more hooks`
 
 ### Root Cause
+
 Helm chart do `ingress-nginx` instala **PreSync Hooks** (Jobs) para gerar certificados e atualizar webhooks. Esses hooks foram criados no `operationState` de ArgoCD, mas:
 
 1. ❌ Os Jobs em si já tinham sido executados/deletados (não existiam mais)
@@ -22,6 +24,7 @@ Helm chart do `ingress-nginx` instala **PreSync Hooks** (Jobs) para gerar certif
 3. ❌ Estado travado indefinidamente sem timeout
 
 ### Fluxo Problemático
+
 ```
 ArgoCD inicia sync
   ↓
@@ -47,6 +50,7 @@ Jobs completam e são deletados (lifecycle padrão)
 ## ✅ Soluções Aplicadas
 
 ### 1. **Limpeza Imediata** (Resolução Rápida)
+
 ```powershell
 # Limpar operationState travado
 kubectl patch application ingress-nginx -n argocd \
@@ -61,6 +65,7 @@ kubectl patch application ingress-nginx -n argocd \
 Arquivo: `infrastructure/kubernetes/manifests/application-ingress-nginx.yaml`
 
 #### Problema Identificado
+
 ```yaml
 # ❌ ANTES: Sem retry policy, sem timeout, hooks sem policy de limpeza
 syncPolicy:
@@ -73,6 +78,7 @@ syncPolicy:
 ```
 
 #### Solução
+
 ```yaml
 # ✅ DEPOIS: Com retry policy, timeout, e hook cleanup
 syncPolicy:
@@ -82,17 +88,18 @@ syncPolicy:
   syncOptions:
     - CreateNamespace=true
     - ServerSideApply=true
-    - PruneLast=true                    # Deleções acontecem por último
-    - RespectIgnoreDifferences=true     # Respeita ignoreDifferences
+    - PruneLast=true # Deleções acontecem por último
+    - RespectIgnoreDifferences=true # Respeita ignoreDifferences
   retry:
-    limit: 2                             # 2 tentativas de retry
+    limit: 2 # 2 tentativas de retry
     backoff:
       duration: 5s
-      factor: 2                          # Backoff exponencial: 5s, 10s
-      maxDuration: 3m0s                  # Máx 3 minutos entre tentativas
+      factor: 2 # Backoff exponencial: 5s, 10s
+      maxDuration: 3m0s # Máx 3 minutos entre tentativas
 ```
 
 #### Helm Values - Hook Cleanup Policy
+
 ```yaml
 admissionWebhooks:
   enabled: true
@@ -105,6 +112,7 @@ admissionWebhooks:
 ```
 
 **O que isso faz**:
+
 - `HookSucceeded`: Deleta hook se completar com sucesso
 - `HookFailed`: Deleta hook se falhar
 - Impede que estado "ghost" permaneça em operationState
@@ -116,6 +124,7 @@ admissionWebhooks:
 ### Arquivo: `application-ingress-nginx.yaml`
 
 **Antes**:
+
 ```yaml
 admissionWebhooks:
   enabled: true
@@ -125,6 +134,7 @@ admissionWebhooks:
 ```
 
 **Depois**:
+
 ```yaml
 admissionWebhooks:
   enabled: true
@@ -137,6 +147,7 @@ admissionWebhooks:
 ```
 
 **Antes**:
+
 ```yaml
 syncPolicy:
   automated:
@@ -149,6 +160,7 @@ syncPolicy:
 ```
 
 **Depois**:
+
 ```yaml
 syncPolicy:
   automated:
@@ -173,6 +185,7 @@ syncPolicy:
 ## ✨ Resultado
 
 ### Antes (Problema)
+
 ```
 ingress-nginx   Syncing   Healthy   ❌ TRAVADO ETERNAMENTE
 message: waiting for completion of hook /ServiceAccount/ingress-nginx-admission and 5 more hooks
@@ -180,6 +193,7 @@ operationState.phase: Running
 ```
 
 ### Depois (Resolvido)
+
 ```
 ingress-nginx   Synced    Healthy   ✅ PRONTO
 sync.status: Synced
@@ -209,6 +223,7 @@ health.status: Healthy
 Para evitar problemas similares com outros Helm charts:
 
 1. **Sempre incluir retry policy**:
+
    ```yaml
    retry:
      limit: 2
@@ -219,6 +234,7 @@ Para evitar problemas similares com outros Helm charts:
    ```
 
 2. **Adicionar hook cleanup policy**:
+
    ```yaml
    syncOptions:
      - PruneLast=true
@@ -226,6 +242,7 @@ Para evitar problemas similares com outros Helm charts:
    ```
 
 3. **Monitorar hooks travados**:
+
    ```bash
    # Ver applications com hooks em execução
    kubectl get applications -n argocd -o json | \
@@ -257,4 +274,3 @@ Para evitar problemas similares com outros Helm charts:
 3. **Monitorar status de sync** - Investigate `Syncing` que não progride
 4. **Hook completion é assíncrono** - Pode falhar silenciosamente
 5. **Helm admissionWebhooks requerem atenção** - Webhook patches não são triviais
-
