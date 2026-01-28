@@ -144,10 +144,9 @@ resource "azurerm_role_assignment" "function_app_kv_secrets_user" {
   principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
 }
 
-# Service Bus Access (if Service Bus ID is provided)
-# Using for_each instead of count to avoid "value depends on resource attributes" error
+# Service Bus Access
+# Note: Service Bus is always created in this project, so no conditional logic needed
 resource "azurerm_role_assignment" "function_app_servicebus_data_owner" {
-  for_each             = var.servicebus_namespace_id != null && var.servicebus_namespace_id != "" ? toset(["enabled"]) : toset([])
   scope                = var.servicebus_namespace_id
   role_definition_name = "Azure Service Bus Data Owner"
   principal_id         = azurerm_linux_function_app.main.identity[0].principal_id

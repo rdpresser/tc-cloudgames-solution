@@ -28,7 +28,7 @@ variable "app_service_plan_id" {
   type        = string
 
   validation {
-    condition = can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft\\.Web/serverFarms/[^/]+$", var.app_service_plan_id))
+    condition     = can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft\\.Web/serverFarms/[^/]+$", var.app_service_plan_id))
     error_message = "App Service Plan ID must be a valid Azure resource ID format."
   }
 }
@@ -38,7 +38,7 @@ variable "log_analytics_workspace_id" {
   type        = string
 
   validation {
-    condition = can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.OperationalInsights/workspaces/[^/]+$", var.log_analytics_workspace_id))
+    condition     = can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.OperationalInsights/workspaces/[^/]+$", var.log_analytics_workspace_id))
     error_message = "Log Analytics Workspace ID must be a valid Azure resource ID format."
   }
 }
@@ -49,7 +49,7 @@ variable "key_vault_id" {
   default     = null
 
   validation {
-    condition = var.key_vault_id == null || can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.KeyVault/vaults/[^/]+$", var.key_vault_id))
+    condition     = var.key_vault_id == null || can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.KeyVault/vaults/[^/]+$", var.key_vault_id))
     error_message = "Key Vault ID must be a valid Azure resource ID format."
   }
 }
@@ -60,18 +60,17 @@ variable "key_vault_uri" {
   default     = null
 
   validation {
-    condition = var.key_vault_uri == null || can(regex("^https://[a-zA-Z0-9-]+\\.vault\\.azure\\.net/?$", var.key_vault_uri))
+    condition     = var.key_vault_uri == null || can(regex("^https://[a-zA-Z0-9-]+\\.vault\\.azure\\.net/?$", var.key_vault_uri))
     error_message = "Key Vault URI must be a valid Azure Key Vault URI format."
   }
 }
 
 variable "servicebus_namespace_id" {
-  description = "ID of the Service Bus namespace for RBAC access"
+  description = "ID of the Service Bus namespace for RBAC access (required for Function App integration)"
   type        = string
-  default     = null
 
   validation {
-    condition = var.servicebus_namespace_id == null || can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.ServiceBus/namespaces/[^/]+$", var.servicebus_namespace_id))
+    condition     = can(regex("^/subscriptions/[a-f0-9-]+/resourceGroups/[^/]+/providers/Microsoft.ServiceBus/namespaces/[^/]+$", var.servicebus_namespace_id))
     error_message = "Service Bus namespace ID must be a valid Azure resource ID format."
   }
 }
