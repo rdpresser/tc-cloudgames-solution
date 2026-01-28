@@ -141,7 +141,7 @@ module "aks" {
 
   # Default node pool (will only run critical addons after separation)
   system_node_count     = 1
-  system_node_vm_size   = "Standard_B2ms" # Upgraded to B2ms (2 vCPU, 8 GB RAM)
+  system_node_vm_size   = "Standard_B2ms" # B2ms (2 vCPU, 8 GB RAM)
   enable_auto_scaling   = true
   system_node_min_count = 1
   system_node_max_count = 1
