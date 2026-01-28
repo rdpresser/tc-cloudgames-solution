@@ -6,12 +6,13 @@
 
 ## 📚 Quick Navigation
 
-| Environment | Description | Documentation |
-|-------------|-------------|---------------|
-| **☁️ Production (AKS)** | Azure Kubernetes Service | [AKS Production Guide](scripts/prod/README.md) |
-| **🔧 Local Development** | K3D cluster with native Ingress | [K3D Development](#-k3d-local-development) |
+| Environment              | Description                     | Documentation                                  |
+| ------------------------ | ------------------------------- | ---------------------------------------------- |
+| **☁️ Production (AKS)**  | Azure Kubernetes Service        | [AKS Production Guide](scripts/prod/README.md) |
+| **🔧 Local Development** | K3D cluster with native Ingress | [K3D Development](#-k3d-local-development)     |
 
 **Key Documents:**
+
 - 🏗️ [AKS Architecture](scripts/prod/ARCHITECTURE.md) - Production architecture and patterns
 - 🔐 [Security Investigation](INVESTIGATION_OUTOFSYNC_RESOLUTION.md) - Deep dive into security implementation
 
@@ -45,29 +46,32 @@ infrastructure/kubernetes/
 
 ### Key Concepts
 
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| **Base** | Core Kubernetes manifests (Deployments, Services, ExternalSecrets) | `base/{service}/` |
-| **Overlays** | Environment-specific patches (HPA, PDB, resource limits) | `overlays/{env}/` |
-| **Manifests** | ArgoCD Applications (GitOps definitions) | `manifests/` |
-| **Scripts** | Automation tools (aks-manager.ps1, k3d-manager.ps1) | `scripts/{env}/` |
+| Component     | Purpose                                                            | Location          |
+| ------------- | ------------------------------------------------------------------ | ----------------- |
+| **Base**      | Core Kubernetes manifests (Deployments, Services, ExternalSecrets) | `base/{service}/` |
+| **Overlays**  | Environment-specific patches (HPA, PDB, resource limits)           | `overlays/{env}/` |
+| **Manifests** | ArgoCD Applications (GitOps definitions)                           | `manifests/`      |
+| **Scripts**   | Automation tools (aks-manager.ps1, k3d-manager.ps1)                | `scripts/{env}/`  |
 
 ---
 
 ## 🚀 Production (AKS) Quick Start
 
 ### Prerequisites
+
 - Azure CLI authenticated
 - kubectl installed
 - PowerShell 7+
 
 ### Step 1: Connect to AKS
+
 ```powershell
 cd infrastructure\kubernetes\scripts\prod
 .\aks-manager.ps1 connect
 ```
 
 ### Step 2: Bootstrap Infrastructure (First Time Only)
+
 ```powershell
 # Menu-driven (recommended)
 .\aks-manager.ps1
@@ -78,6 +82,7 @@ cd infrastructure\kubernetes\scripts\prod
 ```
 
 **What it does:**
+
 1. Installs ArgoCD (GitOps controller)
 2. Configures External Secrets Operator with Workload Identity
 3. Sets up ArgoCD Image Updater (automated image updates)
@@ -85,6 +90,7 @@ cd infrastructure\kubernetes\scripts\prod
 5. Verifies cluster health
 
 ### Step 3: Verify Deployment
+
 ```powershell
 .\aks-manager.ps1 status
 
@@ -95,6 +101,7 @@ kubectl get externalsecrets -n cloudgames
 ```
 
 **Expected output:**
+
 ```
 ✅ ArgoCD: 5/5 Applications Synced
 ✅ Pods: 12/12 Running (4 replicas each: user, games, payments)
@@ -120,18 +127,19 @@ Application Pods (least privilege ServiceAccounts)
 
 ### Implemented Security Controls
 
-| Control | Status | Implementation |
-|---------|--------|----------------|
-| **Secrets Management** | ✅ | Azure Key Vault + External Secrets Operator |
-| **Zero Credentials** | ✅ | Workload Identity (Managed Identity) |
-| **GitOps** | ✅ | ArgoCD with bootstrap pattern |
-| **Namespace Isolation** | ✅ | Dedicated ServiceAccounts per API |
-| **Least Privilege** | ✅ | ServiceAccounts with ZERO RBAC permissions |
-| **Network Policies** | ⚪ | Future work |
-| **Pod Security Standards** | ⚪ | Future work |
-| **etcd Encryption (KMS)** | ⚪ | Not implemented (see [KMS_MIGRATION_PLAN.md](../KMS_MIGRATION_PLAN.md)) |
+| Control                    | Status | Implementation                                                          |
+| -------------------------- | ------ | ----------------------------------------------------------------------- |
+| **Secrets Management**     | ✅     | Azure Key Vault + External Secrets Operator                             |
+| **Zero Credentials**       | ✅     | Workload Identity (Managed Identity)                                    |
+| **GitOps**                 | ✅     | ArgoCD with bootstrap pattern                                           |
+| **Namespace Isolation**    | ✅     | Dedicated ServiceAccounts per API                                       |
+| **Least Privilege**        | ✅     | ServiceAccounts with ZERO RBAC permissions                              |
+| **Network Policies**       | ⚪     | Future work                                                             |
+| **Pod Security Standards** | ⚪     | Future work                                                             |
+| **etcd Encryption (KMS)**  | ⚪     | Not implemented (see [KMS_MIGRATION_PLAN.md](../KMS_MIGRATION_PLAN.md)) |
 
 ### Service Accounts Permissions
+
 ```bash
 # Verified: All ServiceAccounts have minimal permissions
 user-api-sa: ❌ Cannot list secrets, ❌ Cannot delete resources
@@ -201,6 +209,7 @@ application-bootstrap.yaml (Meta-app)
 ```
 
 **Benefits:**
+
 - ✅ Single source of truth (Git)
 - ✅ Declarative infrastructure
 - ✅ Automatic drift detection
@@ -221,7 +230,7 @@ metadata:
 spec:
   provider:
     azurekv:
-      authType: WorkloadIdentity  # No credentials!
+      authType: WorkloadIdentity # No credentials!
       vaultUrl: https://tccloudgamesdevcr8nkv.vault.azure.net
 
 ---
@@ -237,7 +246,7 @@ spec:
   data:
     - secretKey: DB_PASSWORD
       remoteRef:
-        key: db-password  # From Azure Key Vault
+        key: db-password # From Azure Key Vault
 
 ---
 # 3. Kubernetes Secret (auto-created)
@@ -246,7 +255,7 @@ kind: Secret
 metadata:
   name: user-api-secrets
 data:
-  DB_PASSWORD: <base64-encoded>  # Synced from Key Vault
+  DB_PASSWORD: <base64-encoded> # Synced from Key Vault
 ```
 
 **Refresh interval**: 1 hour (automatic sync)
@@ -255,23 +264,23 @@ data:
 
 ## 🎯 Cluster Configuration (Production)
 
-| Component | Configuration |
-|-----------|---------------|
-| **Cluster** | tc-cloudgames-dev-cr8n-aks |
-| **Kubernetes Version** | 1.34.1 |
-| **Node Pool** | nodepool1 (autoscaling: 1-5 nodes) |
-| **VM Size** | Standard_D2s_v3 (2 vCPU, 8GB RAM) |
-| **Network** | Azure CNI + VNet integration |
-| **Identity** | System Assigned Managed Identity + Workload Identity |
-| **Monitoring** | Azure Monitor + Container Insights |
+| Component              | Configuration                                        |
+| ---------------------- | ---------------------------------------------------- |
+| **Cluster**            | tc-cloudgames-dev-hvsb-aks                           |
+| **Kubernetes Version** | 1.34.1                                               |
+| **Node Pool**          | nodepool1 (autoscaling: 1-5 nodes)                   |
+| **VM Size**            | Standard_D2s_v3 (2 vCPU, 8GB RAM)                    |
+| **Network**            | Azure CNI + VNet integration                         |
+| **Identity**           | System Assigned Managed Identity + Workload Identity |
+| **Monitoring**         | Azure Monitor + Container Insights                   |
 
 ### Workloads
 
-| Service | Replicas | HPA | PDB | Resources |
-|---------|----------|-----|-----|-----------|
-| **user-api** | 4 (2-10) | ✅ | ✅ | 200m CPU / 256Mi RAM |
-| **games-api** | 4 (2-10) | ✅ | ✅ | 200m CPU / 256Mi RAM |
-| **payments-api** | 4 (2-10) | ✅ | ✅ | 200m CPU / 256Mi RAM |
+| Service          | Replicas | HPA | PDB | Resources            |
+| ---------------- | -------- | --- | --- | -------------------- |
+| **user-api**     | 4 (2-10) | ✅  | ✅  | 200m CPU / 256Mi RAM |
+| **games-api**    | 4 (2-10) | ✅  | ✅  | 200m CPU / 256Mi RAM |
+| **payments-api** | 4 (2-10) | ✅  | ✅  | 200m CPU / 256Mi RAM |
 
 **HPA Triggers**: 70% CPU / 80% Memory  
 **PDB**: minAvailable=2 (high availability)
@@ -281,6 +290,7 @@ data:
 ## 🧪 Testing & Validation
 
 ### Health Checks
+
 ```powershell
 # Get LoadBalancer IP
 $ip = kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
@@ -292,6 +302,7 @@ Invoke-WebRequest "http://$ip/payments/health"
 ```
 
 ### Verify Secrets
+
 ```powershell
 # Check ExternalSecrets status
 kubectl get externalsecrets -n cloudgames
@@ -300,11 +311,12 @@ kubectl get externalsecrets -n cloudgames
 kubectl get secrets -n cloudgames | Select-String "api-secrets"
 
 # Test secret content (careful!)
-kubectl get secret user-api-secrets -n cloudgames -o jsonpath='{.data.DB_HOST}' | 
+kubectl get secret user-api-secrets -n cloudgames -o jsonpath='{.data.DB_HOST}' |
   ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
 ```
 
 ### ArgoCD Applications
+
 ```powershell
 kubectl get applications -n argocd
 
@@ -340,17 +352,20 @@ cd infrastructure\kubernetes\scripts\dev
 ## ✨ Native Ingress Access
 
 **One-time setup (requires Administrator):**
+
 ```powershell
 .\k3d-manager.ps1 update-hosts
 ```
 
 **Service URLs:**
+
 - ArgoCD: http://argocd.local (admin / Argo@123)
 - User API: http://cloudgames.local/user
 - Games API: http://cloudgames.local/games
 - Payments API: http://cloudgames.local/payments
 
 **Port-forward only needed for:**
+
 - Grafana: `.\k3d-manager.ps1 port-forward grafana` → http://localhost:3000
 - Headlamp: `.\k3d-manager.ps1 headlamp` → http://localhost:4466
 
@@ -360,14 +375,15 @@ cd infrastructure\kubernetes\scripts\dev
 
 ### Common Issues
 
-| Problem | Solution |
-|---------|----------|
-| After reboot cluster doesn't work | `.\k3d-manager.ps1 start` |
-| Port already in use | `.\k3d-manager.ps1 stop all` |
-| ExternalSecrets not syncing | Check Azure credentials in ClusterSecretStore |
-| ArgoCD apps stuck | `.\k3d-manager.ps1 reset-argocd-app <name>` |
+| Problem                           | Solution                                      |
+| --------------------------------- | --------------------------------------------- |
+| After reboot cluster doesn't work | `.\k3d-manager.ps1 start`                     |
+| Port already in use               | `.\k3d-manager.ps1 stop all`                  |
+| ExternalSecrets not syncing       | Check Azure credentials in ClusterSecretStore |
+| ArgoCD apps stuck                 | `.\k3d-manager.ps1 reset-argocd-app <name>`   |
 
 ### Logs & Diagnostics
+
 ```powershell
 # Component logs
 kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server
@@ -382,20 +398,21 @@ kubectl logs -n cloudgames-dev -l app=user-api
 
 ## 📋 Key Differences: K3D vs AKS
 
-| Feature | K3D (Dev) | AKS (Prod) |
-|---------|-----------|------------|
-| **Secrets** | Azure Key Vault (same) | Azure Key Vault (same) |
-| **Identity** | Service Principal | Workload Identity |
-| **Ingress** | Traefik + local DNS | NGINX + Azure LB |
-| **HPA/PDB** | Disabled | Enabled |
-| **Replicas** | 1 per service | 4 per service (autoscaling) |
-| **Registry** | localhost:5000 | Azure Container Registry |
+| Feature      | K3D (Dev)              | AKS (Prod)                  |
+| ------------ | ---------------------- | --------------------------- |
+| **Secrets**  | Azure Key Vault (same) | Azure Key Vault (same)      |
+| **Identity** | Service Principal      | Workload Identity           |
+| **Ingress**  | Traefik + local DNS    | NGINX + Azure LB            |
+| **HPA/PDB**  | Disabled               | Enabled                     |
+| **Replicas** | 1 per service          | 4 per service (autoscaling) |
+| **Registry** | localhost:5000         | Azure Container Registry    |
 
 ---
 
 ## 💡 Tips
 
 ### PowerShell Alias
+
 ```powershell
 # Add to $PROFILE
 Set-Alias k3d "C:\Projects\tc-cloudgames-solution\infrastructure\kubernetes\scripts\dev\k3d-manager.ps1"
@@ -406,6 +423,7 @@ k3d port-forward grafana
 ```
 
 ### Build & Deploy Workflow
+
 ```powershell
 # Build images
 docker build -t user-api:dev -f services\users\src\Adapters\Inbound\TC.CloudGames.Users.Api\Dockerfile .

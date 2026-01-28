@@ -18,7 +18,7 @@ param(
     [string]$ResourceGroup = "tc-cloudgames-solution-dev-rg",
     
     [Parameter(Mandatory = $false)]
-    [string]$ClusterName = "tc-cloudgames-dev-cr8n-aks"
+    [string]$ClusterName = "tc-cloudgames-dev-hvsb-aks"
 )
 
 $ErrorActionPreference = "Stop"
@@ -58,8 +58,8 @@ Write-Host ""
 # Define federated credentials to update
 $federatedCredentials = @(
     @{
-        IdentityName = "tc-cloudgames-dev-cr8n-aks-eso-identity"
-        FedCredName  = "tc-cloudgames-dev-cr8n-aks-eso-identity-federated-credential"
+        IdentityName = "tc-cloudgames-dev-hvsb-aks-eso-identity"
+        FedCredName  = "tc-cloudgames-dev-hvsb-aks-eso-identity-federated-credential"
         Subject      = "system:serviceaccount:external-secrets:external-secrets-operator"
         Description  = "External Secrets Operator"
     }

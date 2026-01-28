@@ -27,7 +27,7 @@
   Skip confirmation prompts.
 
 .EXAMPLE
-  .\setup-eso-workload-identity.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-cr8n-aks" -KeyVaultName "tccloudgamesdevcr8nkv"
+  .\setup-eso-workload-identity.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-hvsb-aks" -KeyVaultName "tccloudgamesdevcr8nkv"
 #>
 
 [CmdletBinding()]
@@ -36,7 +36,7 @@ param(
     [string]$ResourceGroup = "tc-cloudgames-solution-dev-rg",
 
     [Parameter(Mandatory = $false)]
-    [string]$ClusterName = "tc-cloudgames-dev-cr8n-aks",
+    [string]$ClusterName = "tc-cloudgames-dev-hvsb-aks",
 
     [Parameter(Mandatory = $false)]
     [string]$KeyVaultName = "tccloudgamesdevcr8nkv",
@@ -92,7 +92,8 @@ try {
     $account = az account show 2>$null | ConvertFrom-Json
     if (-not $account) { throw "Not logged in" }
     Write-Host "✅ Azure CLI: Logged in as $($account.user.name)" -ForegroundColor $Colors.Success
-} catch {
+}
+catch {
     Write-Host "❌ Not logged in to Azure CLI. Run: az login" -ForegroundColor $Colors.Error
     exit 1
 }
@@ -102,7 +103,8 @@ try {
     kubectl cluster-info 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Cluster not accessible" }
     Write-Host "✅ Kubernetes cluster accessible" -ForegroundColor $Colors.Success
-} catch {
+}
+catch {
     Write-Host "❌ Kubernetes cluster not accessible" -ForegroundColor $Colors.Error
     exit 1
 }
@@ -136,7 +138,8 @@ if (-not $esoPods) {
         Write-Host "   Check pod logs: kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets" -ForegroundColor $Colors.Muted
         exit 1
     }
-} else {
+}
+else {
     Write-Host "✅ External Secrets Operator is running" -ForegroundColor $Colors.Success
 }
 
@@ -198,13 +201,15 @@ Write-Host "   Verifying Workload Identity webhook..." -ForegroundColor $Colors.
 $wiWebhookPods = kubectl get pods -n azure-workload-identity-system --no-headers 2>$null | Where-Object { $_ -match "Running" }
 if ($wiWebhookPods) {
     Write-Host "✅ Workload Identity webhook is running" -ForegroundColor $Colors.Success
-} else {
+}
+else {
     Write-Host "⚠️  Workload Identity webhook not ready yet" -ForegroundColor $Colors.Warning
 }
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Key Vault access granted" -ForegroundColor $Colors.Success
-} else {
+}
+else {
     Write-Host "⚠️  Role assignment may already exist" -ForegroundColor $Colors.Warning
 }
 
@@ -277,13 +282,16 @@ if ($store -and $store.metadata) {
         $readyCondition = $store.status.conditions | Where-Object { $_.type -eq "Ready" }
         if ($readyCondition -and $readyCondition.status -eq "True") {
             Write-Host "✅ ClusterSecretStore is READY!" -ForegroundColor $Colors.Success
-        } elseif ($readyCondition) {
+        }
+        elseif ($readyCondition) {
             Write-Host "⚠️  ClusterSecretStore status: $($readyCondition.reason)" -ForegroundColor $Colors.Warning
         }
-    } else {
+    }
+    else {
         Write-Host "⚠️  ClusterSecretStore status not yet available (will sync shortly)" -ForegroundColor $Colors.Warning
     }
-} else {
+}
+else {
     Write-Host "⚠️  ClusterSecretStore not found - will be deployed by ArgoCD" -ForegroundColor $Colors.Warning
 }
 
@@ -309,7 +317,8 @@ $verifyErrors = 0
 $sa = kubectl get serviceaccount $EsoServiceAccount -n $EsoNamespace -o json 2>$null | ConvertFrom-Json
 if ($sa -and $sa.metadata -and $sa.metadata.annotations -and $sa.metadata.annotations.'azure.workload.identity/client-id') {
     Write-Host "   ✅ ESO ServiceAccount has Workload Identity annotations" -ForegroundColor $Colors.Success
-} else {
+}
+else {
     Write-Host "   ❌ ESO ServiceAccount missing Workload Identity annotations" -ForegroundColor $Colors.Error
     $verifyErrors++
 }
@@ -318,7 +327,8 @@ if ($sa -and $sa.metadata -and $sa.metadata.annotations -and $sa.metadata.annota
 $fedCred = az identity federated-credential show --name "$IdentityName-federated-credential" --identity-name $IdentityName --resource-group $ResourceGroup 2>$null | ConvertFrom-Json
 if ($fedCred -and $fedCred.name) {
     Write-Host "   ✅ Federated Credential is configured" -ForegroundColor $Colors.Success
-} else {
+}
+else {
     Write-Host "   ❌ Federated Credential not found or not configured" -ForegroundColor $Colors.Error
     $verifyErrors++
 }
@@ -327,7 +337,8 @@ if ($fedCred -and $fedCred.name) {
 $kvCheck = az role assignment list --assignee $principalId --scope "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/$ResourceGroup" 2>$null | ConvertFrom-Json
 if ($kvCheck -and ($kvCheck | Where-Object { $_.roleDefinitionName -eq "Key Vault Secrets User" })) {
     Write-Host "   ✅ Key Vault Secrets User role is assigned" -ForegroundColor $Colors.Success
-} else {
+}
+else {
     Write-Host "   ⚠️  Key Vault Secrets User role not verified (may take time to propagate)" -ForegroundColor $Colors.Warning
 }
 
@@ -337,10 +348,12 @@ if ($store.status.conditions) {
     $readyCondition = $store.status.conditions | Where-Object { $_.type -eq "Ready" }
     if ($readyCondition.status -eq "True") {
         Write-Host "   ✅ ClusterSecretStore is READY" -ForegroundColor $Colors.Success
-    } else {
+    }
+    else {
         Write-Host "   ⚠️  ClusterSecretStore status: $($readyCondition.reason)" -ForegroundColor $Colors.Warning
     }
-} else {
+}
+else {
     Write-Host "   ⚠️  ClusterSecretStore status not yet available" -ForegroundColor $Colors.Warning
 }
 
@@ -348,7 +361,8 @@ Write-Host ""
 if ($verifyErrors -eq 0) {
     Write-Host "✅ All critical checks passed! Setup is complete and idempotent." -ForegroundColor $Colors.Success
     Write-Host "   You can safely run this script again if needed." -ForegroundColor $Colors.Muted
-} else {
+}
+else {
     Write-Host "⚠️  Some checks failed. Please review the output above." -ForegroundColor $Colors.Warning
 }
 

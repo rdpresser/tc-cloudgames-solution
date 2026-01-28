@@ -1,6 +1,7 @@
 # 📊 AKS → Grafana Cloud Integration (Consolidated Guide)
 
 This is the **single source of truth** for integrating your AKS cluster with Grafana Cloud using Grafana Agent. It consolidates and replaces:
+
 - `GRAFANA_CLOUD_CREDENTIALS_GUIDE.md`
 - `GRAFANA_CLOUD_SETUP.md`
 - Any other fragmented documentation
@@ -24,13 +25,13 @@ This is the **single source of truth** for integrating your AKS cluster with Gra
 
 You need both for complete observability:
 
-| Solution | Azure Monitor Data Source | Grafana Agent |
-|----------|---------------------------|---------------|
-| **Coverage** | Azure infrastructure (VMs, Disks, PaaS, Activity Logs) | Kubernetes + Application metrics |
-| **Cost** | Pay per GB ingested | Included in Grafana Cloud |
-| **Flexibility** | Azure-only | Any Prometheus exporter |
-| **Custom Metrics** | Complex setup | Simple (pod annotations) |
-| **Vendor Lock** | Azure | Multi-cloud |
+| Solution           | Azure Monitor Data Source                              | Grafana Agent                    |
+| ------------------ | ------------------------------------------------------ | -------------------------------- |
+| **Coverage**       | Azure infrastructure (VMs, Disks, PaaS, Activity Logs) | Kubernetes + Application metrics |
+| **Cost**           | Pay per GB ingested                                    | Included in Grafana Cloud        |
+| **Flexibility**    | Azure-only                                             | Any Prometheus exporter          |
+| **Custom Metrics** | Complex setup                                          | Simple (pod annotations)         |
+| **Vendor Lock**    | Azure                                                  | Multi-cloud                      |
 
 **Recommendation**: Use **Grafana Agent** + **Grafana Cloud** for Kubernetes/Apps metrics, and keep **Azure Monitor Data Source** in Grafana for Azure infrastructure metrics.
 
@@ -47,22 +48,26 @@ You need both for complete observability:
 ### Step 2: Get Prometheus Details
 
 **Option A: Via Connections (Recommended)**
+
 1. Left sidebar → **Connections**
 2. Click **"Add new connection"**
 3. Search for **"Prometheus"**
 4. Click **"Via Grafana Agent, Prometheus and OpenTelemetry"**
 
 **Option B: Via Administration**
+
 1. Left sidebar → **Administration** → **Settings**
 2. Scroll to **Grafana Cloud** section
 
 You will see:
+
 ```
 Remote Write Endpoint: https://prometheus-prod-01-eu-west-0.grafana.net/api/prom/push
 Remote Write User: 123456
 ```
 
 **Copy these values:**
+
 - **Prometheus URL** (base, WITHOUT `/api/prom/push`): `https://prometheus-prod-XX-XX-X.grafana.net`
 - **Username** (Instance ID): `123456`
 
@@ -82,20 +87,21 @@ Remote Write User: 123456
 ### Optional: Loki (Logs)
 
 If you want to send logs:
+
 - **Loki URL**: `https://logs-prod-XX.grafana.net`
 - **Username**: Same Instance ID
 - **API Key**: Same key or create one with `LogsPublisher` role
 
 ### Summary of Credentials
 
-| Credential | Example Value | Sensitive? |
-|------------|---------------|------------|
-| `grafana_cloud_prometheus_url` | `https://prometheus-prod-01-eu-west-0.grafana.net` | No |
-| `grafana_cloud_prometheus_username` | `123456` | No |
-| `grafana_cloud_prometheus_api_key` | `glc_eyJvIjoiMTIzNDU2...` | **YES** |
-| `grafana_cloud_loki_url` | `https://logs-prod-eu-west-0.grafana.net` | No |
-| `grafana_cloud_loki_username` | `123456` | No |
-| `grafana_cloud_loki_api_key` | `glc_eyJvIjoiMTIzNDU2...` | **YES** |
+| Credential                          | Example Value                                      | Sensitive? |
+| ----------------------------------- | -------------------------------------------------- | ---------- |
+| `grafana_cloud_prometheus_url`      | `https://prometheus-prod-01-eu-west-0.grafana.net` | No         |
+| `grafana_cloud_prometheus_username` | `123456`                                           | No         |
+| `grafana_cloud_prometheus_api_key`  | `glc_eyJvIjoiMTIzNDU2...`                          | **YES**    |
+| `grafana_cloud_loki_url`            | `https://logs-prod-eu-west-0.grafana.net`          | No         |
+| `grafana_cloud_loki_username`       | `123456`                                           | No         |
+| `grafana_cloud_loki_api_key`        | `glc_eyJvIjoiMTIzNDU2...`                          | **YES**    |
 
 ---
 
@@ -109,15 +115,15 @@ If you want to send logs:
 4. Click **"Variables"**
 5. Add these **Terraform variables**:
 
-| Variable Name | Category | Sensitive? |
-|---------------|----------|------------|
-| `enable_grafana_agent` | Terraform (HCL=true) | No |
-| `grafana_cloud_prometheus_url` | Terraform | No |
-| `grafana_cloud_prometheus_username` | Terraform | No |
-| `grafana_cloud_prometheus_api_key` | Terraform | **YES** |
-| `grafana_cloud_loki_url` | Terraform | No |
-| `grafana_cloud_loki_username` | Terraform | No |
-| `grafana_cloud_loki_api_key` | Terraform | **YES** |
+| Variable Name                       | Category             | Sensitive? |
+| ----------------------------------- | -------------------- | ---------- |
+| `enable_grafana_agent`              | Terraform (HCL=true) | No         |
+| `grafana_cloud_prometheus_url`      | Terraform            | No         |
+| `grafana_cloud_prometheus_username` | Terraform            | No         |
+| `grafana_cloud_prometheus_api_key`  | Terraform            | **YES**    |
+| `grafana_cloud_loki_url`            | Terraform            | No         |
+| `grafana_cloud_loki_username`       | Terraform            | No         |
+| `grafana_cloud_loki_api_key`        | Terraform            | **YES**    |
 
 ---
 
@@ -224,7 +230,7 @@ terraform apply
 
 ```bash
 # Connect to AKS
-az aks get-credentials --resource-group tc-cloudgames-solution-dev-rg --name tc-cloudgames-dev-cr8n-aks
+az aks get-credentials --resource-group tc-cloudgames-solution-dev-rg --name tc-cloudgames-dev-hvsb-aks
 
 # Check Grafana Agent pods
 kubectl get pods -n grafana-agent
@@ -343,6 +349,7 @@ curl http://localhost:5000/metrics
 ```
 
 You should see output like:
+
 ```
 # HELP http_requests_received_total Total HTTP requests received
 # TYPE http_requests_received_total counter
@@ -365,15 +372,15 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/scrape: "true"    # Enable scraping
-        prometheus.io/port: "8080"       # Port where /metrics is exposed
-        prometheus.io/path: "/metrics"   # Path to metrics endpoint
+        prometheus.io/scrape: "true" # Enable scraping
+        prometheus.io/port: "8080" # Port where /metrics is exposed
+        prometheus.io/path: "/metrics" # Path to metrics endpoint
     spec:
       containers:
-      - name: users-api
-        image: tccloudgamesdevcr8nacr.azurecr.io/users-api:latest
-        ports:
-        - containerPort: 8080
+        - name: users-api
+          image: tccloudgamesdevcr8nacr.azurecr.io/users-api:latest
+          ports:
+            - containerPort: 8080
 ```
 
 ### Example: Full Deployment with Prometheus Annotations
@@ -401,30 +408,30 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       containers:
-      - name: games-api
-        image: tccloudgamesdevcr8nacr.azurecr.io/games-api:latest
-        ports:
-        - containerPort: 8080
-          name: http
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 500m
-            memory: 512Mi
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 15
-          periodSeconds: 20
+        - name: games-api
+          image: tccloudgamesdevcr8nacr.azurecr.io/games-api:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
 ```
 
 ---
@@ -433,12 +440,12 @@ spec:
 
 Import these recommended dashboards in Grafana Cloud:
 
-| Dashboard | ID | Description |
-|-----------|----|-------------|
-| Kubernetes Cluster Monitoring | `7249` | Overall cluster health |
-| Kubernetes Pod Monitoring | `6417` | Pod-level metrics |
-| Node Exporter Full | `1860` | Node-level metrics |
-| .NET Core | `10427` | ASP.NET Core metrics |
+| Dashboard                     | ID      | Description            |
+| ----------------------------- | ------- | ---------------------- |
+| Kubernetes Cluster Monitoring | `7249`  | Overall cluster health |
+| Kubernetes Pod Monitoring     | `6417`  | Pod-level metrics      |
+| Node Exporter Full            | `1860`  | Node-level metrics     |
+| .NET Core                     | `10427` | ASP.NET Core metrics   |
 
 ### How to Import
 
@@ -455,11 +462,13 @@ Import these recommended dashboards in Grafana Cloud:
 ### No metrics appearing in Grafana Cloud
 
 1. **Check Agent pods are running:**
+
    ```bash
    kubectl get pods -n grafana-agent
    ```
 
 2. **Check Agent logs for errors:**
+
    ```bash
    kubectl logs -n grafana-agent -l app.kubernetes.io/name=grafana-agent --tail=100
    ```
@@ -478,11 +487,13 @@ Import these recommended dashboards in Grafana Cloud:
 ### Application metrics not appearing
 
 1. **Check pod annotations:**
+
    ```bash
    kubectl get pod <pod-name> -o yaml | grep -A5 annotations
    ```
 
 2. **Verify /metrics endpoint is accessible:**
+
    ```bash
    kubectl port-forward pod/<pod-name> 8080:8080
    curl http://localhost:8080/metrics
@@ -503,33 +514,33 @@ Reduce scrape targets or increase resource limits in the Helm values.
 
 ### Automatically by Grafana Agent
 
-| Source | Metrics |
-|--------|---------|
-| **Kubelet** | Node CPU, memory, disk, network, conditions |
-| **cAdvisor** | Container CPU, memory, network I/O, disk I/O |
+| Source                 | Metrics                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| **Kubelet**            | Node CPU, memory, disk, network, conditions                 |
+| **cAdvisor**           | Container CPU, memory, network I/O, disk I/O                |
 | **Kube State Metrics** | Deployments, Pods, Services status, ReplicaSets, DaemonSets |
-| **Annotated Pods** | Any pod with `prometheus.io/scrape: "true"` |
+| **Annotated Pods**     | Any pod with `prometheus.io/scrape: "true"`                 |
 
 ### From .NET Applications (with prometheus-net)
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `http_requests_received_total` | Counter | Total HTTP requests |
-| `http_request_duration_seconds` | Histogram | HTTP request latency |
-| `http_requests_in_progress` | Gauge | Current in-flight requests |
-| `dotnet_total_memory_bytes` | Gauge | .NET memory usage |
-| `dotnet_gc_collection_count_total` | Counter | GC collections |
-| `process_cpu_seconds_total` | Counter | CPU time consumed |
+| Metric                             | Type      | Description                |
+| ---------------------------------- | --------- | -------------------------- |
+| `http_requests_received_total`     | Counter   | Total HTTP requests        |
+| `http_request_duration_seconds`    | Histogram | HTTP request latency       |
+| `http_requests_in_progress`        | Gauge     | Current in-flight requests |
+| `dotnet_total_memory_bytes`        | Gauge     | .NET memory usage          |
+| `dotnet_gc_collection_count_total` | Counter   | GC collections             |
+| `process_cpu_seconds_total`        | Counter   | CPU time consumed          |
 
 ---
 
 ## Summary
 
-| Component | Purpose |
-|-----------|---------|
-| **Azure Monitor DS** | Azure infrastructure metrics |
-| **Grafana Agent** | Kubernetes + application metrics |
-| **Grafana Cloud** | Visualization, dashboards, alerting |
-| **prometheus-net** | .NET application metrics |
+| Component            | Purpose                             |
+| -------------------- | ----------------------------------- |
+| **Azure Monitor DS** | Azure infrastructure metrics        |
+| **Grafana Agent**    | Kubernetes + application metrics    |
+| **Grafana Cloud**    | Visualization, dashboards, alerting |
+| **prometheus-net**   | .NET application metrics            |
 
 This consolidated guide is the single source of truth. Keep it updated as configurations change.

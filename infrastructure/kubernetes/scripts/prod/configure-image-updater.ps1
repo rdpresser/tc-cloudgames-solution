@@ -15,7 +15,7 @@ Unified script that:
 Azure Resource Group (e.g., tc-cloudgames-solution-dev-rg)
 
 .PARAMETER ClusterName
-AKS cluster name (e.g., tc-cloudgames-dev-cr8n-aks)
+AKS cluster name (e.g., tc-cloudgames-dev-hvsb-aks)
 
 .PARAMETER AcrName
 ACR name without suffix (e.g., tccloudgamesdevcr8nacr)
@@ -35,20 +35,20 @@ If $true, does NOT update Applications with annotations (uses CRD only)
 .EXAMPLE
 # Full install with secret-based auth
 .\configure-image-updater.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" `
-  -ClusterName "tc-cloudgames-dev-cr8n-aks" `
+  -ClusterName "tc-cloudgames-dev-hvsb-aks" `
   -AcrName "tccloudgamesdevcr8nacr"
 
 .EXAMPLE
 # Install with Workload Identity (more secure)
 .\configure-image-updater.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" `
-  -ClusterName "tc-cloudgames-dev-cr8n-aks" `
+  -ClusterName "tc-cloudgames-dev-hvsb-aks" `
   -AcrName "tccloudgamesdevcr8nacr" `
   -UseWorkloadIdentity
 
 .EXAMPLE
 # Force reinstall
 .\configure-image-updater.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" `
-  -ClusterName "tc-cloudgames-dev-cr8n-aks" `
+  -ClusterName "tc-cloudgames-dev-hvsb-aks" `
   -AcrName "tccloudgamesdevcr8nacr" `
   -Force
 
@@ -63,7 +63,7 @@ param(
     [string]$ResourceGroup = "tc-cloudgames-solution-dev-rg",
 
     [Parameter(Mandatory = $false)]
-    [string]$ClusterName = "tc-cloudgames-dev-cr8n-aks",
+    [string]$ClusterName = "tc-cloudgames-dev-hvsb-aks",
 
     [Parameter(Mandatory = $false)]
     [string]$AcrName = "tccloudgamesdevcr8nacr",
@@ -88,17 +88,17 @@ $script:Namespace = "argocd-image-updater"
 function Write-Status {
     param([string]$Message, [string]$Type = 'Info')
     $colors = @{
-        'Success' = 'Green'
-        'Error' = 'Red'
-        'Warning' = 'Yellow'
-        'Info' = 'Cyan'
+        'Success'  = 'Green'
+        'Error'    = 'Red'
+        'Warning'  = 'Yellow'
+        'Info'     = 'Cyan'
         'Question' = 'Magenta'
     }
     $emoji = @{
-        'Success' = '✓'
-        'Error' = '✗'
-        'Warning' = '⚠'
-        'Info' = 'ℹ'
+        'Success'  = '✓'
+        'Error'    = '✗'
+        'Warning'  = '⚠'
+        'Info'     = 'ℹ'
         'Question' = '?'
     }
     $color = $colors[$Type] ?? 'White'
@@ -357,9 +357,9 @@ if ($UseWorkloadIdentity) {
         2>&1 | Out-Null
     
     $federatedCredJson = @{
-        name = $credentialName
-        issuer = $oidcIssuerUrl
-        subject = "system:serviceaccount:$($script:Namespace):argocd-image-updater"
+        name      = $credentialName
+        issuer    = $oidcIssuerUrl
+        subject   = "system:serviceaccount:$($script:Namespace):argocd-image-updater"
         audiences = @("api://AzureADTokenExchange")
     } | ConvertTo-Json
     
@@ -437,11 +437,11 @@ if (-not $SkipAnnotations) {
             Write-Status "Annotating application: $app" 'Info'
             
             $annotations = @{
-                "argocd-image-updater.argoproj.io/image-list" = "games=$script:AcrUrl/games-api,users=$script:AcrUrl/users-api,payments=$script:AcrUrl/payms-api"
-                "argocd-image-updater.argoproj.io/games.update-strategy" = "newest-build"
-                "argocd-image-updater.argoproj.io/users.update-strategy" = "newest-build"
+                "argocd-image-updater.argoproj.io/image-list"               = "games=$script:AcrUrl/games-api,users=$script:AcrUrl/users-api,payments=$script:AcrUrl/payms-api"
+                "argocd-image-updater.argoproj.io/games.update-strategy"    = "newest-build"
+                "argocd-image-updater.argoproj.io/users.update-strategy"    = "newest-build"
                 "argocd-image-updater.argoproj.io/payments.update-strategy" = "newest-build"
-                "argocd-image-updater.argoproj.io/write-back-method" = "argocd"
+                "argocd-image-updater.argoproj.io/write-back-method"        = "argocd"
             }
             
             $patchData = @{

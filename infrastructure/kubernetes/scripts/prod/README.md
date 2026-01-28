@@ -22,6 +22,7 @@
 This is the recommended flow for a **new AKS cluster after Terraform completes**:
 
 #### Step 1: Terraform Infrastructure
+
 ```powershell
 cd infrastructure/terraform/foundation
 
@@ -38,6 +39,7 @@ terraform apply tfplan
 ```
 
 #### Step 2: Post-Terraform Setup (One Command!)
+
 ```powershell
 cd infrastructure/kubernetes/scripts/prod
 
@@ -46,6 +48,7 @@ cd infrastructure/kubernetes/scripts/prod
 ```
 
 **Automatically configures:**
+
 - ✅ Updates ServiceAccount client IDs from Terraform outputs (Workload Identity)
 - ✅ Connects to AKS cluster
 - ✅ Installs ArgoCD (GitOps)
@@ -56,6 +59,7 @@ cd infrastructure/kubernetes/scripts/prod
 **Done! Your production cluster is ready.**
 
 #### Step 3: Access & Verify
+
 ```powershell
 # Get ArgoCD dashboard URL
 .\aks-manager.ps1 get-argocd-url
@@ -74,22 +78,26 @@ kubectl get applications -n argocd
 ### Required Tools
 
 - **Azure CLI** - [Install](https://docs.microsoft.com/cli/azure/install-azure-cli)
+
   ```powershell
   az --version    # Should be recent
   az login        # Login to your Azure account
   ```
 
 - **kubectl** - [Install](https://kubernetes.io/docs/tasks/tools/)
+
   ```powershell
   kubectl version --client
   ```
 
 - **Helm v3** - [Install](https://helm.sh/docs/intro/install/)
+
   ```powershell
   helm version
   ```
 
 - **Terraform 1.14.x** - [Install](https://developer.hashicorp.com/terraform/install#windows)
+
   ```powershell
   terraform version
   ```
@@ -125,6 +133,7 @@ terraform apply tfplan
 ```
 
 **Infrastructure created:**
+
 - **AKS**: Kubernetes cluster (production-grade)
 - **ACR**: Container registry for images
 - **Key Vault**: Secrets management
@@ -160,8 +169,9 @@ cd infrastructure/kubernetes/scripts/prod
 7. **Verifies health** - Ensures all components are running
 
 **Expected output:**
+
 ```
-✅ Connected to AKS cluster: tc-cloudgames-dev-cr8n-aks
+✅ Connected to AKS cluster: tc-cloudgames-dev-hvsb-aks
 ✅ ArgoCD installed successfully (namespace: argocd)
 ✅ Bootstrap application deployed
 ✅ ESO ClusterSecretStore configured
@@ -256,6 +266,7 @@ curl "http://$NGINX_IP/health" -H "Host: payments-api.cloudgames.local"
 **Symptoms:** `kubectl get svc -n ingress-nginx` shows `<pending>` for EXTERNAL-IP
 
 **Solution:**
+
 ```powershell
 # Check service status
 kubectl describe svc -n ingress-nginx ingress-nginx-controller
@@ -275,6 +286,7 @@ kubectl get svc -n ingress-nginx ingress-nginx-controller --watch
 **Symptoms:** ExternalSecrets show `SecretSyncFailed` or `PendingSecretRefresh`
 
 **Solution:**
+
 ```powershell
 # Check ESO logs
 kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets -f
@@ -302,6 +314,7 @@ kubectl delete secret games-api-secrets -n cloudgames
 **Symptoms:** Pods restart continuously
 
 **Solution:**
+
 ```powershell
 # Check logs (current crash)
 kubectl logs -n cloudgames <pod-name> --tail=50
@@ -324,6 +337,7 @@ kubectl describe pod -n cloudgames <pod-name>
 **Symptoms:** ArgoCD shows "OutOfSync" or "Unknown"
 
 **Solution:**
+
 ```powershell
 # Check ArgoCD controller logs
 kubectl logs -n argocd deployment/argocd-application-controller --tail=50
@@ -371,6 +385,7 @@ kubectl apply -f infrastructure/kubernetes/base/payments/service-account.yaml
 ```
 
 **Why this is needed:**
+
 - Azure Managed Identities get unique `client_id` values
 - Kubernetes ServiceAccounts need these IDs in `azure.workload.identity/client-id` annotations
 - Workload Identity uses OIDC federation to link Azure AD identities to K8s ServiceAccounts
@@ -443,7 +458,7 @@ kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets -f
 Use `reset-cluster` only when you need a **completely clean installation** while keeping the AKS infrastructure:
 
 - ❌ Complete reinstallation from scratch
-- ❌ Remove all workloads and deployments  
+- ❌ Remove all workloads and deployments
 - ❌ Start with fresh configuration
 - ✅ Preserves: AKS cluster, networks, storage, RBAC
 
@@ -525,40 +540,41 @@ Use `reset-cluster` only when you need a **completely clean installation** while
 
 ### Key Azure Resources
 
-| Resource | Purpose | Created by |
-|----------|---------|-----------|
-| AKS Cluster | Kubernetes infrastructure | Terraform |
-| ACR | Container image registry | Terraform |
-| Key Vault | Secrets management | Terraform |
-| PostgreSQL | Application databases | Terraform |
-| Service Bus | Messaging (event-driven) | Terraform |
+| Resource          | Purpose                     | Created by           |
+| ----------------- | --------------------------- | -------------------- |
+| AKS Cluster       | Kubernetes infrastructure   | Terraform            |
+| ACR               | Container image registry    | Terraform            |
+| Key Vault         | Secrets management          | Terraform            |
+| PostgreSQL        | Application databases       | Terraform            |
+| Service Bus       | Messaging (event-driven)    | Terraform            |
 | Workload Identity | Passwordless authentication | post-terraform-setup |
-| External Secrets | K8s ↔ Key Vault sync | post-terraform-setup |
-| ArgoCD | GitOps deployments | post-terraform-setup |
+| External Secrets  | K8s ↔ Key Vault sync        | post-terraform-setup |
+| ArgoCD            | GitOps deployments          | post-terraform-setup |
 
 ### Default Credentials
 
-| Component | Default User | Location |
-|-----------|--------------|----------|
-| ArgoCD | admin | From `argocd-initial-admin-secret` |
-| NGINX | N/A | LoadBalancer IP in Azure |
-| Key Vault | Managed Identity | Workload Identity configuration |
+| Component | Default User     | Location                           |
+| --------- | ---------------- | ---------------------------------- |
+| ArgoCD    | admin            | From `argocd-initial-admin-secret` |
+| NGINX     | N/A              | LoadBalancer IP in Azure           |
+| Key Vault | Managed Identity | Workload Identity configuration    |
 
 ### Kubernetes Namespaces
 
-| Namespace | Purpose |
-|-----------|---------|
-| `argocd` | ArgoCD GitOps platform |
-| `ingress-nginx` | NGINX Ingress Controller |
-| `external-secrets` | ESO & secret syncing |
-| `cloudgames` | Application deployments |
-| `kube-system` | Kubernetes system components |
+| Namespace          | Purpose                      |
+| ------------------ | ---------------------------- |
+| `argocd`           | ArgoCD GitOps platform       |
+| `ingress-nginx`    | NGINX Ingress Controller     |
+| `external-secrets` | ESO & secret syncing         |
+| `cloudgames`       | Application deployments      |
+| `kube-system`      | Kubernetes system components |
 
 ---
 
 ### Getting Help
 
 For detailed help with specific commands:
+
 ```powershell
 .\aks-manager.ps1 help          # Show all available commands
 .\aks-manager.ps1              # Interactive menu with guided options

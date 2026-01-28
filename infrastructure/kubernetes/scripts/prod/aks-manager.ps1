@@ -60,7 +60,7 @@ param(
 # =============================================================================
 # Configuration
 # =============================================================================
-$script:DefaultClusterName = "tc-cloudgames-dev-cr8n-aks"
+$script:DefaultClusterName = "tc-cloudgames-dev-hvsb-aks"
 
 $script:Config = @{
     ResourceGroup = "tc-cloudgames-solution-dev-rg"
