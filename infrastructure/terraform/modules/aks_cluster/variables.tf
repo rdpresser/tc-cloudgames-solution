@@ -157,9 +157,9 @@ variable "tags" {
 # =============================================================================
 
 variable "system_pool_vm_size" {
-  description = "VM size for system node pool (B2s = 2 vCPU, 4 GB RAM - cost optimized)"
+  description = "VM size for system node pool (B2ms = 2 vCPU, 8 GB RAM - better performance)"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2ms"
 }
 
 variable "system_pool_node_count" {
@@ -182,7 +182,7 @@ variable "system_pool_min_count" {
 variable "system_pool_max_count" {
   description = "Maximum number of nodes in system pool when auto-scaling is enabled"
   type        = number
-  default     = 3
+  default     = 2
 
   validation {
     condition     = var.system_pool_max_count >= 1 && var.system_pool_max_count <= 100
@@ -191,9 +191,9 @@ variable "system_pool_max_count" {
 }
 
 variable "system_pool_enable_auto_scaling" {
-  description = "Enable auto-scaling for system node pool"
+  description = "Enable auto-scaling for system node pool (false = fixed size for stability)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "system_pool_os_disk_size_gb" {
@@ -207,9 +207,9 @@ variable "system_pool_os_disk_size_gb" {
 # =============================================================================
 
 variable "workload_pool_vm_size" {
-  description = "VM size for workload node pool (B2s = 2 vCPU, 4 GB RAM - cost optimized)"
+  description = "VM size for workload node pool (B2ms = 2 vCPU, 8 GB RAM - better performance for load tests)"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2ms"
 }
 
 variable "workload_pool_node_count" {

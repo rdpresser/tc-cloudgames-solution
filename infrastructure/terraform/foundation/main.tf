@@ -137,12 +137,27 @@ module "aks" {
   # Monitoring
   log_analytics_workspace_id = module.logs.log_analytics_workspace_id
 
-  # System node pool configuration (optimized for dev/test with autoscaling)
-  system_node_count     = var.aks_system_node_count
-  system_node_vm_size   = var.aks_system_node_vm_size
-  enable_auto_scaling   = var.aks_enable_auto_scaling
-  system_node_min_count = var.aks_system_node_min_count
-  system_node_max_count = var.aks_system_node_max_count
+  # Default node pool (will only run critical addons after separation)
+  system_node_count     = 1
+  system_node_vm_size   = "Standard_B2ms" # Upgraded to B2ms (2 vCPU, 8 GB RAM)
+  enable_auto_scaling   = true
+  system_node_min_count = 1
+  system_node_max_count = 1
+
+  # Separated Node Pools - System (ArgoCD, CoreDNS) + Workload (APIs)
+  # System Pool: 2 nodes B2ms (4 vCPUs, 16 GB RAM) - Fixed size for stability
+  system_pool_vm_size             = "Standard_B2ms"
+  system_pool_node_count          = 2
+  system_pool_min_count           = 2
+  system_pool_max_count           = 2
+  system_pool_enable_auto_scaling = false # Fixed size
+
+  # Workload Pool: 2-6 nodes B2ms (4-12 vCPUs, 16-48 GB RAM) - Autoscales for load tests
+  workload_pool_vm_size             = "Standard_B2ms"
+  workload_pool_node_count          = 3
+  workload_pool_min_count           = 2
+  workload_pool_max_count           = 6
+  workload_pool_enable_auto_scaling = true
 
   # RBAC configuration
   admin_group_object_ids = var.aks_admin_group_object_ids
@@ -402,11 +417,11 @@ module "servicebus" {
   topics = [
     {
       name   = "user.events-topic"
-      create = false
+      create = true
     },
     {
       name   = "game.events-topic"
-      create = false
+      create = true
     },
     # {
     #   name   = "payment.events-topic"

@@ -148,9 +148,9 @@ variable "aks_system_node_count" {
 }
 
 variable "aks_system_node_vm_size" {
-  description = "VM size for AKS system node pool (B2s = 2 vCPU, 4 GB RAM - baseline, cost-optimized for dev/test)"
+  description = "VM size for AKS system node pool (B2ms = 2 vCPU, 8 GB RAM - better performance for ArgoCD stability)"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2ms"
 }
 
 variable "aks_enable_auto_scaling" {
