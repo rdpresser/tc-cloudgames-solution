@@ -13,6 +13,10 @@ resources:
   - cluster-secret-store-patch.yaml
   - resource-governance.yaml
 
+# ArgoCD system tolerations (allows scheduling on system pool with taints)
+# Applied separately after ArgoCD installation via kubectl
+# File: ../../base/system-pod-tolerations.yaml
+
 labels:
   - pairs:
       environment: prod
