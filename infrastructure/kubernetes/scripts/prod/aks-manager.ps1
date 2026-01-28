@@ -967,7 +967,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "  2. Update ServiceAccount client IDs from Terraform" -ForegroundColor $Colors.Muted
             Write-Host "  3. Install ArgoCD (with system pool tolerations)" -ForegroundColor $Colors.Muted
             Write-Host "  4. Bootstrap ArgoCD applications (GitOps)" -ForegroundColor $Colors.Muted
-            Write-Host "  5. Setup External Secrets with Workload Identity" -ForegroundColor $Colors.Muted
+            Write-Host "  5. Setup External Secrets with Workload Identity (creates identity if needed)" -ForegroundColor $Colors.Muted
             Write-Host "  6. Configure ArgoCD Image Updater" -ForegroundColor $Colors.Muted
             Write-Host "  7. Validate webhooks and sync applications" -ForegroundColor $Colors.Muted
             Write-Host "  8. Wait for all components to be ready" -ForegroundColor $Colors.Muted
@@ -1027,8 +1027,9 @@ function Invoke-Command($cmd, $arg1 = "") {
             Write-Host "✅ Step 4 completed" -ForegroundColor $Colors.Success
             Start-Sleep -Seconds 5
             
-            # Step 5: Setup ESO with Workload Identity
+            # Step 5: Setup ESO with Workload Identity (now creates identity if needed)
             Write-Step "Step 5/8: Setting up External Secrets with Workload Identity"
+            Write-Host "🔑 Will create Azure Managed Identity if it doesn't exist..." -ForegroundColor $Colors.Info
             Invoke-Command "setup-eso-wi"
             Write-Host "✅ Step 5 completed" -ForegroundColor $Colors.Success
             Start-Sleep -Seconds 2

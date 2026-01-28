@@ -166,25 +166,45 @@ Write-Host "✅ OIDC Issuer URL: $oidcIssuerUrl" -ForegroundColor $Colors.Succes
 $tenantId = $account.tenantId
 Write-Host "   Tenant ID: $tenantId" -ForegroundColor $Colors.Muted
 # =============================================================================
-# Step 2-5: Verify Azure Resources (Created by Terraform)
+# Step 2-5: Create or Verify Azure Managed Identity
 # =============================================================================
 Write-Host ""
-Write-Host "=== 2/6 Verifying Azure Resources ===" -ForegroundColor $Colors.Title
+Write-Host "=== 2/6 Creating/Verifying Azure Managed Identity ===" -ForegroundColor $Colors.Title
 
-Write-Host "   Verifying identity '$IdentityName'..." -ForegroundColor $Colors.Info
+Write-Host "   Checking if identity '$IdentityName' exists..." -ForegroundColor $Colors.Info
 $ErrorActionPreference = "SilentlyContinue"
 $identity = az identity show --name $IdentityName --resource-group $ResourceGroup 2>&1 | ConvertFrom-Json
 $ErrorActionPreference = "Stop"
 
 if (-not $identity -or -not $identity.clientId) {
-    Write-Host "❌ Identity '$IdentityName' not found in Azure" -ForegroundColor $Colors.Error
-    Write-Host "   Ensure Terraform has created this identity" -ForegroundColor $Colors.Muted
-    exit 1
+    Write-Host "⚠️  Identity not found, creating..." -ForegroundColor $Colors.Warning
+    Write-Host "   (Terraform Cloud cannot create cluster-dependent resources)" -ForegroundColor $Colors.Muted
+    
+    # Get location from AKS cluster
+    $location = $aks.location
+    
+    $identity = az identity create `
+        --name $IdentityName `
+        --resource-group $ResourceGroup `
+        --location $location `
+        --tags "ManagedBy=PowerShell" "Component=ExternalSecrets" "Environment=prod" `
+        2>&1 | ConvertFrom-Json
+    
+    if (-not $identity -or -not $identity.clientId) {
+        Write-Host "❌ Failed to create identity" -ForegroundColor $Colors.Error
+        exit 1
+    }
+    
+    Write-Host "✅ Identity created successfully" -ForegroundColor $Colors.Success
+}
+else {
+    Write-Host "✅ Identity already exists" -ForegroundColor $Colors.Success
 }
 
 $clientId = $identity.clientId
 $principalId = $identity.principalId
-Write-Host "✅ Identity found: $clientId" -ForegroundColor $Colors.Success
+Write-Host "   Client ID:    $clientId" -ForegroundColor $Colors.Info
+Write-Host "   Principal ID: $principalId" -ForegroundColor $Colors.Info
 
 Write-Host "   Verifying Key Vault '$KeyVaultName'..." -ForegroundColor $Colors.Info
 $ErrorActionPreference = "SilentlyContinue"
@@ -196,6 +216,86 @@ if (-not $kv) {
     exit 1
 }
 Write-Host "✅ Key Vault found" -ForegroundColor $Colors.Success
+$kvId = $kv.id
+
+# =============================================================================
+# Step 2.5: Create or Verify Federated Identity Credential
+# =============================================================================
+Write-Host ""
+Write-Host "   Creating/Verifying Federated Identity Credential..." -ForegroundColor $Colors.Info
+
+$credentialName = "$IdentityName-federated-credential"
+$subject = "system:serviceaccount:${EsoNamespace}:${EsoServiceAccount}"
+
+$ErrorActionPreference = "SilentlyContinue"
+$fedCred = az identity federated-credential show `
+    --name $credentialName `
+    --identity-name $IdentityName `
+    --resource-group $ResourceGroup `
+    2>&1 | ConvertFrom-Json
+$ErrorActionPreference = "Stop"
+
+if (-not $fedCred -or -not $fedCred.name) {
+    Write-Host "   Creating federated credential..." -ForegroundColor $Colors.Info
+    Write-Host "   Subject: $subject" -ForegroundColor $Colors.Muted
+    
+    $fedCred = az identity federated-credential create `
+        --identity-name $IdentityName `
+        --resource-group $ResourceGroup `
+        --name $credentialName `
+        --issuer $oidcIssuerUrl `
+        --subject $subject `
+        --audience "api://AzureADTokenExchange" `
+        2>&1 | ConvertFrom-Json
+    
+    if (-not $fedCred) {
+        Write-Host "❌ Failed to create federated credential" -ForegroundColor $Colors.Error
+        exit 1
+    }
+    
+    Write-Host "✅ Federated credential created" -ForegroundColor $Colors.Success
+}
+else {
+    Write-Host "✅ Federated credential already exists" -ForegroundColor $Colors.Success
+}
+
+# =============================================================================
+# Step 2.6: Grant Key Vault Access
+# =============================================================================
+Write-Host ""
+Write-Host "   Granting Key Vault access..." -ForegroundColor $Colors.Info
+
+# Check if role assignment exists
+$ErrorActionPreference = "SilentlyContinue"
+$existingRole = az role assignment list `
+    --assignee $principalId `
+    --scope $kvId `
+    --role "Key Vault Secrets User" `
+    --query "[0]" `
+    -o json 2>&1 | ConvertFrom-Json
+$ErrorActionPreference = "Stop"
+
+if ($existingRole) {
+    Write-Host "✅ Key Vault access already granted" -ForegroundColor $Colors.Success
+}
+else {
+    Write-Host "   Assigning 'Key Vault Secrets User' role..." -ForegroundColor $Colors.Info
+    az role assignment create `
+        --assignee-object-id $principalId `
+        --assignee-principal-type "ServicePrincipal" `
+        --role "Key Vault Secrets User" `
+        --scope $kvId `
+        2>&1 | Out-Null
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Key Vault access granted" -ForegroundColor $Colors.Success
+        Write-Host "   Waiting for RBAC propagation (10 seconds)..." -ForegroundColor $Colors.Muted
+        Start-Sleep -Seconds 10
+    }
+    else {
+        Write-Host "⚠️  Role assignment failed (may already exist)" -ForegroundColor $Colors.Warning
+    }
+}
 
 Write-Host "   Verifying Workload Identity webhook..." -ForegroundColor $Colors.Info
 $wiWebhookPods = kubectl get pods -n azure-workload-identity-system --no-headers 2>$null | Where-Object { $_ -match "Running" }
@@ -204,13 +304,6 @@ if ($wiWebhookPods) {
 }
 else {
     Write-Host "⚠️  Workload Identity webhook not ready yet" -ForegroundColor $Colors.Warning
-}
-
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Key Vault access granted" -ForegroundColor $Colors.Success
-}
-else {
-    Write-Host "⚠️  Role assignment may already exist" -ForegroundColor $Colors.Warning
 }
 
 # =============================================================================

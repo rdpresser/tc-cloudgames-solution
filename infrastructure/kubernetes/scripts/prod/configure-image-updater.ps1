@@ -342,7 +342,15 @@ if ($UseWorkloadIdentity) {
     }
     
     # Atribuir AcrPull role
-    $acrId = az acr show --name $AcrName --query id -o tsv
+    Write-Status "Fetching ACR ID for: $AcrName" 'Info'
+    $acrId = az acr show --name $AcrName --query id -o tsv 2>&1
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($acrId)) {
+        Write-Status "ERROR: Could not find ACR '$AcrName'. Please verify the name is correct." 'Error'
+        Write-Status "Tip: Run 'az acr list -o table' to list available ACRs" 'Warning'
+        throw "ACR not found: $AcrName"
+    }
+    Write-Status "✓ ACR ID obtained: $acrId" 'Success'
+    
     az role assignment create `
         --assignee $appId `
         --role "AcrPull" `
