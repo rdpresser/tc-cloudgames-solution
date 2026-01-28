@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-  AKS Manager - Central orchestrator for Azure AKS cluster management.
+  AKS Manager - Single-shot orchestrator for Azure AKS cluster management.
 
 .DESCRIPTION
   Main script that centralizes and facilitates access to all AKS cluster
-  management scripts. Provides an interactive menu and command line support.
+  management scripts. Provides single-shot setup and interactive menu.
 
 .PARAMETER Command
   Command to execute. Use --help to see the full list.
@@ -21,12 +21,28 @@
   # Shows all available commands
 
 .EXAMPLE
-  .\aks-manager.ps1 install-argocd
-  # Installs ArgoCD on AKS
+  .\aks-manager.ps1 bootstrap-complete
+  # RECOMMENDED: Single-shot setup (connect → ArgoCD → bootstrap → ESO → Image Updater)
 
 .EXAMPLE
-    .\aks-manager.ps1 configure-image-updater
-    # Configures ArgoCD Image Updater
+  .\aks-manager.ps1 install-argocd
+  # Installs ArgoCD on AKS (with system pool tolerations)
+
+.EXAMPLE
+  .\aks-manager.ps1 configure-image-updater
+  # Configures ArgoCD Image Updater
+
+.NOTES
+  SINGLE-SHOT WORKFLOW (after terraform apply):
+    .\aks-manager.ps1 bootstrap-complete
+  
+  This executes the complete setup automatically:
+    1. Connect to AKS
+    2. Install ArgoCD (with system pool tolerations)
+    3. Bootstrap all applications via GitOps
+    4. Setup External Secrets with Workload Identity
+    5. Configure ArgoCD Image Updater
+    6. Wait for all components to be ready
 #>
 
 [CmdletBinding()]
@@ -61,6 +77,78 @@ $script:Colors = @{
     Muted   = "Gray"
 }
 
+# =============================================================================
+# Helper Functions (inspired by scripts_ref/bootstrap.ps1)
+# =============================================================================
+function Write-Step {
+    param([string]$Message)
+    Write-Host ""
+    Write-Host "=== $Message ===" -ForegroundColor $Colors.Info
+}
+
+function Invoke-Retry {
+    param(
+        [int]$Retries = 3,
+        [int]$DelaySeconds = 2,
+        [string]$ErrorMessage = "Operation failed",
+        [ScriptBlock]$Action
+    )
+
+    for ($i = 1; $i -le $Retries; $i++) {
+        try {
+            & $Action
+            if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq $null) {
+                return $true
+            }
+        }
+        catch {
+            if ($i -eq $Retries) { break }
+            Write-Host "⚠️  Attempt $i/$Retries failed, retrying in ${DelaySeconds}s..." -ForegroundColor $Colors.Warning
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+
+    Write-Host "❌ $ErrorMessage" -ForegroundColor $Colors.Error
+    return $false
+}
+
+function Test-ComponentInstalled {
+    param(
+        [string]$Namespace,
+        [string]$Selector
+    )
+    
+    $pods = kubectl get pods -n $Namespace --selector=$Selector --no-headers 2>$null
+    return [bool]$pods -and ($pods | Where-Object { $_ -match "Running" })
+}
+
+function Wait-ForPods {
+    param(
+        [string]$Namespace,
+        [string]$Selector,
+        [string]$Component,
+        [int]$TimeoutSeconds = 120
+    )
+    
+    Write-Host "⏳ Waiting for $Component pods to be ready..." -ForegroundColor $Colors.Info
+    
+    for ($i = 0; $i -lt $TimeoutSeconds; $i += 5) {
+        $pods = kubectl get pods -n $Namespace --selector=$Selector --no-headers 2>$null
+        if ($pods) {
+            $running = $pods | Where-Object { $_ -match "Running" }
+            if ($running) {
+                Write-Host "✅ $Component pods are running" -ForegroundColor $Colors.Success
+                return $true
+            }
+        }
+        Write-Host "   Waiting... ($i/${TimeoutSeconds}s)" -ForegroundColor $Colors.Muted
+        Start-Sleep -Seconds 5
+    }
+    
+    Write-Host "❌ Timeout waiting for $Component" -ForegroundColor $Colors.Error
+    return $false
+}
+
 function Show-Header {
     Write-Host ""
     Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
@@ -77,6 +165,12 @@ function Show-Help {
     Show-Header
 
     Write-Host "📖 AVAILABLE COMMANDS:" -ForegroundColor $Colors.Title
+    Write-Host ""
+
+    Write-Host "  � SINGLE-SHOT SETUP (RECOMMENDED):" -ForegroundColor $Colors.Title
+    Write-Host "    bootstrap-complete  " -NoNewline -ForegroundColor $Colors.Success
+    Write-Host "Complete infrastructure setup in one command" -ForegroundColor $Colors.Muted
+    Write-Host "                        (connect → ArgoCD → bootstrap → ESO → Image Updater)" -ForegroundColor $Colors.Muted
     Write-Host ""
 
     Write-Host "  🔧 CLUSTER CONNECTION:" -ForegroundColor $Colors.Info
@@ -151,6 +245,10 @@ function Show-Help {
     Write-Host ""
 
     Write-Host "📝 EXAMPLES:" -ForegroundColor $Colors.Title
+    Write-Host "  # RECOMMENDED: Single-shot setup after terraform apply" -ForegroundColor $Colors.Success
+    Write-Host "  .\aks-manager.ps1 bootstrap-complete" -ForegroundColor $Colors.Muted
+    Write-Host ""
+    Write-Host "  # Individual commands:" -ForegroundColor $Colors.Info
     Write-Host "  .\aks-manager.ps1 connect" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-nginx  # validate (ArgoCD-managed)" -ForegroundColor $Colors.Muted
     Write-Host "  .\aks-manager.ps1 install-eso    # validate (ArgoCD-managed)" -ForegroundColor $Colors.Muted
@@ -174,7 +272,8 @@ function Show-Status {
         if ($account) {
             Write-Host "   ✅ Logged in as: $($account.user.name)" -ForegroundColor $Colors.Success
             Write-Host "   📁 Subscription: $($account.name)" -ForegroundColor $Colors.Muted
-        } else {
+        }
+        else {
             Write-Host "   ❌ Not logged in" -ForegroundColor $Colors.Error
             Write-Host "   💡 Run: az login" -ForegroundColor $Colors.Warning
             return
@@ -321,18 +420,18 @@ function Update-ServiceAccountClientIds {
     $k8sBasePath = Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) "base"
     $serviceAccounts = @(
         @{
-            Name = "user-api"
-            Path = Join-Path $k8sBasePath "user\service-account.yaml"
+            Name     = "user-api"
+            Path     = Join-Path $k8sBasePath "user\service-account.yaml"
             ClientId = $userApiClientId
         },
         @{
-            Name = "games-api"
-            Path = Join-Path $k8sBasePath "games\service-account.yaml"
+            Name     = "games-api"
+            Path     = Join-Path $k8sBasePath "games\service-account.yaml"
             ClientId = $gamesApiClientId
         },
         @{
-            Name = "payments-api"
-            Path = Join-Path $k8sBasePath "payments\service-account.yaml"
+            Name     = "payments-api"
+            Path     = Join-Path $k8sBasePath "payments\service-account.yaml"
             ClientId = $paymentsApiClientId
         }
     )
@@ -519,7 +618,8 @@ function Show-Menu {
             try {
                 $pods = kubectl get pods -n argocd --no-headers 2>$null | Where-Object { $_ -match "Running" }
                 return @{ argocd = [bool]$pods }
-            } catch {
+            }
+            catch {
                 return @{ argocd = $false }
             }
         }
@@ -529,7 +629,8 @@ function Show-Menu {
             try {
                 $pods = kubectl get pods -n external-secrets --no-headers 2>$null | Where-Object { $_ -match "Running" }
                 return @{ eso = [bool]$pods }
-            } catch {
+            }
+            catch {
                 return @{ eso = $false }
             }
         }
@@ -539,7 +640,8 @@ function Show-Menu {
             try {
                 $pods = kubectl get pods -n ingress-nginx --no-headers 2>$null | Where-Object { $_ -match "Running" }
                 return @{ nginx = [bool]$pods }
-            } catch {
+            }
+            catch {
                 return @{ nginx = $false }
             }
         }
@@ -549,7 +651,8 @@ function Show-Menu {
             try {
                 $app = kubectl get application cloudgames-prod -n argocd --no-headers 2>$null
                 return @{ apps = [bool]$app }
-            } catch {
+            }
+            catch {
                 return @{ apps = $false }
             }
         }
@@ -569,11 +672,12 @@ function Show-Menu {
                     if ($tagsJson) {
                         $item = $tagsJson | Select-Object -First 1
                         $acrTags[$key] = @{
-                            tag = $item.name
+                            tag            = $item.name
                             lastUpdateTime = $item.lastUpdateTime
                         }
                     }
-                } catch {}
+                }
+                catch {}
             }
             return @{ acrTags = $acrTags }
         }
@@ -583,7 +687,8 @@ function Show-Menu {
             try {
                 $ip = kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
                 return @{ nginxIP = $ip }
-            } catch {
+            }
+            catch {
                 return @{ nginxIP = $null }
             }
         }
@@ -593,7 +698,8 @@ function Show-Menu {
             try {
                 $pods = kubectl get pods -n argocd-image-updater --no-headers 2>$null | Where-Object { $_ -match "Running" }
                 return @{ imageUpdater = [bool]$pods }
-            } catch {
+            }
+            catch {
                 return @{ imageUpdater = $false }
             }
         }
@@ -646,6 +752,13 @@ function Show-Menu {
 
         $installed = { param($flag) if ($flag) { '(installed)' } else { '(not installed)' } }
 
+        Write-Host "  ═══════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+        Write-Host "  🚀 RECOMMENDED: SINGLE-SHOT SETUP" -ForegroundColor $Colors.Success
+        Write-Host "  ═══════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+        Write-Host "  [B] 🚀 Bootstrap Complete (Single-Shot Setup)" -ForegroundColor $Colors.Success
+        Write-Host "       (connect → update SA → ArgoCD → bootstrap → ESO → Image Updater)" -ForegroundColor $Colors.Muted
+        Write-Host ""
+        
         Write-Host "  [1] 🔌 Connect to AKS cluster" -ForegroundColor $Colors.Info
         Write-Host "  [2] 📊 Show cluster status" -ForegroundColor $Colors.Info
         Write-Host ""
@@ -683,9 +796,9 @@ function Show-Menu {
         Write-Host "  🐳 BUILD & DEPLOY:" -ForegroundColor $Colors.Title
         Write-Host ""
         # ACR last builds per repo
-        $acrUser    = $statuses.acrTags['user']
-        $acrGames   = $statuses.acrTags['games']
-        $acrPayments= $statuses.acrTags['payments']
+        $acrUser = $statuses.acrTags['user']
+        $acrGames = $statuses.acrTags['games']
+        $acrPayments = $statuses.acrTags['payments']
         Write-Host " [11] 🐳 Build & Push images to ACR" -ForegroundColor $Colors.Info
         if ($acrUser -or $acrGames -or $acrPayments) {
             Write-Host ""
@@ -734,6 +847,9 @@ function Show-Menu {
         $choice = Read-Host "Choose an option"
 
         switch ($choice) {
+            { $_ -in "B", "b", "bootstrap", "bootstrap-complete" } { 
+                Invoke-Command "bootstrap-complete" 
+            }
             "1" { Invoke-Command "connect" }
             "2" { Invoke-Command "status" }
             "3" { Invoke-Command "install-nginx" }
@@ -799,6 +915,164 @@ function Invoke-Command($cmd, $arg1 = "") {
                 kubectl cluster-info
             }
         }
+        "bootstrap-complete" {
+            Write-Host ""
+            Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Success
+            Write-Host "║       SINGLE-SHOT COMPLETE AKS BOOTSTRAP                  ║" -ForegroundColor $Colors.Success
+            Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Success
+            Write-Host ""
+            Write-Host "This will execute the complete setup automatically:" -ForegroundColor $Colors.Info
+            Write-Host "  1. Connect to AKS cluster" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Update ServiceAccount client IDs from Terraform" -ForegroundColor $Colors.Muted
+            Write-Host "  3. Install ArgoCD (with system pool tolerations)" -ForegroundColor $Colors.Muted
+            Write-Host "  4. Bootstrap ArgoCD applications (GitOps)" -ForegroundColor $Colors.Muted
+            Write-Host "  5. Setup External Secrets with Workload Identity" -ForegroundColor $Colors.Muted
+            Write-Host "  6. Configure ArgoCD Image Updater" -ForegroundColor $Colors.Muted
+            Write-Host "  7. Validate webhooks and sync applications" -ForegroundColor $Colors.Muted
+            Write-Host "  8. Wait for all components to be ready" -ForegroundColor $Colors.Muted
+            Write-Host ""
+            Write-Host "⚡ This setup is IDEMPOTENT - safe to run multiple times" -ForegroundColor $Colors.Warning
+            Write-Host ""
+            
+            $continue = Read-Host "Continue with bootstrap? [Y/n]"
+            if ($continue.ToLower() -eq 'n') {
+                Write-Host "❌ Bootstrap cancelled" -ForegroundColor $Colors.Warning
+                return
+            }
+            
+            Write-Host ""
+            Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Title
+            
+            # Step 1: Connect
+            Write-Step "Step 1/8: Connecting to AKS cluster"
+            Invoke-Command "connect"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "❌ Failed to connect to AKS" -ForegroundColor $Colors.Error
+                return
+            }
+            Write-Host "✅ Step 1 completed" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
+            
+            # Step 2: Update ServiceAccount client IDs
+            Write-Step "Step 2/8: Updating ServiceAccount client IDs from Terraform"
+            Update-ServiceAccountClientIds
+            Write-Host "✅ Step 2 completed" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
+            
+            # Step 3: Install ArgoCD (checks if exists first)
+            Write-Step "Step 3/8: Installing ArgoCD"
+            $argocdExists = Test-ComponentInstalled -Namespace "argocd" -Selector "app.kubernetes.io/name=argocd-server"
+            if ($argocdExists) {
+                Write-Host "⭕ ArgoCD already installed, skipping..." -ForegroundColor $Colors.Success
+            }
+            else {
+                Invoke-Command "install-argocd"
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "❌ Failed to install ArgoCD" -ForegroundColor $Colors.Error
+                    return
+                }
+                # Wait for ArgoCD to be ready
+                $ready = Wait-ForPods -Namespace "argocd" -Selector "app.kubernetes.io/name=argocd-server" -Component "ArgoCD" -TimeoutSeconds 180
+                if (-not $ready) {
+                    Write-Host "⚠️  ArgoCD pods not ready, but continuing..." -ForegroundColor $Colors.Warning
+                }
+            }
+            Write-Host "✅ Step 3 completed" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
+            
+            # Step 4: Bootstrap applications
+            Write-Step "Step 4/8: Bootstrapping ArgoCD applications"
+            Invoke-Command "bootstrap"
+            Write-Host "✅ Step 4 completed" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 5
+            
+            # Step 5: Setup ESO with Workload Identity
+            Write-Step "Step 5/8: Setting up External Secrets with Workload Identity"
+            Invoke-Command "setup-eso-wi"
+            Write-Host "✅ Step 5 completed" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
+            
+            # Step 6: Configure Image Updater
+            Write-Step "Step 6/8: Configuring ArgoCD Image Updater"
+            Write-Host "Using Workload Identity for ACR authentication..." -ForegroundColor $Colors.Muted
+            $scriptArgs = @{
+                ResourceGroup       = $Config.ResourceGroup
+                ClusterName         = $Config.ClusterName
+                AcrName             = $Config.ACRName
+                UseWorkloadIdentity = $true
+            }
+            $imageUpdaterScript = Join-Path $scriptPath "configure-image-updater.ps1"
+            if (Test-Path $imageUpdaterScript) {
+                & $imageUpdaterScript @scriptArgs
+                Write-Host "✅ Step 6 completed" -ForegroundColor $Colors.Success
+            }
+            else {
+                Write-Host "⚠️  configure-image-updater.ps1 not found, skipping..." -ForegroundColor $Colors.Warning
+            }
+            Start-Sleep -Seconds 2
+            
+            # Step 7: Validate webhooks and sync
+            Write-Step "Step 7/8: Validating webhooks and syncing applications"
+            Write-Host "🔍 Checking webhook health..." -ForegroundColor $Colors.Info
+            & "$scriptPath\fix-webhooks.ps1"
+            Write-Host ""
+            Write-Host "🔄 Ensuring all ArgoCD applications are synced..." -ForegroundColor $Colors.Info
+            & "$scriptPath\fix-argocd-sync.ps1"
+            Write-Host "✅ Step 7 completed" -ForegroundColor $Colors.Success
+            Start-Sleep -Seconds 2
+            
+            # Step 8: Wait for all components
+            Write-Step "Step 8/8: Waiting for all components to be ready"
+            $waitScript = Join-Path $scriptPath "wait-for-components.ps1"
+            if (Test-Path $waitScript) {
+                & $waitScript -TimeoutSeconds 300
+                Write-Host "✅ Step 8 completed" -ForegroundColor $Colors.Success
+            }
+            else {
+                Write-Host "⚠️  wait-for-components.ps1 not found, skipping..." -ForegroundColor $Colors.Warning
+            }
+            
+            Write-Host ""
+            Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Success
+            Write-Host "║          ✅ BOOTSTRAP COMPLETE!                            ║" -ForegroundColor $Colors.Success
+            Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Success
+            Write-Host ""
+            Write-Host "📊 Quick Status Check:" -ForegroundColor $Colors.Info
+            Write-Host ""
+            
+            # Show ArgoCD URL
+            $argocdIP = kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
+            if ($argocdIP) {
+                Write-Host "🔗 ArgoCD UI:" -ForegroundColor $Colors.Title
+                Write-Host "   URL:      http://$argocdIP" -ForegroundColor $Colors.Success
+                Write-Host "   Username: admin" -ForegroundColor $Colors.Muted
+                Write-Host "   Password: Argo@AKS123! (or run: .\aks-manager.ps1 reset-argocd-password)" -ForegroundColor $Colors.Muted
+                Write-Host ""
+            }
+            
+            # Show component status
+            Write-Host "📦 Components Status:" -ForegroundColor $Colors.Title
+            $components = @(
+                @{ Name = "ArgoCD"; NS = "argocd"; Selector = "app.kubernetes.io/name=argocd-server" },
+                @{ Name = "NGINX Ingress"; NS = "ingress-nginx"; Selector = "app.kubernetes.io/name=ingress-nginx" },
+                @{ Name = "External Secrets"; NS = "external-secrets"; Selector = "app.kubernetes.io/name=external-secrets" },
+                @{ Name = "Image Updater"; NS = "argocd-image-updater"; Selector = "app.kubernetes.io/name=argocd-image-updater" }
+            )
+            foreach ($comp in $components) {
+                $installed = Test-ComponentInstalled -Namespace $comp.NS -Selector $comp.Selector
+                $status = if ($installed) { "✅ Running" } else { "⭕ Not installed" }
+                $color = if ($installed) { $Colors.Success } else { $Colors.Warning }
+                Write-Host "   $($comp.Name): $status" -ForegroundColor $color
+            }
+            Write-Host ""
+            
+            Write-Host "📋 Next Steps:" -ForegroundColor $Colors.Title
+            Write-Host "  1. Access ArgoCD UI and check application sync status" -ForegroundColor $Colors.Muted
+            Write-Host "  2. Build and push images: .\aks-manager.ps1 build-push all" -ForegroundColor $Colors.Muted
+            Write-Host "  3. Monitor applications: kubectl get applications -n argocd" -ForegroundColor $Colors.Muted
+            Write-Host "  4. Check cluster status: .\aks-manager.ps1 status" -ForegroundColor $Colors.Muted
+            Write-Host ""
+        }
         "status" {
             Show-Status
         }
@@ -807,7 +1081,8 @@ function Invoke-Command($cmd, $arg1 = "") {
             $script = Join-Path $scriptPath "install-argocd-aks.ps1"
             if (Test-Path $script) {
                 & $script -ResourceGroup $Config.ResourceGroup -ClusterName $Config.ClusterName -Namespace "argocd"
-            } else {
+            }
+            else {
                 Write-Host "❌ Script not found: install-argocd-aks.ps1" -ForegroundColor $Colors.Error
             }
         }
@@ -826,7 +1101,7 @@ function Invoke-Command($cmd, $arg1 = "") {
             
             $installArgs = @{
                 ResourceGroup = $Config.ResourceGroup
-                ClusterName = $Config.ClusterName
+                ClusterName   = $Config.ClusterName
             }
             
             & "$scriptPath\install-external-secrets.ps1" @installArgs
@@ -859,8 +1134,8 @@ function Invoke-Command($cmd, $arg1 = "") {
 
             $scriptArgs = @{
                 ResourceGroup = $Config.ResourceGroup
-                ClusterName = $Config.ClusterName
-                AcrName = $Config.ACRName
+                ClusterName   = $Config.ClusterName
+                AcrName       = $Config.ACRName
             }
 
             if ($useWI) {
@@ -1005,7 +1280,8 @@ function Invoke-Command($cmd, $arg1 = "") {
             Invoke-Command "setup-eso-wi"
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "`n⚠️  Warning: ESO setup had issues (non-critical)" -ForegroundColor $Colors.Warning
-            } else {
+            }
+            else {
                 Write-Host "✅ Step 4 completed`n" -ForegroundColor $Colors.Success
             }
             Start-Sleep -Seconds 2
@@ -1017,7 +1293,8 @@ function Invoke-Command($cmd, $arg1 = "") {
             Invoke-Command "configure-image-updater"
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "`n⚠️  Warning: Image Updater setup had issues (non-critical)" -ForegroundColor $Colors.Warning
-            } else {
+            }
+            else {
                 Write-Host "✅ Step 5 completed`n" -ForegroundColor $Colors.Success
             }
             
@@ -1235,7 +1512,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 try {
                     kubectl delete validatingwebhookconfiguration $webhook --ignore-not-found 2>$null
                     kubectl delete mutatingwebhookconfiguration $webhook --ignore-not-found 2>$null
-                } catch {
+                }
+                catch {
                     # Continue
                 }
             }
@@ -1250,11 +1528,13 @@ function Invoke-Command($cmd, $arg1 = "") {
                     if ($namespace) {
                         timeout /t $timeout /nobreak > $null 2>&1 &
                         kubectl delete $resource $name -n $namespace --wait=false --ignore-not-found 2>$null
-                    } else {
+                    }
+                    else {
                         kubectl delete $resource $name --wait=false --ignore-not-found 2>$null
                     }
                     return $true
-                } catch {
+                }
+                catch {
                     return $false
                 }
             }
@@ -1269,10 +1549,12 @@ function Invoke-Command($cmd, $arg1 = "") {
                         kubectl delete application $app -n argocd --wait=false 2>$null
                     }
                     Write-Host "   ✅ ArgoCD Applications deleted" -ForegroundColor $Colors.Success
-                } else {
+                }
+                else {
                     Write-Host "   ⭕ No ArgoCD Applications found" -ForegroundColor $Colors.Muted
                 }
-            } catch {
+            }
+            catch {
                 Write-Host "   ⚠️  Error deleting applications (continuing)" -ForegroundColor $Colors.Warning
             }
             Write-Host ""
@@ -1293,7 +1575,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 kubectl delete imageupdaters --all --all-namespaces --wait=false --ignore-not-found 2>$null
                 
                 Write-Host "   ✅ CRD instances deleted" -ForegroundColor $Colors.Success
-            } catch {
+            }
+            catch {
                 Write-Host "   ⚠️  Error deleting CRD instances (continuing)" -ForegroundColor $Colors.Warning
             }
             Write-Host ""
@@ -1324,7 +1607,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 }
                 
                 Write-Host "   ✅ ClusterRoles/ClusterRoleBindings deleted" -ForegroundColor $Colors.Success
-            } catch {
+            }
+            catch {
                 Write-Host "   ⚠️  Error deleting cluster roles (continuing)" -ForegroundColor $Colors.Warning
             }
             Write-Host ""
@@ -1347,7 +1631,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                     }
                 }
                 Write-Host "   ✅ ServiceAccounts deleted" -ForegroundColor $Colors.Success
-            } catch {
+            }
+            catch {
                 Write-Host "   ⚠️  Error deleting service accounts (continuing)" -ForegroundColor $Colors.Warning
             }
             Write-Host ""
@@ -1369,7 +1654,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 if ($nsExists) {
                     kubectl delete namespace $ns --wait=false 2>$null
                     Write-Host "      ⏳ Deletion initiated" -ForegroundColor $Colors.Muted
-                } else {
+                }
+                else {
                     Write-Host "      ⭕ Already absent" -ForegroundColor $Colors.Muted
                 }
             }
@@ -1411,7 +1697,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                         kubectl delete crd $crd --ignore-not-found --wait=false 2>$null
                         Write-Host "   ✅ CRD: $crd" -ForegroundColor $Colors.Success
                     }
-                } catch {
+                }
+                catch {
                     # Continue on error
                 }
             }
@@ -1430,10 +1717,12 @@ function Invoke-Command($cmd, $arg1 = "") {
                             Write-Host "      • $($parts[0]) in $($parts[1])" -ForegroundColor $Colors.Muted
                         }
                     }
-                } else {
+                }
+                else {
                     Write-Host "   ✅ No Helm releases found" -ForegroundColor $Colors.Success
                 }
-            } catch {
+            }
+            catch {
                 Write-Host "   ⚠️  Error checking Helm (continuing)" -ForegroundColor $Colors.Warning
             }
             Write-Host ""
@@ -1453,10 +1742,12 @@ function Invoke-Command($cmd, $arg1 = "") {
                 
                 if ($nsName -in $systemNs) {
                     Write-Host "      ✓ $nsName (system)" -ForegroundColor $Colors.Success
-                } elseif ($nsStatus -eq "Terminating") {
+                }
+                elseif ($nsStatus -eq "Terminating") {
                     Write-Host "      ⚠️  $nsName (Terminating)" -ForegroundColor $Colors.Warning
                     $hasIssues = $true
-                } else {
+                }
+                else {
                     Write-Host "      ! $nsName" -ForegroundColor $Colors.Warning
                     $hasIssues = $true
                 }
@@ -1471,7 +1762,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 Write-Host "Some resources may need manual cleanup:" -ForegroundColor $Colors.Warning
                 Write-Host "  • Use: .\force-delete-namespace.ps1 <namespace>" -ForegroundColor $Colors.Muted
                 Write-Host "  • Or delete via Azure Portal" -ForegroundColor $Colors.Muted
-            } else {
+            }
+            else {
                 Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
                 Write-Host "✅ Cluster reset complete!" -ForegroundColor $Colors.Success
                 Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor $Colors.Success
@@ -1534,7 +1826,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 
                 $chartName = if ($chartMap.ContainsKey($chartInput)) {
                     $chartMap[$chartInput]
-                } else {
+                }
+                else {
                     $chartInput
                 }
                 
@@ -1581,7 +1874,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 else {
                     Write-Host "❌ Script not found: force-delete-namespace.ps1" -ForegroundColor $Colors.Error
                 }
-            } else {
+            }
+            else {
                 Write-Host "`n📋 Checking for terminating namespaces..." -ForegroundColor $Colors.Info
                 $script = Join-Path $scriptPath "force-delete-namespace.ps1"
                 if (Test-Path $script) {
@@ -1617,8 +1911,8 @@ function Invoke-Command($cmd, $arg1 = "") {
                 
                 if ($syncStatus -ne "Synced" -or $healthStatus -notin @("Healthy", "Progressing")) {
                     $degradedApps += @{
-                        Name = $name
-                        Sync = $syncStatus
+                        Name   = $name
+                        Sync   = $syncStatus
                         Health = $healthStatus
                     }
                     Write-Host "[ISSUE] $name - Sync: $syncStatus, Health: $healthStatus" -ForegroundColor $Colors.Warning

@@ -19,6 +19,9 @@ games/
 payments/
 common/
 
+# Reference scripts from other projects (k3d local cluster)
+infrastructure/kubernetes/scripts/scripts_ref/
+
 # =============================================================================
 # DEVELOPMENT ENVIRONMENT
 # =============================================================================
@@ -226,5 +229,11 @@ site/
 !.gitignore
 !scripts/
 !docs/
-#! Whitelist Kubernetes infrastructure manifests and folders
-!infrastructure/kubernetes/**
+# Whitelist Kubernetes infrastructure manifests and folders (except scripts_ref)
+!infrastructure/kubernetes/
+!infrastructure/kubernetes/base/
+!infrastructure/kubernetes/manifests/
+!infrastructure/kubernetes/overlays/
+!infrastructure/kubernetes/scripts/
+!infrastructure/kubernetes/scripts/dev/
+!infrastructure/kubernetes/scripts/prod/

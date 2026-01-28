@@ -126,7 +126,8 @@ if ($argoCdExe) {
             
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "✅ Password updated via argocd CLI" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host "⚠️  Could not update password via CLI, trying manual method..." -ForegroundColor Yellow
             }
         }
@@ -176,7 +177,8 @@ if ($hash -and $hash.StartsWith('$2')) {
     kubectl rollout status deployment argocd-server -n $Namespace --timeout=60s 2>$null | Out-Null
     
     Write-Host "✅ Password set and server restarted" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⚠️  Could not generate bcrypt hash" -ForegroundColor Yellow
     Write-Host "⚠️  Use initial admin password from secret: kubectl get secret argocd-initial-admin-secret -n $Namespace" -ForegroundColor Yellow
 }
@@ -187,6 +189,36 @@ if ($hash -and $hash.StartsWith('$2')) {
 Write-Host "Configuring LoadBalancer service..." -ForegroundColor Yellow
 kubectl patch svc argocd-server -n $Namespace -p '{"spec": {"type": "LoadBalancer"}}' 2>$null
 Write-Host "✅ Service configured" -ForegroundColor Green
+
+# =============================================================================
+# Apply System Pod Tolerations (Node Pool Separation)
+# =============================================================================
+Write-Host "Configuring ArgoCD for system node pool..." -ForegroundColor Yellow
+
+$tolerationsPath = Join-Path $PSScriptRoot "..\..\base\system-pod-tolerations.yaml"
+if (Test-Path $tolerationsPath) {
+    Write-Host "  Applying system-pod-tolerations.yaml..." -ForegroundColor Gray
+    kubectl apply -f $tolerationsPath 2>$null | Out-Null
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✅ System tolerations applied" -ForegroundColor Green
+        
+        # Restart ArgoCD to pick up tolerations and migrate to system pool
+        Write-Host "  Restarting ArgoCD components..." -ForegroundColor Gray
+        kubectl rollout restart deployment/argocd-server -n $Namespace 2>$null | Out-Null
+        kubectl rollout restart deployment/argocd-repo-server -n $Namespace 2>$null | Out-Null
+        kubectl rollout restart statefulset/argocd-application-controller -n $Namespace 2>$null | Out-Null
+        
+        kubectl rollout status deployment/argocd-server -n $Namespace --timeout=60s 2>$null | Out-Null
+        Write-Host "  ✅ ArgoCD configured for system pool" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  ⚠️  Could not apply tolerations (may not be needed for single pool setup)" -ForegroundColor Yellow
+    }
+}
+else {
+    Write-Host "  ⚠️  system-pod-tolerations.yaml not found (skipping node pool config)" -ForegroundColor Yellow
+}
 
 # =============================================================================
 # Get access info
@@ -210,7 +242,8 @@ if ($ip) {
     Write-Host "🌐 URL      : http://$ip" -ForegroundColor Cyan
     Write-Host "👤 Username : admin" -ForegroundColor White
     Write-Host "🔐 Password : $AdminPassword" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⏳ IP pending..." -ForegroundColor Yellow
     Write-Host "Username: admin | Password: $AdminPassword" -ForegroundColor Gray
 }
