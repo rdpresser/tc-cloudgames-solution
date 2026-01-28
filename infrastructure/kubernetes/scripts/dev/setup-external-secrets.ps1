@@ -35,7 +35,7 @@ param(
 # === Configuration ===
 $tenantId = "084169c0-a779-43c3-970c-487a71a93f88"
 $clientId = "44193307-5366-4806-860d-5656aa54c9e3"
-$keyVaultName = "tccloudgamesdevcr8nkv"
+$keyVaultName = "tccloudgamesdevhvsbkv"
 $namespace = "external-secrets"
 $secretName = "azure-sp-credentials"
 $appNamespace = "cloudgames-dev"

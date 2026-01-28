@@ -18,15 +18,15 @@ spec:
     # Target all applications matching cloudgames-*
     images:
     - alias: games-api
-      imageName: tccloudgamesdevcr8nacr.azurecr.io/games-api:latest
+      imageName: tccloudgamesdevhvsbacr.azurecr.io/games-api:latest
       commonUpdateSettings:
         updateStrategy: newest-build
       # Don't specify manifestTargets - let ArgoCD auto-detect via image name
     - alias: users-api
-      imageName: tccloudgamesdevcr8nacr.azurecr.io/users-api:latest
+      imageName: tccloudgamesdevhvsbacr.azurecr.io/users-api:latest
       commonUpdateSettings:
         updateStrategy: newest-build
     - alias: payments-api
-      imageName: tccloudgamesdevcr8nacr.azurecr.io/payms-api:latest
+      imageName: tccloudgamesdevhvsbacr.azurecr.io/payms-api:latest
       commonUpdateSettings:
         updateStrategy: newest-build

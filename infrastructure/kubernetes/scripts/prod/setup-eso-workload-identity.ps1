@@ -27,7 +27,7 @@
   Skip confirmation prompts.
 
 .EXAMPLE
-  .\setup-eso-workload-identity.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-hvsb-aks" -KeyVaultName "tccloudgamesdevcr8nkv"
+  .\setup-eso-workload-identity.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" -ClusterName "tc-cloudgames-dev-hvsb-aks" -KeyVaultName "tccloudgamesdevhvsbkv"
 #>
 
 [CmdletBinding()]
@@ -39,7 +39,7 @@ param(
     [string]$ClusterName = "tc-cloudgames-dev-hvsb-aks",
 
     [Parameter(Mandatory = $false)]
-    [string]$KeyVaultName = "tccloudgamesdevcr8nkv",
+    [string]$KeyVaultName = "tccloudgamesdevhvsbkv",
 
     [Parameter(Mandatory = $false)]
     [string]$IdentityName,

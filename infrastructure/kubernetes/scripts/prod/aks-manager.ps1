@@ -65,8 +65,8 @@ $script:DefaultClusterName = "tc-cloudgames-dev-hvsb-aks"
 $script:Config = @{
     ResourceGroup = "tc-cloudgames-solution-dev-rg"
     ClusterName   = $null
-    KeyVaultName  = "tccloudgamesdevcr8nkv"
-    ACRName       = "tccloudgamesdevcr8nacr"
+    KeyVaultName  = "tccloudgamesdevhvsbkv"
+    ACRName       = "tccloudgamesdevhvsbacr"
 }
 
 # Colors and formatting

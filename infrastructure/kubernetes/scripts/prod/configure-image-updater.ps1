@@ -18,7 +18,7 @@ Azure Resource Group (e.g., tc-cloudgames-solution-dev-rg)
 AKS cluster name (e.g., tc-cloudgames-dev-hvsb-aks)
 
 .PARAMETER AcrName
-ACR name without suffix (e.g., tccloudgamesdevcr8nacr)
+ACR name without suffix (e.g., tccloudgamesdevhvsbacr)
 
 .PARAMETER AcrPassword
 ACR password. If not provided, tries to fetch via Azure CLI
@@ -36,20 +36,20 @@ If $true, does NOT update Applications with annotations (uses CRD only)
 # Full install with secret-based auth
 .\configure-image-updater.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" `
   -ClusterName "tc-cloudgames-dev-hvsb-aks" `
-  -AcrName "tccloudgamesdevcr8nacr"
+  -AcrName "tccloudgamesdevhvsbacr"
 
 .EXAMPLE
 # Install with Workload Identity (more secure)
 .\configure-image-updater.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" `
   -ClusterName "tc-cloudgames-dev-hvsb-aks" `
-  -AcrName "tccloudgamesdevcr8nacr" `
+  -AcrName "tccloudgamesdevhvsbacr" `
   -UseWorkloadIdentity
 
 .EXAMPLE
 # Force reinstall
 .\configure-image-updater.ps1 -ResourceGroup "tc-cloudgames-solution-dev-rg" `
   -ClusterName "tc-cloudgames-dev-hvsb-aks" `
-  -AcrName "tccloudgamesdevcr8nacr" `
+  -AcrName "tccloudgamesdevhvsbacr" `
   -Force
 
 .NOTES
@@ -66,7 +66,7 @@ param(
     [string]$ClusterName = "tc-cloudgames-dev-hvsb-aks",
 
     [Parameter(Mandatory = $false)]
-    [string]$AcrName = "tccloudgamesdevcr8nacr",
+    [string]$AcrName = "tccloudgamesdevhvsbacr",
 
     [string]$AcrPassword,
 

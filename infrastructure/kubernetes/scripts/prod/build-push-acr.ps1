@@ -14,7 +14,7 @@
   Image tag to use. Default: dev
 
 .PARAMETER AcrName
-  Azure Container Registry name. Default: tccloudgamesdevcr8nacr
+  Azure Container Registry name. Default: tccloudgamesdevhvsbacr
 
 .PARAMETER SkipPush
   Build only, skip push to ACR.
@@ -45,7 +45,7 @@ param(
     [string]$Tag = "dev",
 
     [Parameter()]
-    [string]$AcrName = "tccloudgamesdevcr8nacr",
+    [string]$AcrName = "tccloudgamesdevhvsbacr",
 
     [Parameter()]
     [switch]$SkipPush,

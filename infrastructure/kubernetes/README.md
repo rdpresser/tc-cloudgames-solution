@@ -231,7 +231,7 @@ spec:
   provider:
     azurekv:
       authType: WorkloadIdentity # No credentials!
-      vaultUrl: https://tccloudgamesdevcr8nkv.vault.azure.net
+      vaultUrl: https://tccloudgamesdevhvsbkv.vault.azure.net
 
 ---
 # 2. ExternalSecret (base/user/external-secret.yaml)

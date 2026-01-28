@@ -13,7 +13,7 @@ spec:
       - name: argocd-image-updater-controller
         env:
         - name: ACR_NAME
-          value: "tccloudgamesdevcr8nacr.azurecr.io"
+          value: "tccloudgamesdevhvsbacr.azurecr.io"
         - name: AZURE_TENANT_ID
           value: "084169c0-a779-43c3-970c-487a71a93f88"
         volumeMounts:

@@ -9,8 +9,8 @@ data:
   registries.conf: |
     registries:
       - name: ACR Dev
-        prefix: tccloudgamesdevcr8nacr.azurecr.io
-        api_url: https://tccloudgamesdevcr8nacr.azurecr.io
+        prefix: tccloudgamesdevhvsbacr.azurecr.io
+        api_url: https://tccloudgamesdevhvsbacr.azurecr.io
         ping: true
         insecure: false
         credentials: ext:/app/auth/auth.sh

@@ -378,7 +378,7 @@ spec:
     spec:
       containers:
         - name: users-api
-          image: tccloudgamesdevcr8nacr.azurecr.io/users-api:latest
+          image: tccloudgamesdevhvsbacr.azurecr.io/users-api:latest
           ports:
             - containerPort: 8080
 ```
@@ -409,7 +409,7 @@ spec:
     spec:
       containers:
         - name: games-api
-          image: tccloudgamesdevcr8nacr.azurecr.io/games-api:latest
+          image: tccloudgamesdevhvsbacr.azurecr.io/games-api:latest
           ports:
             - containerPort: 8080
               name: http

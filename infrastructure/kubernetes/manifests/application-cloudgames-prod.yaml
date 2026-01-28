@@ -21,7 +21,7 @@ metadata:
   annotations:
     # ArgoCD Image Updater Configuration
     # Monitora 3 images ACR usando digest tracking para tag 'latest'
-    argocd-image-updater.argoproj.io/image-list: "games=tccloudgamesdevcr8nacr.azurecr.io/games-api:latest,users=tccloudgamesdevcr8nacr.azurecr.io/users-api:latest,payments=tccloudgamesdevcr8nacr.azurecr.io/payms-api:latest"
+    argocd-image-updater.argoproj.io/image-list: "games=tccloudgamesdevhvsbacr.azurecr.io/games-api:latest,users=tccloudgamesdevhvsbacr.azurecr.io/users-api:latest,payments=tccloudgamesdevhvsbacr.azurecr.io/payms-api:latest"
     argocd-image-updater.argoproj.io/games.update-strategy: "digest"
     argocd-image-updater.argoproj.io/games.force-update: "true"
     argocd-image-updater.argoproj.io/users.update-strategy: "digest"
