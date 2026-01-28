@@ -26,7 +26,7 @@ locals {
   project_name = var.project_name
   name_prefix  = "${local.project_name}-${local.environment}"
   full_name    = "${local.name_prefix}-${random_string.unique_suffix.result}"
-  enable_aks   = false
+  enable_aks   = true
 
   kv_name = "tccloudgames${local.environment}kv${random_string.unique_suffix.result}"
 
