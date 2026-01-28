@@ -20,9 +20,30 @@ spec:
         fsGroup: 65534  # Allows reading projected tokens
       serviceAccountName: games-api-sa
       terminationGracePeriodSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: workload
+                operator: In
+                values:
+                - application
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+        effect: NoSchedule
+      - key: node.kubernetes.io/not-ready
+        operator: Exists
+        effect: NoExecute
+        tolerationSeconds: 300
+      - key: node.kubernetes.io/unreachable
+        operator: Exists
+        effect: NoExecute
+        tolerationSeconds: 300
       containers:
         - name: games-api
-          image: localhost:5000/games-api:latest
+          image: tccloudgamesdevhvsbacr.azurecr.io/games-api:latest
           ports:
             - containerPort: 8080
           securityContext:
