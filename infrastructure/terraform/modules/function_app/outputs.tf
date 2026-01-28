@@ -70,10 +70,10 @@ output "application_insights_connection_string" {
 # RBAC Role Assignment IDs
 output "role_assignment_kv_secrets_user_id" {
   description = "The ID of the Key Vault Secrets User role assignment"
-  value       = var.key_vault_id != null ? azurerm_role_assignment.function_app_kv_secrets_user.id : null
+  value       = azurerm_role_assignment.function_app_kv_secrets_user.id
 }
 
 output "role_assignment_servicebus_data_owner_id" {
   description = "The ID of the Service Bus Data Owner role assignment"
-  value       = var.servicebus_namespace_id != null ? azurerm_role_assignment.function_app_servicebus_data_owner[0].id : null
+  value       = azurerm_role_assignment.function_app_servicebus_data_owner.id
 }
