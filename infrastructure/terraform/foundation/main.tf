@@ -26,6 +26,7 @@ locals {
   project_name = var.project_name
   name_prefix  = "${local.project_name}-${local.environment}"
   full_name    = "${local.name_prefix}-${random_string.unique_suffix.result}"
+  enable_aks   = false
 
   kv_name = "tccloudgames${local.environment}kv${random_string.unique_suffix.result}"
 
@@ -125,6 +126,7 @@ module "vnet" {
 # AKS Cluster Module
 # =============================================================================
 module "aks" {
+  count               = local.enable_aks ? 1 : 0
   source              = "../modules/aks_cluster"
   name_prefix         = local.full_name
   location            = module.resource_group.location
@@ -175,7 +177,8 @@ module "aks" {
 # ACR Pull Permission for AKS
 # =============================================================================
 resource "azurerm_role_assignment" "aks_acr_pull" {
-  principal_id         = module.aks.kubelet_identity.object_id
+  count                = local.enable_aks ? 1 : 0
+  principal_id         = module.aks[0].kubelet_identity.object_id
   role_definition_name = "AcrPull"
   scope                = module.acr.acr_id
 
@@ -257,33 +260,36 @@ resource "azurerm_user_assigned_identity" "payments_api" {
 # Links Azure AD managed identities to Kubernetes ServiceAccounts via OIDC
 # This enables pods to authenticate to Azure services without secrets
 resource "azurerm_federated_identity_credential" "user_api" {
+  count               = local.enable_aks ? 1 : 0
   name                = "${local.full_name}-user-api-fic"
   resource_group_name = module.resource_group.name
   parent_id           = azurerm_user_assigned_identity.user_api.id
   audience            = ["api://AzureADTokenExchange"]
-  issuer              = module.aks.oidc_issuer_url
+  issuer              = module.aks[0].oidc_issuer_url
   subject             = "system:serviceaccount:cloudgames:user-api-sa"
 
   depends_on = [azurerm_user_assigned_identity.user_api]
 }
 
 resource "azurerm_federated_identity_credential" "games_api" {
+  count               = local.enable_aks ? 1 : 0
   name                = "${local.full_name}-games-api-fic"
   resource_group_name = module.resource_group.name
   parent_id           = azurerm_user_assigned_identity.games_api.id
   audience            = ["api://AzureADTokenExchange"]
-  issuer              = module.aks.oidc_issuer_url
+  issuer              = module.aks[0].oidc_issuer_url
   subject             = "system:serviceaccount:cloudgames:games-api-sa"
 
   depends_on = [azurerm_user_assigned_identity.games_api]
 }
 
 resource "azurerm_federated_identity_credential" "payments_api" {
+  count               = local.enable_aks ? 1 : 0
   name                = "${local.full_name}-payments-api-fic"
   resource_group_name = module.resource_group.name
   parent_id           = azurerm_user_assigned_identity.payments_api.id
   audience            = ["api://AzureADTokenExchange"]
-  issuer              = module.aks.oidc_issuer_url
+  issuer              = module.aks[0].oidc_issuer_url
   subject             = "system:serviceaccount:cloudgames:payments-api-sa"
 
   depends_on = [azurerm_user_assigned_identity.payments_api]

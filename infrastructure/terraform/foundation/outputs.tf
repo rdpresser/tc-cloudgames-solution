@@ -221,7 +221,7 @@ output "all_resources" {
     servicebus_topics  = module.servicebus.topic_names
     function_app       = module.function_app.function_app_name
     key_vault          = module.key_vault.key_vault_name
-    aks_cluster        = module.aks.cluster_name
+    aks_cluster        = try(module.aks[0].cluster_name, null)
     vnet_name          = module.vnet.vnet_name
     location           = module.resource_group.location
   }
@@ -241,8 +241,8 @@ output "connection_info" {
     redis_port           = module.redis.redis_ssl_port
     servicebus_namespace = module.servicebus.namespace_name
     servicebus_topics    = module.servicebus.topic_names
-    aks_cluster          = module.aks.cluster_name
-    aks_fqdn             = module.aks.cluster_fqdn
+    aks_cluster          = try(module.aks[0].cluster_name, null)
+    aks_fqdn             = try(module.aks[0].cluster_fqdn, null)
   }
 }
 
@@ -322,28 +322,28 @@ output "vnet_info" {
 output "aks_info" {
   description = "Azure Kubernetes Service (AKS) cluster details"
   value = {
-    id                  = module.aks.cluster_id
-    name                = module.aks.cluster_name
-    fqdn                = module.aks.cluster_fqdn
-    kubernetes_version  = module.aks.kubernetes_version
-    node_resource_group = module.aks.node_resource_group
-    oidc_issuer_url     = module.aks.oidc_issuer_url
+    id                  = try(module.aks[0].cluster_id, null)
+    name                = try(module.aks[0].cluster_name, null)
+    fqdn                = try(module.aks[0].cluster_fqdn, null)
+    kubernetes_version  = try(module.aks[0].kubernetes_version, null)
+    node_resource_group = try(module.aks[0].node_resource_group, null)
+    oidc_issuer_url     = try(module.aks[0].oidc_issuer_url, null)
     kubelet_identity = {
-      client_id = module.aks.kubelet_identity.client_id
-      object_id = module.aks.kubelet_identity.object_id
+      client_id = try(module.aks[0].kubelet_identity.client_id, null)
+      object_id = try(module.aks[0].kubelet_identity.object_id, null)
     }
   }
 }
 
 output "aks_kube_config_raw" {
   description = "Raw kubeconfig for kubectl (use: az aks get-credentials instead)"
-  value       = module.aks.kube_config_raw
+  value       = try(module.aks[0].kube_config_raw, null)
   sensitive   = true
 }
 
 output "aks_get_credentials_command" {
   description = "Command to configure kubectl with AKS credentials"
-  value       = "az aks get-credentials --resource-group ${module.resource_group.name} --name ${module.aks.cluster_name}"
+  value       = try("az aks get-credentials --resource-group ${module.resource_group.name} --name ${module.aks[0].cluster_name}", null)
 }
 
 # ArgoCD installed via: aks-manager.ps1 install-argocd
