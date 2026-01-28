@@ -60,9 +60,11 @@ param(
 # =============================================================================
 # Configuration
 # =============================================================================
+$script:DefaultClusterName = "tc-cloudgames-dev-cr8n-aks"
+
 $script:Config = @{
     ResourceGroup = "tc-cloudgames-solution-dev-rg"
-    ClusterName   = "tc-cloudgames-dev-cr8n-aks"
+    ClusterName   = $null
     KeyVaultName  = "tccloudgamesdevcr8nkv"
     ACRName       = "tccloudgamesdevcr8nacr"
 }
@@ -149,6 +151,42 @@ function Wait-ForPods {
     return $false
 }
 
+function Get-AKSClusterName {
+    param([string]$ResourceGroup, [string]$DefaultName = $null)
+    
+    Write-Host "Discovering AKS cluster..." -ForegroundColor $Colors.Muted
+    if ($DefaultName) {
+        $cluster = az aks show --resource-group $ResourceGroup --name $DefaultName 2>$null | ConvertFrom-Json
+        if ($cluster) { return $DefaultName }
+    }
+    
+    try {
+        $resources = az resource list --resource-group $ResourceGroup --resource-type "Microsoft.ContainerService/managedClusters" --query "[].name" -o tsv 2>$null
+        if (-not $resources) { return $null }
+        $clusterNames = @($resources)
+        $mainCluster = $clusterNames | Where-Object { $_ -match "aks" } | Select-Object -First 1
+        if (-not $mainCluster) { $mainCluster = $clusterNames[0] }
+        
+        if ($DefaultName -and $DefaultName -ne $mainCluster) {
+            Write-Host ""
+            Write-Host "Cluster name changed:" -ForegroundColor $Colors.Warning
+            Write-Host "  Cached: $DefaultName" -ForegroundColor $Colors.Muted
+            Write-Host "  Current: $mainCluster" -ForegroundColor $Colors.Info
+            $confirm = Read-Host "Use new cluster? (Y/n)"
+            if ($confirm -eq "n" -or $confirm -eq "N") { return $DefaultName }
+        }
+        return $mainCluster
+    }
+    catch { return $DefaultName }
+}
+
+function Initialize-ClusterName {
+    if ($script:Config.ClusterName) { return }
+    $clusterName = Get-AKSClusterName -ResourceGroup $script:Config.ResourceGroup -DefaultName $script:DefaultClusterName
+    if (-not $clusterName) { exit 1 }
+    $script:Config.ClusterName = $clusterName
+}
+
 function Show-Header {
     Write-Host ""
     Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor $Colors.Title
@@ -156,6 +194,9 @@ function Show-Header {
     Write-Host "║          Azure Kubernetes Service Manager                  ║" -ForegroundColor $Colors.Title
     Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor $Colors.Title
     Write-Host ""
+    
+    Initialize-ClusterName
+    
     Write-Host "  Resource Group: $($Config.ResourceGroup)" -ForegroundColor $Colors.Muted
     Write-Host "  Cluster Name:   $($Config.ClusterName)" -ForegroundColor $Colors.Muted
     Write-Host ""
@@ -2021,6 +2062,9 @@ function Invoke-Command($cmd, $arg1 = "") {
 # =============================================================================
 # Main execution
 # =============================================================================
+
+Initialize-ClusterName
+
 if (-not $Command) {
     Show-Menu
 }
