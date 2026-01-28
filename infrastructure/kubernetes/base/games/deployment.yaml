@@ -50,7 +50,7 @@ spec:
             - name: AZURE_TENANT_ID
               value: "084169c0-a779-43c3-970c-487a71a93f88"
             - name: AZURE_CLIENT_ID
-              value: "fa8c944e-d16b-474e-91ac-82e56c0ce5e8"
+              value: "b6d8b871-a12a-431a-8e1a-3d5c687614bd"
             - name: AZURE_FEDERATED_TOKEN_FILE
               value: "/var/run/secrets/workload-identity-token/token"
           volumeMounts:
