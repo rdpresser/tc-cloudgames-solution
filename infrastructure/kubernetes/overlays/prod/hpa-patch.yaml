@@ -16,7 +16,7 @@ spec:
     kind: Deployment
     name: user-api
   minReplicas: 2
-  maxReplicas: 4
+  maxReplicas: 6
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 60
@@ -62,7 +62,7 @@ spec:
     kind: Deployment
     name: games-api
   minReplicas: 2
-  maxReplicas: 4
+  maxReplicas: 6
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 30
